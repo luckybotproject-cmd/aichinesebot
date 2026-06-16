@@ -1,0 +1,2982 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chinese Signal Bot • AI Auto Trading</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@500;600;700;800;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --gold:    #FFD700;
+            --gold2:   #F59E0B;
+            --gold3:   #FBBF24;
+            --emerald: #10B981;
+            --red:     #EF4444;
+            --bg:      #030712;
+            --card:    rgba(8,16,32,0.96);
+            --border:  rgba(234,179,8,0.22);
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: #F1F5F9;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        .title-font { font-family: 'Orbitron', sans-serif; }
+        .num-font   { font-family: 'Rajdhani', sans-serif; }
+
+        /* ── Canvas background ── */
+        canvas {
+            position: fixed; top:0; left:0;
+            width:100%; height:100%;
+            z-index: -1; opacity: 0.22;
+            pointer-events: none;
+        }
+
+        /* ── Glass card ── */
+        .glass {
+            background: linear-gradient(135deg, rgba(12,22,44,0.97) 0%, rgba(6,14,28,0.98) 100%);
+            backdrop-filter: blur(32px) saturate(180%);
+            -webkit-backdrop-filter: blur(32px) saturate(180%);
+            border: 1px solid var(--border);
+        }
+        .glass-bright {
+            background: linear-gradient(135deg, rgba(20,35,65,0.95) 0%, rgba(10,18,38,0.97) 100%);
+            backdrop-filter: blur(32px);
+            border: 1px solid rgba(234,179,8,0.35);
+        }
+
+        /* ── Animated gradient border ── */
+        .gold-border {
+            position: relative;
+            border: none !important;
+        }
+        .gold-border::before {
+            content: '';
+            position: absolute; inset: -1px;
+            border-radius: inherit;
+            padding: 1px;
+            background: linear-gradient(135deg, #FFD700, #F59E0B, #10B981, #FFD700);
+            background-size: 300% 300%;
+            animation: borderSpin 4s linear infinite;
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            z-index: 0;
+        }
+        @keyframes borderSpin {
+            0%   { background-position: 0% 50%; }
+            50%  { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* ── Golden button ── */
+        .golden-btn {
+            position: relative;
+            background: linear-gradient(90deg, #FFD700 0%, #F59E0B 40%, #FFD700 80%, #FBBF24 100%);
+            background-size: 200% 100%;
+            box-shadow: 0 0 24px rgba(255,215,0,0.55), 0 4px 20px rgba(255,215,0,0.3);
+            transition: all 0.3s ease;
+            overflow: hidden;
+            color: #0a0a00;
+        }
+        .golden-btn::after {
+            content: '';
+            position: absolute;
+            top: -50%; left: -60%;
+            width: 40%; height: 200%;
+            background: rgba(255,255,255,0.35);
+            transform: skewX(-20deg);
+            animation: btnShine 3s ease infinite;
+        }
+        .golden-btn:hover {
+            background-position: 100% 0;
+            box-shadow: 0 0 40px rgba(255,215,0,0.8), 0 6px 30px rgba(255,215,0,0.45);
+            transform: translateY(-2px);
+        }
+        .golden-btn:active { transform: scale(0.98); }
+        @keyframes btnShine {
+            0%   { left: -60%; }
+            30%  { left: 120%; }
+            100% { left: 120%; }
+        }
+
+        /* ── Input fields ── */
+        .field {
+            width: 100%;
+            background: rgba(8,18,38,0.9);
+            border: 1.5px solid rgba(234,179,8,0.30);
+            border-radius: 16px;
+            padding: 18px 22px;
+            color: #F1F5F9;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.25s, box-shadow 0.25s;
+        }
+        .field:focus {
+            border-color: var(--gold);
+            box-shadow: 0 0 0 3px rgba(255,215,0,0.12), 0 0 20px rgba(255,215,0,0.08);
+        }
+        .field::placeholder { color: #475569; }
+
+        /* ── OTP inputs (JS sets className but these base styles apply) ── */
+        .otp-input {
+            width: 52px !important;
+            height: 64px !important;
+            background: rgba(8,18,38,0.9) !important;
+            border: 2px solid rgba(234,179,8,0.35) !important;
+            border-radius: 16px !important;
+            text-align: center;
+            font-size: 1.75rem !important;
+            font-weight: 700;
+            font-family: 'Orbitron', sans-serif;
+            color: #FFD700;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s !important;
+            caret-color: #FFD700;
+        }
+        .otp-input:focus {
+            border-color: #FFD700 !important;
+            box-shadow: 0 0 0 3px rgba(255,215,0,0.18), 0 0 20px rgba(255,215,0,0.12) !important;
+        }
+
+        /* ── Market ticker ── */
+        .market-ticker {
+            background: rgba(234,179,8,0.06);
+            border-bottom: 1px solid rgba(234,179,8,0.18);
+            overflow: hidden;
+            white-space: nowrap;
+            mask-image: linear-gradient(90deg, transparent 0%, black 8%, black 92%, transparent 100%);
+        }
+        .ticker-content {
+            display: inline-flex;
+            animation: ticker-slide 50s linear infinite;
+        }
+        .ticker-item {
+            display: inline-flex;
+            align-items: center;
+            padding: 0 1.5rem;
+            gap: 0.6rem;
+            font-size: 0.78rem;
+        }
+        @keyframes ticker-slide {
+            0%   { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        /* ── Animations ── */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(28px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+        @keyframes floatY {
+            0%, 100% { transform: translateY(0); }
+            50%       { transform: translateY(-10px); }
+        }
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 8px rgba(255,215,0,0.4); }
+            50%       { box-shadow: 0 0 28px rgba(255,215,0,0.9); }
+        }
+        @keyframes spinRing {
+            to { transform: rotate(360deg); }
+        }
+        @keyframes ripple {
+            0%   { transform: scale(1); opacity: 0.6; }
+            100% { transform: scale(2.4); opacity: 0; }
+        }
+        .fade-up   { animation: fadeInUp 0.6s cubic-bezier(0.22,1,0.36,1) both; }
+        .fade-up-2 { animation: fadeInUp 0.6s 0.1s cubic-bezier(0.22,1,0.36,1) both; }
+        .fade-up-3 { animation: fadeInUp 0.6s 0.2s cubic-bezier(0.22,1,0.36,1) both; }
+        .fade-up-4 { animation: fadeInUp 0.6s 0.3s cubic-bezier(0.22,1,0.36,1) both; }
+        .float-anim { animation: floatY 3.5s ease-in-out infinite; }
+
+        /* ── Signal result animations (JS sets full className so these are for container) ── */
+        @keyframes buyGlow {
+            0%, 100% { box-shadow: 0 0 30px rgba(16,185,129,0.5), 0 0 60px rgba(16,185,129,0.2); }
+            50%       { box-shadow: 0 0 60px rgba(16,185,129,0.8), 0 0 100px rgba(16,185,129,0.4); }
+        }
+        @keyframes sellGlow {
+            0%, 100% { box-shadow: 0 0 30px rgba(239,68,68,0.5), 0 0 60px rgba(239,68,68,0.2); }
+            50%       { box-shadow: 0 0 60px rgba(239,68,68,0.8), 0 0 100px rgba(239,68,68,0.4); }
+        }
+        @keyframes signalPop {
+            0%   { transform: scale(0.85); opacity: 0; }
+            60%  { transform: scale(1.04); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* ── Section header gradient ── */
+        .section-header {
+            background: linear-gradient(90deg, #7c5200 0%, #b07800 35%, #7c5200 100%);
+        }
+
+        /* ── Mode button selected state ── */
+        .mode-btn-active {
+            background: linear-gradient(135deg, rgba(255,215,0,0.18) 0%, rgba(245,158,11,0.12) 100%) !important;
+            border-color: rgba(255,215,0,0.7) !important;
+            color: #FFD700 !important;
+            box-shadow: 0 0 20px rgba(255,215,0,0.2) !important;
+        }
+
+        /* ── Injected message banner ── */
+        @keyframes slideDownMsg {
+            from { transform: translateY(-110%); opacity: 0; }
+            to   { transform: translateY(0);     opacity: 1; }
+        }
+        @keyframes slideUpMsg {
+            from { transform: translateY(0);     opacity: 1; }
+            to   { transform: translateY(-110%); opacity: 0; }
+        }
+        .msg-banner-enter { animation: slideDownMsg 0.4s cubic-bezier(0.34,1.4,0.64,1) forwards; }
+        .msg-banner-exit  { animation: slideUpMsg  0.3s ease forwards; }
+
+        /* ── Select styling ── */
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23F59E0B' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 18px center;
+            padding-right: 44px !important;
+        }
+        select option { background: #0a1424; color: #F1F5F9; }
+
+        /* ── Scrollbar ── */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); }
+        ::-webkit-scrollbar-thumb { background: rgba(234,179,8,0.3); border-radius: 4px; }
+
+        /* ── Live dot ── */
+        .live-dot {
+            width: 8px; height: 8px;
+            background: #10B981;
+            border-radius: 50%;
+            animation: livePulse 1.4s ease-in-out infinite;
+            box-shadow: 0 0 0 0 rgba(16,185,129,0.6);
+        }
+        @keyframes livePulse {
+            0%   { box-shadow: 0 0 0 0 rgba(16,185,129,0.6); }
+            70%  { box-shadow: 0 0 0 8px rgba(16,185,129,0); }
+            100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); }
+        }
+
+        /* ── Progress bar ── */
+        #progress-bar {
+            background: linear-gradient(90deg, #F59E0B, #FFD700, #10B981);
+            background-size: 200% 100%;
+            animation: shimmerBar 1.5s linear infinite;
+        }
+        @keyframes shimmerBar {
+            0%   { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* ── Stat card ── */
+        .stat-card {
+            background: rgba(8,18,38,0.9);
+            border: 1px solid rgba(234,179,8,0.12);
+            border-radius: 20px;
+            padding: 20px;
+            text-align: center;
+            transition: border-color 0.3s, transform 0.3s;
+        }
+        .stat-card:hover {
+            border-color: rgba(234,179,8,0.35);
+            transform: translateY(-2px);
+        }
+        .stat-val {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.4rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        /* ── Signal history rows ── */
+        .history-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(8,18,38,0.8);
+            border: 1px solid rgba(234,179,8,0.08);
+            padding: 14px 18px;
+            border-radius: 14px;
+            transition: border-color 0.2s;
+        }
+        .history-row:hover { border-color: rgba(234,179,8,0.25); }
+
+        /* ── Decorative grid lines ── */
+        .grid-lines {
+            background-image:
+                linear-gradient(rgba(234,179,8,0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(234,179,8,0.04) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+    </style>
+</head>
+<body class="bg-[#030712] text-white min-h-screen relative">
+    <canvas id="candleCanvas"></canvas>
+
+    <!-- ═══════════════════════════════════════════════════
+         AUTH SCREEN
+    ═══════════════════════════════════════════════════ -->
+    <div id="auth-view" class="absolute inset-0 flex items-center justify-center p-4 z-50 grid-lines">
+
+        <!-- Ambient glow orbs -->
+        <div style="position:fixed;top:-20%;left:-10%;width:60vw;height:60vw;background:radial-gradient(circle,rgba(234,179,8,0.06) 0%,transparent 70%);pointer-events:none;"></div>
+        <div style="position:fixed;bottom:-20%;right:-10%;width:50vw;height:50vw;background:radial-gradient(circle,rgba(16,185,129,0.05) 0%,transparent 70%);pointer-events:none;"></div>
+
+        <div class="max-w-md w-full fade-up">
+
+            <!-- Logo row -->
+            <div class="text-center mb-8">
+                <div class="relative inline-block float-anim">
+                    <div class="absolute inset-0 rounded-full" style="background:radial-gradient(circle,rgba(255,215,0,0.25) 0%,transparent 70%);animation:ripple 2s ease-out infinite;"></div>
+                    <div class="relative w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-5"
+                         style="background:linear-gradient(135deg,rgba(255,215,0,0.2),rgba(245,158,11,0.1));border:2px solid rgba(255,215,0,0.4);box-shadow:0 0 40px rgba(255,215,0,0.3);">
+                        <i class="fa-solid fa-dragon text-4xl text-yellow-400"></i>
+                    </div>
+                </div>
+                <h1 class="title-font text-4xl font-bold mb-2" style="background:linear-gradient(90deg,#FFD700,#F59E0B,#FFD700);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">
+                    Chinese Signal Bot
+                </h1>
+                <p class="text-amber-400/80 text-sm font-medium tracking-widest uppercase">AI-Powered Trading Intelligence</p>
+            </div>
+
+            <!-- Card -->
+            <div class="glass rounded-3xl p-8 shadow-2xl" style="box-shadow:0 25px 80px rgba(0,0,0,0.6),0 0 60px rgba(234,179,8,0.06);">
+
+                <!-- Trust badge strip -->
+                <div class="flex items-center justify-center gap-6 mb-7 pb-6 border-b border-yellow-400/10">
+                    <div class="flex items-center gap-1.5 text-xs text-slate-400">
+                        <i class="fa-solid fa-shield-halved text-yellow-500"></i> Secure
+                    </div>
+                    <div class="flex items-center gap-1.5 text-xs text-slate-400">
+                        <i class="fa-solid fa-bolt text-yellow-500"></i> Real-Time AI
+                    </div>
+                    <div class="flex items-center gap-1.5 text-xs text-slate-400">
+                        <i class="fa-solid fa-clock text-yellow-500"></i> 24/7 Active
+                    </div>
+                </div>
+
+                <!-- License section -->
+                <div id="license-section">
+                    <label class="block text-amber-400 text-xs font-semibold mb-3 tracking-widest uppercase">Enter Your License Key</label>
+                    <div class="relative mb-5">
+                        <i class="fa-solid fa-key absolute left-5 top-1/2 -translate-y-1/2 text-yellow-500/60"></i>
+                        <input id="license-input" type="text" placeholder="CSAI-XXXX-XXXX-XXXX" maxlength="19"
+                               onkeyup="formatLicense(this)"
+                               class="field font-mono text-lg tracking-widest text-center pl-12"
+                               style="letter-spacing:0.15em;">
+                    </div>
+                    <button onclick="checkLicense()"
+                            class="golden-btn w-full text-black font-bold py-5 rounded-2xl text-base tracking-widest uppercase">
+                        <i class="fa-solid fa-unlock mr-2"></i> Verify License
+                    </button>
+                </div>
+
+                <!-- Name section -->
+                <div id="name-section" class="hidden">
+                    <label class="block text-amber-400 text-xs font-semibold mb-3 tracking-widest uppercase">Your Full Name</label>
+                    <div class="relative mb-5">
+                        <i class="fa-solid fa-user absolute left-5 top-1/2 -translate-y-1/2 text-yellow-500/60"></i>
+                        <input id="user-name" type="text" placeholder="Enter your full name"
+                               class="field text-lg pl-12">
+                    </div>
+                    <button onclick="submitName()"
+                            class="golden-btn w-full text-black font-bold py-5 rounded-2xl text-base tracking-widest uppercase">
+                        <i class="fa-solid fa-arrow-right mr-2"></i> Confirm & Access Bot
+                    </button>
+                </div>
+
+                <!-- Social links -->
+                <div class="mt-5 grid grid-cols-2 gap-3">
+                    <a id="login-wa-link" href="https://wa.me/923021036192?text=Hello,%20I%20want%20to%20buy%20Chinese%20Signal%20Bot%20License%20Key" target="_blank"
+                       class="flex items-center justify-center gap-2 py-3.5 rounded-2xl font-semibold text-sm text-white transition-all hover:scale-[1.02]"
+                       style="background:linear-gradient(135deg,#16a34a,#15803d);box-shadow:0 4px 20px rgba(22,163,74,0.3);">
+                        <i class="fa-brands fa-whatsapp text-lg"></i> Contact on WhatsApp
+                    </a>
+                    <a id="login-tg-link" href="https://t.me/webmaster9i" target="_blank"
+                       class="flex items-center justify-center gap-2 py-3.5 rounded-2xl font-semibold text-sm text-white transition-all hover:scale-[1.02]"
+                       style="background:linear-gradient(135deg,#0284c7,#0369a1);box-shadow:0 4px 20px rgba(2,132,199,0.3);">
+                        <i class="fa-brands fa-telegram text-lg"></i> Contact Admin
+                    </a>
+                </div>
+            </div>
+
+            <!-- Bottom tagline -->
+            <p class="text-center text-slate-600 text-xs mt-5">
+                Trusted by 12,000+ traders worldwide &bull; 93.8% accuracy
+            </p>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════
+         QUOTEX CONNECTOR OVERLAY
+    ═══════════════════════════════════════════════════ -->
+    <div id="connector-view" class="hidden fixed inset-0 z-[60] flex items-center justify-center p-4"
+         style="background:rgba(3,7,18,0.92);backdrop-filter:blur(20px);">
+        <div class="max-w-md w-full relative fade-up">
+
+            <!-- Close btn -->
+            <button onclick="closeConnector()"
+                    class="absolute -top-4 -right-4 w-11 h-11 rounded-full flex items-center justify-center z-10 transition-all hover:scale-110"
+                    style="background:rgba(20,30,55,0.95);border:1px solid rgba(234,179,8,0.3);box-shadow:0 4px 20px rgba(0,0,0,0.5);">
+                <i class="fa-solid fa-xmark text-lg text-slate-300"></i>
+            </button>
+
+            <!-- Login screen -->
+            <div id="login-screen" class="glass rounded-3xl p-8 shadow-2xl"
+                 style="box-shadow:0 30px 80px rgba(0,0,0,0.7),0 0 50px rgba(234,179,8,0.05);">
+
+                <div class="text-center mb-7">
+                    <div class="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
+                         style="background:linear-gradient(135deg,rgba(255,215,0,0.18),rgba(245,158,11,0.08));border:1px solid rgba(255,215,0,0.3);">
+                        <i class="fa-solid fa-plug text-3xl text-yellow-400"></i>
+                    </div>
+                    <h2 class="title-font text-2xl font-bold text-yellow-300 mb-1">Connect Quotex Account</h2>
+                    <p class="text-slate-400 text-sm">Link your Quotex account to activate the AI bot</p>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-amber-400 text-xs font-semibold mb-2 tracking-wider uppercase">Email Address <span class="text-slate-500 normal-case">(Gmail only)</span></label>
+                        <div class="relative">
+                            <i class="fa-solid fa-envelope absolute left-5 top-1/2 -translate-y-1/2 text-yellow-500/50 text-sm"></i>
+                            <input id="quotex-email" type="email" placeholder="yourname@gmail.com"
+                                   class="field pl-12 text-sm">
+                        </div>
+                        <p id="email-error" class="text-red-400 text-xs mt-2 hidden flex items-center gap-1.5">
+                            <i class="fa-solid fa-circle-exclamation"></i> Please use a valid @gmail.com address
+                        </p>
+                    </div>
+                    <div>
+                        <label class="block text-amber-400 text-xs font-semibold mb-2 tracking-wider uppercase">Quotex Password</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-lock absolute left-5 top-1/2 -translate-y-1/2 text-yellow-500/50 text-sm"></i>
+                            <input id="quotex-password" type="password" placeholder="Enter your Quotex password"
+                                   class="field pl-12 text-sm">
+                        </div>
+                    </div>
+                    <button onclick="connectQuotex()"
+                            class="golden-btn w-full text-black font-bold py-5 rounded-2xl text-base tracking-wide uppercase mt-2">
+                        <i class="fa-solid fa-plug mr-2"></i> Connect Account
+                    </button>
+                </div>
+
+                <div class="mt-5 flex items-center gap-2 justify-center">
+                    <i class="fa-solid fa-shield-halved text-emerald-400 text-xs"></i>
+                    <span class="text-xs text-slate-500">256-bit encrypted connection &bull; Read-only access</span>
+                </div>
+            </div>
+
+            <!-- OTP screen -->
+            <div id="otp-screen" class="glass rounded-3xl p-8 shadow-2xl hidden"
+                 style="box-shadow:0 30px 80px rgba(0,0,0,0.7),0 0 50px rgba(234,179,8,0.05);">
+                <div class="text-center mb-8">
+                    <div class="relative w-18 h-18 mx-auto mb-5">
+                        <div class="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto"
+                             style="background:linear-gradient(135deg,rgba(255,215,0,0.18),rgba(245,158,11,0.08));border:1px solid rgba(255,215,0,0.3);box-shadow:0 0 30px rgba(255,215,0,0.12);">
+                            <i class="fa-solid fa-shield-halved text-4xl text-yellow-400"></i>
+                        </div>
+                    </div>
+                    <h2 class="title-font text-xl font-bold text-yellow-200 mb-2">Verification Required</h2>
+                    <p class="text-slate-400 text-sm leading-relaxed">Enter the 6-digit code sent to your<br>Quotex registered email or phone</p>
+                </div>
+
+                <div class="flex justify-center gap-2.5 mb-8" id="otp-container"></div>
+
+                <button onclick="verifyOTP()"
+                        class="golden-btn w-full text-black font-bold py-5 rounded-2xl text-base tracking-wide uppercase mb-4">
+                    <i class="fa-solid fa-check-double mr-2"></i> Verify OTP
+                </button>
+                <button onclick="backToLogin()"
+                        class="w-full text-center text-sm text-amber-400 hover:text-yellow-200 transition-colors py-2">
+                    <i class="fa-solid fa-arrow-left mr-1.5 text-xs"></i> Back to Login
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════
+         LOADING SCREEN
+    ═══════════════════════════════════════════════════ -->
+    <div id="loading-screen" class="hidden fixed inset-0 z-[70] flex items-center justify-center"
+         style="background:rgba(3,7,18,0.97);backdrop-filter:blur(20px);">
+        <div class="text-center max-w-xs px-6">
+
+            <!-- Spinning rings -->
+            <div class="relative w-24 h-24 mx-auto mb-10">
+                <div class="absolute inset-0 rounded-full border-4 border-yellow-400/10"></div>
+                <div class="absolute inset-0 rounded-full border-4 border-transparent border-t-yellow-400 animate-spin"></div>
+                <div class="absolute inset-2 rounded-full border-4 border-transparent border-t-emerald-400" style="animation:spinRing 1.8s linear infinite reverse;"></div>
+                <div class="absolute inset-0 flex items-center justify-center">
+                    <i class="fa-solid fa-robot text-2xl text-yellow-400"></i>
+                </div>
+            </div>
+
+            <h3 class="title-font text-lg font-bold text-yellow-300 mb-2">Connecting to System</h3>
+            <p class="text-slate-500 text-sm mb-8">Validating your OTP with Quotex servers...</p>
+
+            <div class="space-y-3 text-left">
+                <div class="flex items-center gap-3 text-sm">
+                    <div class="w-5 h-5 rounded-full bg-emerald-500/20 border border-emerald-500 flex items-center justify-center flex-shrink-0">
+                        <i class="fa-solid fa-check text-emerald-400 text-[10px]"></i>
+                    </div>
+                    <span class="text-emerald-400">Connecting to Quotex servers</span>
+                </div>
+                <div class="flex items-center gap-3 text-sm">
+                    <div class="w-5 h-5 rounded-full border-2 border-yellow-400 animate-pulse flex-shrink-0"></div>
+                    <span class="text-yellow-300">Validating credentials...</span>
+                </div>
+                <div class="flex items-center gap-3 text-sm opacity-40">
+                    <div class="w-5 h-5 rounded-full border-2 border-slate-600 flex-shrink-0"></div>
+                    <span class="text-slate-400">Syncing AI Signal Bot...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════
+         CONNECTION SUCCESS POPUP
+    ═══════════════════════════════════════════════════ -->
+    <div id="connection-success-popup" class="hidden fixed inset-0 z-[90] flex items-center justify-center p-4"
+         style="background:rgba(3,7,18,0.92);backdrop-filter:blur(20px);">
+        <div class="glass rounded-3xl p-10 max-w-md w-full text-center fade-up"
+             style="box-shadow:0 0 60px rgba(16,185,129,0.12),0 30px 80px rgba(0,0,0,0.6);border-color:rgba(16,185,129,0.3);">
+
+            <!-- Success ring -->
+            <div class="relative w-24 h-24 mx-auto mb-7">
+                <div class="absolute inset-0 rounded-full" style="background:radial-gradient(circle,rgba(16,185,129,0.2),transparent 70%);animation:ripple 2s ease-out infinite;"></div>
+                <div class="w-24 h-24 rounded-full border-2 border-emerald-500 flex items-center justify-center"
+                     style="background:rgba(16,185,129,0.1);box-shadow:0 0 40px rgba(16,185,129,0.3);">
+                    <i class="fa-solid fa-circle-check text-5xl text-emerald-400"></i>
+                </div>
+            </div>
+
+            <h2 class="title-font text-2xl font-bold text-emerald-400 mb-3">Account Connected!</h2>
+            <p class="text-slate-400 text-sm leading-relaxed mb-8">Your Quotex account has been successfully linked with the AI Chinese Signal Bot. Complete your trading profile to begin.</p>
+
+            <button onclick="showProfitForm()"
+                    class="golden-btn w-full text-black font-bold py-5 rounded-2xl text-base tracking-wide uppercase">
+                <i class="fa-solid fa-arrow-right mr-2"></i> Continue Setup
+            </button>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════
+         PROFIT SETUP FORM
+    ═══════════════════════════════════════════════════ -->
+    <div id="profit-setup-form" class="hidden fixed inset-0 z-[95] flex items-center justify-center p-4"
+         style="background:rgba(3,7,18,0.92);backdrop-filter:blur(20px);">
+        <div class="glass rounded-3xl p-8 max-w-md w-full fade-up"
+             style="box-shadow:0 30px 80px rgba(0,0,0,0.7),0 0 50px rgba(234,179,8,0.05);">
+
+            <div class="text-center mb-7">
+                <div class="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
+                     style="background:linear-gradient(135deg,rgba(255,215,0,0.18),rgba(245,158,11,0.08));border:1px solid rgba(255,215,0,0.3);">
+                    <i class="fa-solid fa-chart-line text-2xl text-yellow-400"></i>
+                </div>
+                <h2 class="title-font text-2xl font-bold text-yellow-300 mb-1">Trading Profile Setup</h2>
+                <p class="text-slate-400 text-sm">Configure your AI trading parameters</p>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-amber-400 text-xs font-semibold mb-2 tracking-wider uppercase">Full Name</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-user absolute left-5 top-1/2 -translate-y-1/2 text-yellow-500/50 text-sm"></i>
+                        <input id="setup-fullname" type="text" placeholder="Enter Full Name"
+                               class="field pl-12 text-sm">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-amber-400 text-xs font-semibold mb-2 tracking-wider uppercase">Account Balance (USD)</label>
+                    <div class="relative">
+                        <span class="absolute left-5 top-1/2 -translate-y-1/2 text-yellow-500/50 font-bold text-sm">$</span>
+                        <input id="setup-balance" type="number" placeholder="5000"
+                               class="field pl-10 text-sm">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-amber-400 text-xs font-semibold mb-2 tracking-wider uppercase">Profit Target</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="relative">
+                            <input id="setup-profit-percent" type="number" placeholder="% Percentage"
+                                   class="field text-sm">
+                        </div>
+                        <div class="relative">
+                            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-yellow-500/50 text-sm">$</span>
+                            <input id="setup-profit-amount" type="number" placeholder="Amount USD"
+                                   class="field pl-8 text-sm">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="startTrading()"
+                    class="golden-btn w-full text-black font-bold py-5 rounded-2xl text-base tracking-widest uppercase mt-7">
+                <i class="fa-solid fa-rocket mr-2"></i> Start Trading
+            </button>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════
+         LIVE TRADE HISTORY VIEW
+    ═══════════════════════════════════════════════════ -->
+    <div id="demo-trades-view" class="hidden fixed inset-0 z-[98]"
+         style="background:linear-gradient(135deg,#030712 0%,#050d20 50%,#030712 100%);">
+        <canvas id="demoCanvas" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;opacity:0.15;pointer-events:none;"></canvas>
+
+        <!-- ── PHASE 1: BOT STARTUP SCREEN ── -->
+        <div id="demo-startup-screen" class="relative z-10 h-full flex items-center justify-center p-4">
+            <div class="max-w-sm w-full text-center">
+
+                <!-- Spinning robot icon -->
+                <div class="relative w-28 h-28 mx-auto mb-8">
+                    <div class="absolute inset-0 rounded-full border-4 border-yellow-400/10"></div>
+                    <div class="absolute inset-0 rounded-full border-4 border-transparent border-t-yellow-400 animate-spin"></div>
+                    <div class="absolute inset-2 rounded-full border-4 border-transparent border-t-emerald-400" style="animation:spinRing 1.8s linear infinite reverse;"></div>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <i class="fa-solid fa-robot text-3xl text-yellow-400"></i>
+                    </div>
+                    <div class="absolute inset-0 rounded-full" style="background:radial-gradient(circle,rgba(255,215,0,0.12),transparent 70%);animation:ripple 2s ease-out infinite;"></div>
+                </div>
+
+                <h2 class="title-font text-xl font-bold text-yellow-300 mb-1 tracking-wide">AI Auto Chinese Signal Bot</h2>
+                <p class="text-amber-400/70 text-sm tracking-widest uppercase mb-8">is Starting... Please Wait</p>
+
+                <!-- Step checklist -->
+                <div class="space-y-3 text-left mb-8" id="startup-steps">
+                    <div class="startup-step flex items-center gap-3 rounded-2xl px-4 py-3 opacity-0"
+                         style="background:rgba(8,18,38,0.7);border:1px solid rgba(234,179,8,0.08);transition:opacity 0.4s;">
+                        <div class="step-icon w-6 h-6 rounded-full border-2 border-yellow-400 flex items-center justify-center flex-shrink-0">
+                            <div class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></div>
+                        </div>
+                        <span class="text-sm text-yellow-200">Connecting to Quotex servers</span>
+                    </div>
+                    <div class="startup-step flex items-center gap-3 rounded-2xl px-4 py-3 opacity-0"
+                         style="background:rgba(8,18,38,0.7);border:1px solid rgba(234,179,8,0.08);transition:opacity 0.4s;">
+                        <div class="step-icon w-6 h-6 rounded-full border-2 border-yellow-400 flex items-center justify-center flex-shrink-0">
+                            <div class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></div>
+                        </div>
+                        <span class="text-sm text-yellow-200">Validating account credentials</span>
+                    </div>
+                    <div class="startup-step flex items-center gap-3 rounded-2xl px-4 py-3 opacity-0"
+                         style="background:rgba(8,18,38,0.7);border:1px solid rgba(234,179,8,0.08);transition:opacity 0.4s;">
+                        <div class="step-icon w-6 h-6 rounded-full border-2 border-yellow-400 flex items-center justify-center flex-shrink-0">
+                            <div class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></div>
+                        </div>
+                        <span class="text-sm text-yellow-200">Syncing AI neural network model</span>
+                    </div>
+                    <div class="startup-step flex items-center gap-3 rounded-2xl px-4 py-3 opacity-0"
+                         style="background:rgba(8,18,38,0.7);border:1px solid rgba(234,179,8,0.08);transition:opacity 0.4s;">
+                        <div class="step-icon w-6 h-6 rounded-full border-2 border-yellow-400 flex items-center justify-center flex-shrink-0">
+                            <div class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></div>
+                        </div>
+                        <span class="text-sm text-yellow-200">Scanning 47 market indicators</span>
+                    </div>
+                    <div class="startup-step flex items-center gap-3 rounded-2xl px-4 py-3 opacity-0"
+                         style="background:rgba(8,18,38,0.7);border:1px solid rgba(234,179,8,0.08);transition:opacity 0.4s;">
+                        <div class="step-icon w-6 h-6 rounded-full border-2 border-yellow-400 flex items-center justify-center flex-shrink-0">
+                            <div class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></div>
+                        </div>
+                        <span class="text-sm text-yellow-200">Initialising auto-trading engine</span>
+                    </div>
+                </div>
+
+                <!-- Progress bar -->
+                <div class="h-2 rounded-full overflow-hidden mb-3" style="background:rgba(8,18,38,0.9);">
+                    <div id="startup-progress" class="h-2 w-0 rounded-full transition-all duration-700"
+                         style="background:linear-gradient(90deg,#F59E0B,#FFD700,#10B981);background-size:200% 100%;animation:shimmerBar 1.5s linear infinite;"></div>
+                </div>
+                <p id="startup-status-text" class="text-xs text-slate-500 tracking-wide">Initialising...</p>
+            </div>
+        </div>
+
+        <!-- ── PHASE 2: LIVE TRADE FEED ── -->
+        <div id="demo-live-feed" class="hidden relative z-10 h-full overflow-y-auto">
+            <div class="min-h-full flex flex-col items-center justify-start py-10 px-4">
+
+                <!-- LIVE badge -->
+                <div class="flex items-center gap-2.5 rounded-full px-5 py-2 mb-6"
+                     style="background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.3);box-shadow:0 0 20px rgba(16,185,129,0.08);">
+                    <div class="live-dot"></div>
+                    <span class="text-emerald-300 text-sm font-bold tracking-widest uppercase">Live Trade History</span>
+                </div>
+
+                <!-- Stats row -->
+                <div class="glass rounded-3xl p-6 max-w-2xl w-full mb-6"
+                     style="border:1px solid rgba(234,179,8,0.25);">
+                    <div class="grid grid-cols-3 gap-4">
+                        <div class="stat-card text-center">
+                            <div id="demo-balance-display" class="font-mono font-bold text-yellow-300 text-lg">$0</div>
+                            <div class="text-xs text-slate-500 mt-1">Account Balance</div>
+                        </div>
+                        <div class="stat-card text-center">
+                            <div id="demo-running-pnl" class="font-mono font-bold text-emerald-400 text-lg">$0.00</div>
+                            <div class="text-xs text-slate-500 mt-1">Running P&amp;L</div>
+                        </div>
+                        <div class="stat-card text-center">
+                            <div id="demo-trade-count" class="font-mono font-bold text-yellow-300 text-lg">0</div>
+                            <div class="text-xs text-slate-500 mt-1">Trades</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Trade table -->
+                <div class="glass rounded-3xl max-w-2xl w-full mb-6" style="border:1px solid rgba(234,179,8,0.15);overflow:hidden;">
+                    <div class="flex items-center justify-between px-6 py-4"
+                         style="background:rgba(8,18,38,0.6);border-bottom:1px solid rgba(234,179,8,0.1);">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-clock-rotate-left text-yellow-400 text-sm"></i>
+                            <h3 class="font-bold text-yellow-100 text-sm tracking-wide uppercase">AI Bot — Live Trades</h3>
+                        </div>
+                        <div class="flex items-center gap-2 rounded-full px-3 py-1"
+                             style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.25);">
+                            <div class="live-dot" style="width:6px;height:6px;"></div>
+                            <span class="text-emerald-400 text-xs font-bold">LIVE</span>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-5 gap-2 px-6 py-3 text-xs font-bold uppercase tracking-widest text-slate-600"
+                         style="border-bottom:1px solid rgba(234,179,8,0.06);">
+                        <span>Time</span><span>Asset</span><span>Signal</span>
+                        <span class="text-right">Amount</span><span class="text-right">Result</span>
+                    </div>
+                    <!-- Processing indicator row -->
+                    <div id="demo-processing-row" class="hidden flex items-center gap-3 px-6 py-3"
+                         style="background:rgba(255,215,0,0.04);border-bottom:1px solid rgba(234,179,8,0.06);">
+                        <div class="w-4 h-4 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
+                        <span class="text-xs text-yellow-400 tracking-wide">AI analysing next signal...</span>
+                    </div>
+                    <div id="demo-trade-rows" class="divide-y max-h-80 overflow-y-auto" style="divide-color:rgba(234,179,8,0.04);"></div>
+                </div>
+
+                <!-- Total loss bar (shown only after all loss trades done) -->
+                <div id="demo-loss-summary" class="hidden max-w-2xl w-full mb-6 glass rounded-2xl px-6 py-5 flex items-center justify-between"
+                     style="border:1px solid rgba(239,68,68,0.3);box-shadow:0 0 30px rgba(239,68,68,0.06);">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl flex items-center justify-center"
+                             style="background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.2);">
+                            <i class="fa-solid fa-arrow-trend-down text-red-400"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs text-slate-500 mb-0.5 uppercase tracking-wider">Total Amount Lost</div>
+                            <div id="demo-total-loss-val" class="text-xl font-mono font-bold text-red-400" style="font-family:'Orbitron',sans-serif;">-$0.00</div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-xs text-slate-500 mb-0.5 uppercase tracking-wider">Net P&amp;L</div>
+                        <div id="demo-net-pnl" class="text-xl font-mono font-bold" style="font-family:'Orbitron',sans-serif;color:#f87171;">-$0.00</div>
+                    </div>
+                </div>
+
+                <!-- Proceed button (hidden until all trades done) -->
+                <div id="demo-proceed-wrap" class="hidden max-w-2xl w-full mb-8">
+                    <button onclick="proceedToLiveTrading()"
+                            class="golden-btn w-full text-black font-bold py-5 rounded-2xl text-base tracking-wide uppercase">
+                        <i class="fa-solid fa-rocket mr-2"></i> Proceed to Live Trading
+                    </button>
+                    <p class="text-center text-slate-600 text-xs mt-3">Your AI bot will now begin real-time signal generation</p>
+                </div>
+
+                <div class="text-xs text-slate-700 text-center pb-6">Chinese Signal Bot • AI Auto Trading System</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════
+         MARGIN CALL / DEPOSIT POPUP
+    ═══════════════════════════════════════════════════ -->
+    <div id="margin-call-popup" class="hidden fixed inset-0 z-[96] flex items-center justify-center p-4"
+         style="background:rgba(3,7,18,0.96);backdrop-filter:blur(24px);">
+        <div class="rounded-3xl p-10 max-w-sm w-full text-center fade-up"
+             style="background:linear-gradient(135deg,rgba(20,5,5,0.99),rgba(40,8,8,0.99));border:1px solid rgba(239,68,68,0.35);box-shadow:0 30px 80px rgba(0,0,0,0.8),0 0 60px rgba(239,68,68,0.08);">
+            <!-- Icon -->
+            <div class="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6"
+                 style="background:linear-gradient(135deg,rgba(239,68,68,0.18),rgba(185,28,28,0.08));border:1px solid rgba(239,68,68,0.3);">
+                <i class="fa-solid fa-circle-exclamation text-4xl text-red-400"></i>
+            </div>
+            <!-- Title -->
+            <h2 style="font-family:'Orbitron',sans-serif;" class="text-xl font-bold text-red-400 mb-1 tracking-wide">MARGIN CALL</h2>
+            <p class="text-red-300/70 text-xs tracking-widest uppercase mb-5">Account Balance Insufficient</p>
+            <!-- Loss display -->
+            <div class="rounded-2xl px-5 py-4 mb-6" style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);">
+                <div class="text-xs text-slate-500 mb-1 uppercase tracking-wider">Total Amount Lost</div>
+                <div id="mc-loss-amount" style="font-family:'Orbitron',sans-serif;" class="text-3xl font-bold text-red-400">-$0.00</div>
+                <div class="text-xs text-slate-600 mt-2">Your balance is insufficient to cover open positions</div>
+            </div>
+            <!-- Description -->
+            <p class="text-slate-400 text-sm leading-relaxed mb-8">
+                To continue live trading and recover your losses with the AI bot,
+                you need to top up your Quotex account balance now.
+            </p>
+            <!-- CTA button -->
+            <button onclick="proceedToDeposit()"
+                    class="w-full font-bold py-5 rounded-2xl text-base tracking-wide uppercase mb-3 flex items-center justify-center gap-2"
+                    style="background:linear-gradient(135deg,#dc2626,#b91c1c);color:#fff;border:1px solid rgba(239,68,68,0.5);">
+                <i class="fa-solid fa-circle-plus"></i> Top Up My Account
+            </button>
+            <button onclick="dismissMarginCall()"
+                    class="w-full py-3 text-slate-600 hover:text-slate-400 text-sm transition-colors">
+                I'll top up later
+            </button>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════
+         TEST LIMIT POPUP
+    ═══════════════════════════════════════════════════ -->
+    <div id="test-limit-popup" class="hidden fixed inset-0 z-[95] flex items-center justify-center p-4"
+         style="background:rgba(3,7,18,0.92);backdrop-filter:blur(20px);">
+        <div class="glass rounded-3xl p-10 max-w-sm w-full text-center fade-up"
+             style="box-shadow:0 30px 80px rgba(0,0,0,0.7),0 0 40px rgba(234,179,8,0.06);">
+            <div class="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6"
+                 style="background:linear-gradient(135deg,rgba(255,215,0,0.18),rgba(245,158,11,0.08));border:1px solid rgba(255,215,0,0.3);">
+                <i class="fa-solid fa-hourglass-end text-4xl text-yellow-400"></i>
+            </div>
+            <h2 class="title-font text-2xl font-bold text-yellow-300 mb-3">Free Trial Used</h2>
+            <p class="text-slate-400 text-sm leading-relaxed mb-8">You've used your 2 free Test Signals.<br>Connect your Quotex Account for unlimited signals and real-time AI trading.</p>
+            <button onclick="showConnectorFromTest()"
+                    class="golden-btn w-full text-black font-bold py-5 rounded-2xl text-base tracking-wide uppercase mb-4">
+                <i class="fa-solid fa-plug mr-2"></i> Connect Quotex Now
+            </button>
+            <button onclick="closeTestLimitPopup()"
+                    class="w-full py-3 text-slate-500 hover:text-slate-300 text-sm transition-colors">Maybe Later</button>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════
+         MAIN BOT SCREEN
+    ═══════════════════════════════════════════════════ -->
+    <div id="bot-view" class="hidden flex flex-col min-h-screen">
+
+        <!-- Sticky top header -->
+        <div class="sticky top-0 z-50"
+             style="background:rgba(3,7,18,0.98);backdrop-filter:blur(20px);border-bottom:1px solid rgba(234,179,8,0.12);">
+
+            <!-- Live bar -->
+            <div class="flex justify-between items-center px-5 py-2.5 border-b border-yellow-400/8">
+                <div class="flex items-center gap-2.5">
+                    <div class="live-dot"></div>
+                    <span class="text-emerald-400 text-xs font-semibold tracking-wider">LIVE</span>
+                    <span id="live-time" class="font-mono text-xs text-amber-300/80"></span>
+                </div>
+                <div class="flex items-center gap-3 text-xs">
+                    <div class="flex items-center gap-1.5">
+                        <i class="fa-solid fa-clock text-yellow-400/60 text-[10px]"></i>
+                        <span class="text-slate-500 text-[10px] tracking-wide">BOT UPTIME</span>
+                        <span id="bot-session-timer" class="font-mono text-amber-400/80 text-[10px]">00:00</span>
+                    </div>
+                    <i class="fa-solid fa-wifi text-emerald-400 text-[10px]"></i>
+                    <span class="text-slate-500">REAL-TIME DATA</span>
+                </div>
+            </div>
+
+            <!-- Ticker -->
+            <div class="market-ticker py-2.5">
+                <div id="ticker-content" class="ticker-content"></div>
+            </div>
+
+            <!-- Brand header -->
+            <div class="py-4 px-5 text-center"
+                 style="background:linear-gradient(90deg,rgba(100,60,0,0.6),rgba(160,100,0,0.8),rgba(100,60,0,0.6));border-bottom:1px solid rgba(234,179,8,0.2);">
+                <h1 class="title-font text-2xl md:text-3xl font-black tracking-widest"
+                    style="background:linear-gradient(90deg,#FFD700,#FFF8DC,#FFD700);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">
+                    ⚡ CHINESE SIGNAL BOT
+                </h1>
+                <p class="text-amber-400/70 text-xs tracking-widest uppercase mt-0.5">AI-Powered Trading Intelligence System</p>
+            </div>
+        </div>
+
+        <!-- Main content -->
+        <div id="main-content" class="flex-1 p-4 md:p-6 max-w-5xl mx-auto w-full overflow-y-auto">
+
+            <!-- Trading Mode selector -->
+            <div class="glass rounded-3xl p-6 mb-6">
+                <div class="flex items-center gap-2 mb-5">
+                    <i class="fa-solid fa-sliders text-yellow-400"></i>
+                    <h2 class="text-sm font-bold text-yellow-200 tracking-widest uppercase">Select Trading Mode</h2>
+                </div>
+                <div class="grid grid-cols-3 gap-3">
+                    <button onclick="selectTradingMode('manual')" id="manual-btn"
+                            class="flex flex-col items-center gap-2 py-5 rounded-2xl font-bold text-sm text-slate-300 border border-slate-700/50 transition-all hover:border-yellow-400/40 hover:text-yellow-200"
+                            style="background:rgba(8,18,38,0.7);">
+                        <i class="fa-solid fa-hand-pointer text-xl text-amber-400"></i>
+                        <span>MANUAL</span>
+                    </button>
+                    <button onclick="selectTradingMode('auto')" id="auto-btn"
+                            class="flex flex-col items-center gap-2 py-5 rounded-2xl font-bold text-sm text-slate-300 border border-slate-700/50 transition-all hover:border-yellow-400/40 hover:text-yellow-200"
+                            style="background:rgba(8,18,38,0.7);">
+                        <i class="fa-solid fa-robot text-xl text-amber-400"></i>
+                        <span>AUTO</span>
+                    </button>
+                    <button onclick="selectTradingMode('test')" id="test-btn"
+                            class="flex flex-col items-center gap-2 py-5 rounded-2xl font-bold text-sm text-slate-300 border border-slate-700/50 transition-all hover:border-yellow-400/40 hover:text-yellow-200"
+                            style="background:rgba(8,18,38,0.7);">
+                        <i class="fa-solid fa-vial text-xl text-amber-400"></i>
+                        <span>TEST</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Signal Generator + Stats -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 mb-5">
+
+                <!-- Signal generator card -->
+                <div class="lg:col-span-7 glass rounded-3xl overflow-hidden">
+                    <!-- Card header -->
+                    <div class="px-6 py-4 flex items-center gap-3"
+                         style="background:linear-gradient(90deg,rgba(100,60,0,0.5),rgba(60,35,0,0.3));border-bottom:1px solid rgba(234,179,8,0.15);">
+                        <div class="w-8 h-8 rounded-xl flex items-center justify-center"
+                             style="background:rgba(255,215,0,0.15);border:1px solid rgba(255,215,0,0.3);">
+                            <i class="fa-solid fa-brain text-yellow-400 text-sm"></i>
+                        </div>
+                        <h2 class="font-bold text-yellow-200 text-sm tracking-wide uppercase">AI Signal Generator</h2>
+                    </div>
+
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                            <div>
+                                <label class="text-amber-400/80 text-xs font-semibold mb-2 block tracking-wider uppercase">Broker</label>
+                                <select class="field text-sm">
+                                    <option selected>Quotex</option>
+                                    <option>Pocket Option</option>
+                                    <option>Deriv</option>
+                                    <option>IQ Option</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-amber-400/80 text-xs font-semibold mb-2 block tracking-wider uppercase">Asset</label>
+                                <select id="asset-select" onchange="updateSelectedAsset()" class="field text-sm"></select>
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label class="text-amber-400/80 text-xs font-semibold mb-2 block tracking-wider uppercase">Time Frame</label>
+                                <select id="timeframe-select" class="field text-sm">
+                                    <option>15 seconds</option>
+                                    <option selected>30 seconds</option>
+                                    <option>1 minute</option>
+                                    <option>5 minutes</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Trading controls -->
+                        <div id="trading-controls" class="hidden">
+                            <div id="manual-controls">
+                                <button onclick="generateSignal()" id="generate-btn"
+                                        class="golden-btn w-full text-black font-black text-xl py-6 rounded-2xl tracking-wide uppercase"
+                                        style="letter-spacing:0.08em;box-shadow:0 0 40px rgba(255,215,0,0.4),0 8px 30px rgba(0,0,0,0.3);">
+                                    <i class="fa-solid fa-brain mr-3"></i> Generate Signal
+                                </button>
+                            </div>
+                            <!-- NEW: Manual trading Quotex connection requirement -->
+                            <div id="manual-connect-controls" class="hidden">
+                                <button onclick="showConnector()"
+                                        class="golden-btn w-full text-black font-bold text-base py-6 rounded-2xl tracking-wide uppercase">
+                                    <i class="fa-solid fa-plug mr-2"></i> Connect Quotex to Generate Signals
+                                </button>
+                                <p class="text-center text-slate-500 text-xs mt-3">Manual trading requires an active Quotex connection</p>
+                            </div>
+                            <div id="auto-controls" class="hidden">
+                                <button onclick="showConnector()"
+                                        class="golden-btn w-full text-black font-bold text-base py-6 rounded-2xl tracking-wide uppercase">
+                                    <i class="fa-solid fa-plug mr-2"></i> Connect Bot for Auto Trading
+                                </button>
+                                <p class="text-center text-slate-500 text-xs mt-3">Auto trading requires an active Quotex connection</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Performance stats card -->
+                <div class="lg:col-span-5 glass rounded-3xl overflow-hidden">
+                    <div class="px-6 py-4 flex items-center gap-3"
+                         style="background:linear-gradient(90deg,rgba(0,50,30,0.4),rgba(0,30,18,0.2));border-bottom:1px solid rgba(16,185,129,0.15);">
+                        <div class="w-8 h-8 rounded-xl flex items-center justify-center"
+                             style="background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);">
+                            <i class="fa-solid fa-chart-bar text-emerald-400 text-sm"></i>
+                        </div>
+                        <h3 class="font-bold text-emerald-300 text-sm tracking-wide uppercase">Performance</h3>
+                    </div>
+
+                    <div class="p-6">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="stat-card text-center">
+                                <div class="text-2xl mb-1">📊</div>
+                                <div id="total-signals" class="stat-val text-yellow-300">248</div>
+                                <div class="text-slate-500 text-xs mt-1.5 tracking-wide">Total Signals</div>
+                            </div>
+                            <div class="stat-card text-center">
+                                <div class="text-2xl mb-1">🏆</div>
+                                <div id="win-rate" class="stat-val text-emerald-400">93.8%</div>
+                                <div class="text-slate-500 text-xs mt-1.5 tracking-wide">Win Rate</div>
+                            </div>
+                        </div>
+
+                        <!-- AI Status -->
+                        <div class="mt-4 rounded-2xl p-4"
+                             style="background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.12);">
+                            <div class="flex items-center gap-2 mb-2">
+                                <div class="live-dot" style="width:6px;height:6px;"></div>
+                                <span class="text-xs text-emerald-400 font-semibold">AI ENGINE ACTIVE</span>
+                            </div>
+                            <p class="text-xs text-slate-500 leading-relaxed">Neural network scanning 47 indicators across 26 currency pairs in real-time.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Signal result area -->
+            <div id="result-area" class="hidden mb-5">
+
+                <!-- Analyzing state -->
+                <div id="analyzing" class="hidden glass rounded-3xl p-8 text-center">
+                    <div class="flex items-center justify-center gap-3 mb-5">
+                        <div class="w-6 h-6 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin"></div>
+                        <p class="text-yellow-300 font-semibold tracking-wide">AI Neural Network Analyzing Market...</p>
+                    </div>
+                    <div class="space-y-2.5 text-left max-w-sm mx-auto text-sm mb-7">
+                        <div class="flex items-center gap-3 text-emerald-400">
+                            <i class="fa-solid fa-circle-dot text-xs"></i>
+                            <span>Scanning order flow & volume</span>
+                        </div>
+                        <div class="flex items-center gap-3 text-emerald-400">
+                            <i class="fa-solid fa-circle-dot text-xs"></i>
+                            <span>Calculating RSI, MACD & Momentum</span>
+                        </div>
+                        <div class="flex items-center gap-3 text-yellow-300">
+                            <div class="w-3 h-3 border border-yellow-400 rounded-full animate-pulse flex-shrink-0"></div>
+                            <span>Volatility &amp; Bollinger analysis...</span>
+                        </div>
+                        <div class="flex items-center gap-3 text-slate-500">
+                            <div class="w-3 h-3 border border-slate-600 rounded-full flex-shrink-0"></div>
+                            <span>Probability calculation</span>
+                        </div>
+                    </div>
+                    <div class="h-2 rounded-full overflow-hidden" style="background:rgba(8,18,38,0.8);">
+                        <div id="progress-bar" class="h-2 w-0 rounded-full transition-all duration-300"></div>
+                    </div>
+                </div>
+
+                <!-- Signal result -->
+                <div id="signal-result" class="hidden glass rounded-3xl overflow-hidden"
+                     style="animation:signalPop 0.5s cubic-bezier(0.22,1,0.36,1);">
+                    <!-- Signal box — JS sets full className so only outer container styled here -->
+                    <div id="signal-box" class="text-6xl md:text-7xl font-bold py-10 rounded-3xl mb-6 text-center"
+                         style="font-family:'Orbitron',sans-serif;letter-spacing:0.06em;"></div>
+
+                    <div class="px-8 pb-8 text-center">
+                        <div id="accuracy-text" class="text-5xl font-bold text-emerald-400 mb-1"
+                             style="font-family:'Orbitron',sans-serif;"></div>
+                        <div class="text-slate-400 text-sm mb-7">AI Confidence Score</div>
+
+                        <div class="grid grid-cols-3 gap-3">
+                            <div class="rounded-2xl p-4 text-center" style="background:rgba(8,18,38,0.9);border:1px solid rgba(234,179,8,0.1);">
+                                <div class="text-slate-500 text-xs mb-1.5 uppercase tracking-wider">Asset</div>
+                                <div id="result-asset" class="font-semibold text-sm text-yellow-200"></div>
+                            </div>
+                            <div class="rounded-2xl p-4 text-center" style="background:rgba(8,18,38,0.9);border:1px solid rgba(234,179,8,0.1);">
+                                <div class="text-slate-500 text-xs mb-1.5 uppercase tracking-wider">Timeframe</div>
+                                <div id="result-time" class="font-semibold text-sm text-yellow-200"></div>
+                            </div>
+                            <div class="rounded-2xl p-4 text-center" style="background:rgba(8,18,38,0.9);border:1px solid rgba(234,179,8,0.1);">
+                                <div class="text-slate-500 text-xs mb-1.5 uppercase tracking-wider">Time</div>
+                                <div id="signal-time" class="font-mono font-semibold text-sm text-yellow-200"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Signal history -->
+            <div class="glass rounded-3xl overflow-hidden">
+                <div class="px-6 py-4 flex items-center gap-3"
+                     style="background:rgba(8,18,38,0.5);border-bottom:1px solid rgba(234,179,8,0.1);">
+                    <i class="fa-solid fa-clock-rotate-left text-yellow-400 text-sm"></i>
+                    <h3 class="font-bold text-yellow-200 text-sm tracking-wide uppercase">Recent Signals</h3>
+                </div>
+                <div class="p-4">
+                    <div id="signal-history" class="space-y-2.5 max-h-80 overflow-y-auto"></div>
+                    <div id="signal-history-empty" class="text-center py-10 text-slate-600 text-sm">
+                        <i class="fa-solid fa-chart-line text-2xl mb-3 block opacity-30"></i>
+                        Generate a signal to see history here
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom spacer -->
+            <div class="h-8"></div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════
+         UNDER MAINTENANCE PAGE
+    ═══════════════════════════════════════════════════ -->
+    <div id="maintenance-view" class="hidden fixed inset-0 z-[200] flex flex-col items-center justify-center px-4 py-10 overflow-y-auto"
+         style="background: linear-gradient(135deg, #030712 0%, #0a0614 50%, #030712 100%);">
+        <canvas id="maintCanvas" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;opacity:0.12;pointer-events:none;"></canvas>
+        <div class="relative z-10 flex flex-col items-center text-center max-w-lg w-full">
+
+            <div class="relative w-28 h-28 mb-8">
+                <div class="absolute inset-0 rounded-full border-4 border-orange-500 opacity-20 animate-ping"></div>
+                <div class="absolute inset-0 rounded-full border-2 border-orange-500 opacity-40"></div>
+                <div class="w-full h-full rounded-full flex items-center justify-center"
+                     style="background:linear-gradient(135deg,rgba(249,115,22,0.2),rgba(220,38,38,0.1));box-shadow:0 0 60px rgba(249,115,22,0.2);">
+                    <i class="fa-solid fa-wrench text-5xl text-orange-400"></i>
+                </div>
+            </div>
+
+            <h1 class="title-font text-3xl md:text-4xl font-bold text-orange-300 mb-4">Under Maintenance</h1>
+            <p id="maint-user-message" class="text-slate-400 text-base leading-relaxed mb-8 max-w-md">
+                We are currently performing maintenance. Please check back soon.
+            </p>
+
+            <div class="glass rounded-3xl p-8 w-full mb-8" style="border:1px solid rgba(249,115,22,0.3);box-shadow:0 0 40px rgba(249,115,22,0.06);">
+                <div class="text-xs text-slate-500 uppercase tracking-widest mb-3">Estimated Time Remaining</div>
+                <div id="maint-user-countdown" class="text-5xl font-mono font-bold text-orange-300 tracking-wider mb-2" style="font-family:'Orbitron',sans-serif;">—</div>
+                <div id="maint-no-timer-msg" class="text-slate-500 text-sm">We'll be back as soon as possible.</div>
+                <div id="maint-progress-wrap" class="hidden mt-5">
+                    <div class="h-2 rounded-full overflow-hidden" style="background:rgba(8,18,38,0.9);">
+                        <div id="maint-progress-bar" class="h-full rounded-full transition-all duration-1000" style="width:100%;background:linear-gradient(90deg,#f97316,#ef4444);"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="w-full space-y-3 mb-8">
+                <div class="glass flex items-center gap-3 rounded-2xl px-5 py-3.5" style="border:1px solid rgba(249,115,22,0.15);">
+                    <div class="w-5 h-5 border-2 border-orange-400 rounded-full animate-spin flex-shrink-0" style="border-top-color:transparent;"></div>
+                    <span class="text-sm text-orange-200">System update in progress...</span>
+                </div>
+                <div class="glass flex items-center gap-3 rounded-2xl px-5 py-3.5" style="border:1px solid rgba(249,115,22,0.08);">
+                    <div class="w-5 h-5 border-2 border-slate-600 rounded-full animate-pulse flex-shrink-0"></div>
+                    <span class="text-sm text-slate-500">AI signal engine — restart pending</span>
+                </div>
+            </div>
+
+            <div class="text-xs text-slate-700">Chinese Signal Bot • AI Auto Trading System</div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════
+         TRADING STARTED VIEW
+    ═══════════════════════════════════════════════════ -->
+    <div id="trading-started-view" class="hidden fixed inset-0 z-[100] overflow-y-auto"
+         style="background: linear-gradient(135deg, #030712 0%, #050d20 50%, #030712 100%);">
+        <canvas id="tradingCanvas" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;opacity:0.18;pointer-events:none;"></canvas>
+
+        <div class="relative z-10 min-h-screen flex flex-col items-center justify-start py-10 px-4">
+
+            <!-- Live badge -->
+            <div class="flex items-center gap-2.5 rounded-full px-5 py-2 mb-8"
+                 style="background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.3);box-shadow:0 0 20px rgba(16,185,129,0.08);">
+                <div class="live-dot"></div>
+                <span class="text-emerald-300 text-sm font-bold tracking-widest uppercase">Account Connected — Bot Active</span>
+            </div>
+
+            <!-- Main card -->
+            <div class="glass rounded-3xl p-8 md:p-12 max-w-2xl w-full text-center mb-8"
+                 style="border:1px solid rgba(234,179,8,0.3);box-shadow:0 0 80px rgba(234,179,8,0.06),0 30px 80px rgba(0,0,0,0.5);">
+
+                <div class="relative w-24 h-24 mx-auto mb-8">
+                    <div class="absolute inset-0 rounded-full border-4 border-yellow-400 opacity-20 animate-ping"></div>
+                    <div class="absolute inset-0 rounded-full border-2 border-yellow-400 opacity-40"></div>
+                    <div class="w-full h-full rounded-full flex items-center justify-center"
+                         style="background:linear-gradient(135deg,rgba(255,215,0,0.18),rgba(245,158,11,0.08));box-shadow:0 0 40px rgba(255,215,0,0.2);">
+                        <i class="fa-solid fa-robot text-4xl text-yellow-400"></i>
+                    </div>
+                </div>
+
+                <h1 class="title-font text-3xl md:text-4xl font-bold text-yellow-300 mb-4 leading-tight">
+                    Your Account Is Connected
+                </h1>
+                <p class="text-xl text-amber-200 font-medium mb-3">The Bot Is Going To Start Trading</p>
+                <p class="text-slate-400 text-base leading-relaxed mb-8 max-w-lg mx-auto">
+                    The trades and history are shown here. Please wait to check your Trades and Profit History with our
+                    <span class="text-yellow-300 font-semibold">AI Auto Chinese Signal Bot</span>.
+                </p>
+
+                <div class="border-t border-yellow-400/10 mb-8"></div>
+
+                <!-- Live stats -->
+                <div class="grid grid-cols-3 gap-4 mb-8">
+                    <div class="stat-card">
+                        <div id="ts-signals" class="stat-val text-yellow-300 text-2xl">0</div>
+                        <div class="text-xs text-slate-500 mt-1">Signals Sent</div>
+                    </div>
+                    <div class="stat-card">
+                        <div id="ts-winrate" class="stat-val text-emerald-400 text-2xl">0%</div>
+                        <div class="text-xs text-slate-500 mt-1">Win Rate</div>
+                    </div>
+                    <div class="stat-card">
+                        <div id="ts-profit" class="stat-val text-blue-300 text-2xl">$0</div>
+                        <div class="text-xs text-slate-500 mt-1">Profit Today</div>
+                    </div>
+                </div>
+
+                <!-- Status steps -->
+                <div class="space-y-3 text-left mb-8">
+                    <div class="flex items-center gap-3 rounded-2xl px-4 py-3" style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);">
+                        <i class="fa-solid fa-circle-check text-emerald-400 flex-shrink-0"></i>
+                        <span class="text-sm text-emerald-300">License verified &amp; activated</span>
+                    </div>
+                    <div class="flex items-center gap-3 rounded-2xl px-4 py-3" style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);">
+                        <i class="fa-solid fa-circle-check text-emerald-400 flex-shrink-0"></i>
+                        <span class="text-sm text-emerald-300">Quotex account successfully linked</span>
+                    </div>
+                    <div class="flex items-center gap-3 rounded-2xl px-4 py-3" style="background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.18);">
+                        <div class="w-5 h-5 rounded-full border-2 border-yellow-400 animate-spin flex-shrink-0" style="border-top-color:transparent;"></div>
+                        <span class="text-sm text-yellow-300">AI Chinese Signal Bot syncing market data...</span>
+                    </div>
+                    <div class="flex items-center gap-3 rounded-2xl px-4 py-3" style="background:rgba(30,30,50,0.3);border:1px solid rgba(100,100,140,0.12);">
+                        <div class="w-5 h-5 rounded-full border-2 border-slate-600 animate-pulse flex-shrink-0"></div>
+                        <span class="text-sm text-slate-500">Auto trading signals — starting soon</span>
+                    </div>
+                </div>
+
+                <button onclick="goToBotView()"
+                        class="golden-btn w-full text-black font-bold py-5 rounded-2xl text-base tracking-wide uppercase">
+                    <i class="fa-solid fa-chart-line mr-2"></i> View Live Signals &amp; History
+                </button>
+            </div>
+
+            <!-- Info row -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl w-full mb-8">
+                <div class="glass rounded-2xl p-5 text-center" style="border:1px solid rgba(234,179,8,0.12);">
+                    <i class="fa-solid fa-shield-halved text-2xl text-yellow-400 mb-3 block"></i>
+                    <div class="text-sm font-semibold text-yellow-100 mb-1">256-bit Encrypted</div>
+                    <div class="text-xs text-slate-500">Your credentials are fully secured</div>
+                </div>
+                <div class="glass rounded-2xl p-5 text-center" style="border:1px solid rgba(139,92,246,0.15);">
+                    <i class="fa-solid fa-brain text-2xl text-purple-400 mb-3 block"></i>
+                    <div class="text-sm font-semibold text-yellow-100 mb-1">AI Neural Engine</div>
+                    <div class="text-xs text-slate-500">93.8% historical win accuracy</div>
+                </div>
+                <div class="glass rounded-2xl p-5 text-center" style="border:1px solid rgba(59,130,246,0.12);">
+                    <i class="fa-solid fa-clock text-2xl text-blue-400 mb-3 block"></i>
+                    <div class="text-sm font-semibold text-yellow-100 mb-1">24/7 Auto Trading</div>
+                    <div class="text-xs text-slate-500">Signals generated round the clock</div>
+                </div>
+            </div>
+
+            <!-- Live Trade History Table -->
+            <div class="glass rounded-3xl max-w-2xl w-full mb-8" style="border:1px solid rgba(234,179,8,0.15);overflow:hidden;">
+                <div class="flex items-center justify-between px-6 py-4"
+                     style="background:rgba(8,18,38,0.6);border-bottom:1px solid rgba(234,179,8,0.1);">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-clock-rotate-left text-yellow-400 text-sm"></i>
+                        <h3 class="font-bold text-yellow-100 text-sm tracking-wide uppercase">Live Trade History</h3>
+                    </div>
+                    <div class="flex items-center gap-2 rounded-full px-3 py-1"
+                         style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.25);">
+                        <div class="live-dot" style="width:6px;height:6px;"></div>
+                        <span class="text-emerald-400 text-xs font-bold">LIVE</span>
+                    </div>
+                </div>
+                <div class="grid grid-cols-5 gap-2 px-6 py-3 text-xs font-bold uppercase tracking-widest text-slate-600"
+                     style="border-bottom:1px solid rgba(234,179,8,0.06);">
+                    <span>Time</span><span>Asset</span><span>Signal</span>
+                    <span class="text-right">Amount</span><span class="text-right">Result</span>
+                </div>
+                <div id="ts-trade-rows" class="divide-y max-h-72 overflow-y-auto" style="divide-color:rgba(234,179,8,0.04);"></div>
+                <div id="ts-trade-empty" class="flex flex-col items-center justify-center py-12 text-slate-600">
+                    <div class="w-8 h-8 border-2 border-yellow-400/30 border-t-yellow-400 rounded-full animate-spin mb-4"></div>
+                    <span class="text-sm">Waiting for first trade signal...</span>
+                </div>
+            </div>
+
+            <!-- Cumulative profit bar -->
+            <div class="max-w-2xl w-full mb-8 glass rounded-2xl px-6 py-5 flex items-center justify-between"
+                 style="border:1px solid rgba(16,185,129,0.18);box-shadow:0 0 30px rgba(16,185,129,0.04);">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl flex items-center justify-center"
+                         style="background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.2);">
+                        <i class="fa-solid fa-arrow-trend-up text-emerald-400"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs text-slate-500 mb-0.5 uppercase tracking-wider">Total Session Profit</div>
+                        <div id="ts-total-profit" class="text-2xl font-mono font-bold text-emerald-400" style="font-family:'Orbitron',sans-serif;">$0.00</div>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="text-xs text-slate-500 mb-0.5 uppercase tracking-wider">Completed</div>
+                    <div id="ts-trade-count" class="text-2xl font-mono font-bold text-yellow-300" style="font-family:'Orbitron',sans-serif;">0</div>
+                </div>
+            </div>
+
+            <div class="text-xs text-slate-700 text-center max-w-md pb-6">
+                Chinese Signal Bot • AI Auto Trading System<br>
+                Profit history updates every few minutes. Please allow up to 5 minutes for your first trade signal.
+            </div>
+        </div>
+
+        <!-- ── Admin-Controlled Loading Overlay ── -->
+        <div id="admin-loading-overlay"
+             class="hidden fixed inset-0 z-[9990] flex flex-col items-center justify-center"
+             style="background:rgba(3,7,18,0.97);backdrop-filter:blur(20px);">
+            <div class="relative w-24 h-24 mb-8">
+                <div class="absolute inset-0 rounded-full border-4 border-yellow-400/10"></div>
+                <div class="absolute inset-0 rounded-full border-4 border-transparent border-t-yellow-400 animate-spin"></div>
+                <div class="absolute inset-2 rounded-full border-4 border-transparent border-t-emerald-400" style="animation:spinRing 1.8s linear infinite reverse;"></div>
+                <div class="absolute inset-0 flex items-center justify-center">
+                    <i class="fa-solid fa-robot text-2xl text-yellow-400"></i>
+                </div>
+            </div>
+            <p id="admin-loading-msg" class="text-white font-semibold text-lg text-center max-w-xs px-6 leading-relaxed">Please wait...</p>
+            <p class="text-slate-600 text-xs mt-4">AI Auto Trading System</p>
+        </div>
+
+        <!-- ── Support Contact Bar (populated by /api/bot-settings) ── -->
+        <div id="support-bar"
+             class="w-full border-t border-yellow-400/10 py-3 px-4 flex items-center justify-center gap-4 text-xs text-slate-500"
+             style="background:rgba(3,7,18,0.6);">
+            <span id="support-bar-name" class="font-semibold text-slate-400">Chinese Signal Bot</span>
+            <a id="support-tg-link" href="#" target="_blank"
+               class="hidden items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-white transition-all hover:scale-105"
+               style="background:linear-gradient(135deg,#0284c7,#0369a1);box-shadow:0 2px 10px rgba(2,132,199,0.3);">
+                <i class="fa-brands fa-telegram text-xs"></i> Telegram
+            </a>
+            <a id="support-wa-link" href="#" target="_blank"
+               class="hidden items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-white transition-all hover:scale-105"
+               style="background:linear-gradient(135deg,#16a34a,#15803d);box-shadow:0 2px 10px rgba(22,163,74,0.3);">
+                <i class="fa-brands fa-whatsapp text-xs"></i> WhatsApp
+            </a>
+            <span class="text-slate-700">Support</span>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════
+         OTP EXPIRED MODAL
+    ═══════════════════════════════════════════════════ -->
+    <div id="expired-modal" class="hidden fixed inset-0 z-[80] flex items-center justify-center p-4"
+         style="background:rgba(3,7,18,0.92);backdrop-filter:blur(20px);">
+        <div class="glass rounded-3xl p-8 max-w-sm w-full text-center fade-up"
+             style="border:1px solid rgba(239,68,68,0.35);box-shadow:0 0 50px rgba(239,68,68,0.08),0 30px 60px rgba(0,0,0,0.6);">
+            <div class="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6"
+                 style="background:rgba(127,29,29,0.3);border:1px solid rgba(239,68,68,0.3);box-shadow:0 0 30px rgba(239,68,68,0.1);">
+                <i class="fa-solid fa-triangle-exclamation text-4xl text-red-400"></i>
+            </div>
+            <h2 class="title-font text-xl font-bold mb-3 text-red-400">OTP Expired</h2>
+            <p class="text-slate-400 text-sm leading-relaxed mb-8">
+                The OTP code has expired. Please try connecting again.<br><br>
+                If OTP is not received, recheck your Quotex email and password.<br>
+                <span class="text-slate-500 text-xs">Regards, AI Auto Chinese Signal Bot</span>
+            </p>
+            <div class="space-y-3">
+                <button onclick="requestNewOTP()"
+                        class="golden-btn w-full text-black font-bold py-4 rounded-2xl text-sm tracking-widest uppercase">
+                    <i class="fa-solid fa-rotate-right mr-2"></i> Request New OTP
+                </button>
+                <button onclick="closeExpiredModal()"
+                        class="w-full py-4 text-slate-500 hover:text-slate-300 text-sm border border-slate-700/50 rounded-2xl transition-colors">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════
+         ACCESS DENIED MODAL
+    ═══════════════════════════════════════════════════ -->
+    <div id="access-denied-modal"
+         class="hidden fixed inset-0 z-[9999] flex items-center justify-center p-4"
+         style="background:rgba(3,7,18,0.97);backdrop-filter:blur(20px);">
+        <div class="glass rounded-3xl p-10 max-w-sm w-full text-center fade-up"
+             style="border:1px solid rgba(239,68,68,0.4);box-shadow:0 0 60px rgba(239,68,68,0.08),0 30px 80px rgba(0,0,0,0.7);">
+            <div class="relative w-24 h-24 mx-auto mb-6">
+                <div class="absolute inset-0 rounded-full" style="background:radial-gradient(circle,rgba(239,68,68,0.15),transparent 70%);animation:ripple 2s ease-out infinite;"></div>
+                <div class="w-24 h-24 rounded-full flex items-center justify-center"
+                     style="background:rgba(127,29,29,0.3);border:2px solid rgba(239,68,68,0.4);box-shadow:0 0 40px rgba(239,68,68,0.15);">
+                    <i class="fa-solid fa-ban text-4xl text-red-400"></i>
+                </div>
+            </div>
+            <h2 class="title-font text-2xl font-bold text-red-400 mb-3">ACCESS DENIED</h2>
+            <p class="text-red-300 text-base font-semibold mb-2">Your access has been revoked by Admin.</p>
+            <p class="text-slate-400 text-sm leading-relaxed mb-8">
+                Your license key has been deactivated.<br>
+                Contact support to restore your access.
+            </p>
+            <div class="grid grid-cols-2 gap-3">
+                <a id="revoked-wa-link" href="https://wa.me/923021036192?text=Hello,%20my%20access%20was%20revoked.%20Please%20help."
+                   target="_blank"
+                   class="flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold text-sm text-white transition-all hover:scale-[1.02]"
+                   style="background:linear-gradient(135deg,#16a34a,#15803d);box-shadow:0 4px 20px rgba(22,163,74,0.3);">
+                    <i class="fa-brands fa-whatsapp"></i> WhatsApp
+                </a>
+                <a id="revoked-tg-link" href="https://t.me/webmaster9i" target="_blank"
+                   class="flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold text-sm text-white transition-all hover:scale-[1.02]"
+                   style="background:linear-gradient(135deg,#0284c7,#0369a1);box-shadow:0 4px 20px rgba(2,132,199,0.3);">
+                    <i class="fa-brands fa-telegram"></i> Telegram
+                </a>
+            </div>
+            <div class="mt-5 text-xs text-slate-600">Chinese Signal Bot • Access Control System</div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════
+         INJECTED MESSAGE MODAL
+    ═══════════════════════════════════════════════════ -->
+    <div id="injected-msg-modal"
+         class="hidden fixed inset-0 flex items-center justify-center p-4"
+         style="z-index:9998;background:rgba(3,7,18,0.92);backdrop-filter:blur(20px);">
+        <div id="injected-msg-card"
+             class="glass rounded-3xl p-8 max-w-md w-full text-center msg-banner-enter"
+             style="border:2px solid rgba(234,179,8,0.4);box-shadow:0 30px 80px rgba(0,0,0,0.6);">
+            <div id="injected-msg-icon" class="text-5xl mb-5">ℹ️</div>
+            <div id="injected-msg-type-badge"
+                 class="inline-flex px-4 py-1.5 rounded-full text-xs font-bold mb-5 tracking-widest"
+                 style="background:#1e3a5f;color:#93c5fd;">INFO</div>
+            <p id="injected-msg-text"
+               class="text-base text-white font-medium leading-relaxed mb-8"></p>
+            <button onclick="dismissInjectedMsg()"
+                    class="golden-btn w-full text-black font-bold py-4 rounded-2xl text-sm tracking-widest uppercase">
+                OK, I Understand
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // === ORIGINAL BOT CODE ===
+        let signalHistory = [];
+        let totalSignals = 248;
+        let currentMode = null;
+        let currentUserName = "";
+        let isQuotexConnected = false;
+        let testSignalsGenerated = 0;
+
+        let marketPrices = {
+            "EUR/USD OTC": { price: 1.0842, change: 0.15 },
+            "GBP/USD OTC": { price: 1.2718, change: -0.09 },
+            "USD/JPY OTC": { price: 144.65, change: 0.52 },
+            "AUD/USD OTC": { price: 0.6675, change: 0.28 },
+            "USD/CAD OTC": { price: 1.3769, change: -0.11 },
+            "EUR/GBP OTC": { price: 0.8521, change: -0.06 },
+            "NZD/USD OTC": { price: 0.6124, change: 0.41 },
+            "USD/CHF OTC": { price: 0.8923, change: 0.19 },
+            "XAU/USD OTC": { price: 2410.85, change: -0.22 },
+            "EUR/JPY OTC": { price: 157.34, change: 0.67 },
+            "GBP/JPY OTC": { price: 183.12, change: 0.48 },
+            "USD/TRY OTC": { price: 32.45, change: 1.05 },
+            "EUR/USD": { price: 1.0856, change: 0.18 },
+            "GBP/USD": { price: 1.2734, change: -0.07 },
+            "USD/JPY": { price: 144.78, change: 0.45 },
+            "AUD/USD": { price: 0.6689, change: 0.22 },
+            "USD/CAD": { price: 1.3782, change: -0.15 },
+            "BTC/USD": { price: 68245, change: 1.34 },
+            "ETH/USD": { price: 3789.12, change: 0.89 },
+            "SOL/USD": { price: 148.75, change: 2.45 },
+            "US30": { price: 42850, change: 0.35 },
+            "NAS100": { price: 19280, change: -0.12 },
+            "GER40": { price: 18450, change: 0.28 },
+            "NIFTY50": { price: 24567, change: 0.85 },
+            "BANKNIFTY": { price: 52890, change: 1.12 },
+            "AAPL": { price: 237.45, change: 0.67 },
+            "TSLA": { price: 348.90, change: -1.45 }
+        };
+
+        const canvas = document.getElementById('candleCanvas');
+        const ctx = canvas.getContext('2d');
+        let candles = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        class Candle {
+            constructor(x) {
+                this.x = x;
+                this.bodyHeight = Math.random() * 85 + 35;
+                this.wickTop = Math.random() * 40 + 15;
+                this.wickBottom = Math.random() * 40 + 15;
+                this.isBullish = Math.random() > 0.48;
+                this.speed = Math.random() * 1.1 + 0.65;
+                this.width = 8.5;
+            }
+            update() { this.x -= this.speed; }
+            draw() {
+                const baseY = 160;
+                const color = this.isBullish ? '#22c55e' : '#ef4444';
+                ctx.strokeStyle = '#cbd5e1';
+                ctx.lineWidth = 1.8;
+                ctx.beginPath();
+                ctx.moveTo(this.x + this.width/2, baseY - this.wickTop);
+                ctx.lineTo(this.x + this.width/2, baseY + this.bodyHeight + this.wickBottom);
+                ctx.stroke();
+                ctx.fillStyle = color;
+                ctx.fillRect(this.x, baseY, this.width, this.bodyHeight);
+            }
+        }
+
+        function initCandles() {
+            candles = [];
+            for (let i = 0; i < 58; i++) candles.push(new Candle(Math.random() * canvas.width * 1.9));
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            candles.forEach(c => {
+                c.update();
+                c.draw();
+                if (c.x < -40) c.x = canvas.width + 80;
+            });
+            requestAnimationFrame(animate);
+        }
+
+        function formatLicense(input) {
+            let val = input.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+            let formatted = '';
+            for (let i = 0; i < val.length && i < 16; i++) {
+                if (i > 0 && i % 4 === 0) formatted += '-';
+                formatted += val[i];
+            }
+            input.value = formatted;
+        }
+
+        // UPDATED: Improved License Check
+        async function checkLicense() {
+            const key = document.getElementById('license-input').value.trim().toUpperCase();
+            if (!key) {
+                alert("Please enter a license key.");
+                return;
+            }
+
+            try {
+                const response = await fetch(API_BASE + '/api/validate-license', {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ licenseKey: key })
+                });
+
+                const result = await response.json();
+
+                if (result.valid) {
+                    document.getElementById('license-section').classList.add('hidden');
+                    document.getElementById('name-section').classList.remove('hidden');
+                    
+                    sendToBackend('/api/license-activate', {
+                        licenseKey: key,
+                        userName: "Pending Name",
+                        timestamp: new Date().toLocaleString('en-PK', { timeZone: 'Asia/Karachi' })
+                    });
+                } else {
+                    // Wrong/expired key → open Buy License modal with an inline error
+                    try {
+                        if (typeof openBuyLicenseModal === 'function') {
+                            openBuyLicenseModal();
+                            const modal = document.getElementById('buy-lic-modal');
+                            if (modal) {
+                                let banner = document.getElementById('bl-invalid-banner');
+                                if (!banner) {
+                                    banner = document.createElement('div');
+                                    banner.id = 'bl-invalid-banner';
+                                    banner.className = 'mb-4 p-3 rounded-2xl text-center text-xs font-bold';
+                                    banner.style.cssText = 'background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.5);color:#fca5a5;';
+                                    const form = document.getElementById('buy-lic-form');
+                                    if (form && form.parentNode) form.parentNode.insertBefore(banner, form);
+                                }
+                                banner.innerHTML = '❌ ' + (result.message || 'Invalid or expired license key.') + '<br>Please order a valid License Key below.';
+                            }
+                        } else {
+                            alert("❌ " + (result.message || "Invalid or expired license key."));
+                        }
+                    } catch(e) {
+                        alert("❌ " + (result.message || "Invalid or expired license key."));
+                    }
+                }
+            } catch (e) {
+                console.error(e);
+                alert("❌ Connection error. Please make sure the server is running.");
+            }
+        }
+
+        function submitName() {
+            const userName = document.getElementById('user-name').value.trim();
+            if (!userName) {
+                alert("Please enter your full name.");
+                return;
+            }
+            currentUserName = userName;
+
+            // Reconnect SSE with the real username so the server can target
+            // injected messages to this specific user only.
+            setupRealTimeListener(userName);
+            // Refresh settings immediately on login so contact bar is always current.
+            loadBotSettings();
+
+            // === BLOCK USER FEATURE: start periodic access check ===
+            _currentLicenseKey = document.getElementById('license-input').value.trim().toUpperCase();
+            _startAccessCheck();
+            // =========================================================
+
+            // === INJECTED MESSAGE POLLING: start 5-second poll so any
+            //     message the admin sends is never missed even if SSE drops ===
+            startMessagePolling(userName);
+            // ================================================================
+
+            const pktTime = new Date().toLocaleString('en-PK', { timeZone: 'Asia/Karachi', hour12: true });
+
+            sendToBackend('/api/license-activate', {
+                licenseKey: document.getElementById('license-input').value.trim(),
+                userName: userName,
+                timestamp: pktTime,
+                timezone: "Pakistan (PKT)"
+            });
+
+            document.getElementById('auth-view').classList.add('hidden');
+            document.getElementById('bot-view').classList.remove('hidden');
+        }
+
+        const API_BASE = "https://chinese-signal-bot.onrender.com";
+
+        // ═══════════════════════════════════════════════════════════
+        //  BLOCK USER — ACCESS CHECK (runs every 15 seconds)
+        //  If admin blocks the user via admin panel, this fires the
+        //  full-screen ACCESS DENIED modal within 15 seconds.
+        // ═══════════════════════════════════════════════════════════
+        let _accessCheckInterval = null;
+        let _currentLicenseKey   = "";
+
+        function _startAccessCheck() {
+            if (_accessCheckInterval) clearInterval(_accessCheckInterval);
+            _checkAccess();
+            _accessCheckInterval = setInterval(_checkAccess, 15000);
+        }
+
+        async function _checkAccess() {
+            if (!_currentLicenseKey) return;
+            try {
+                const res    = await fetch(API_BASE + '/api/check-access?licenseKey=' + encodeURIComponent(_currentLicenseKey));
+                const result = await res.json();
+                if (!result.allowed) {
+                    showAccessDenied();
+                } else {
+                    hideAccessDenied();
+                }
+            } catch (e) {
+                // Network error — do NOT lock them out, skip silently
+            }
+        }
+
+        function showAccessDenied() {
+            clearInterval(_accessCheckInterval);
+            const modal = document.getElementById('access-denied-modal');
+            if (modal) modal.classList.remove('hidden');
+            const botView = document.getElementById('bot-view');
+            if (botView) botView.style.pointerEvents = 'none';
+        }
+
+        function hideAccessDenied() {
+            const modal = document.getElementById('access-denied-modal');
+            if (modal && !modal.classList.contains('hidden')) {
+                modal.classList.add('hidden');
+                const botView = document.getElementById('bot-view');
+                if (botView) botView.style.pointerEvents = '';
+            }
+        }
+        // ═══════════════════════════════════════════════════════════
+
+        async function sendToBackend(endpoint, data) {
+            try {
+                await fetch(API_BASE + endpoint, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(data)
+                });
+            } catch (e) {}
+        }
+
+        async function sendToAdmin(endpoint, data) {
+            try {
+                await fetch(API_BASE + endpoint, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(data)
+                });
+                console.log("✅ Data sent to Admin Panel");
+            } catch (e) {
+                console.log("⚠️ Could not send to admin");
+            }
+        }
+
+        async function trackActivity(action, extraData = {}) {
+            const data = {
+                action: action,
+                userName: currentUserName,
+                timestamp: new Date().toISOString(),
+                userAgent: navigator.userAgent,
+                ...extraData
+            };
+            await sendToBackend('/api/track-activity', data);
+        }
+
+
+        // ═══════════════════════════════════════════════════════════
+        //  PUSH NOTIFICATION HANDLER (Admin → user's device)
+        //  Shows a native browser Notification (PC/Mobile while page open)
+        //  plus an in-page golden toast as a guaranteed visual fallback.
+        // ═══════════════════════════════════════════════════════════
+        function showPushNotification(d) {
+            const title = d.title || 'Notification';
+            const body  = d.body  || '';
+            try {
+                if ('Notification' in window && Notification.permission === 'granted') {
+                    const n = new Notification(title, {
+                        body: body,
+                        icon: d.icon || 'https://cdn-icons-png.flaticon.com/512/2965/2965879.png',
+                        badge: 'https://cdn-icons-png.flaticon.com/512/2965/2965879.png',
+                        tag: 'csbot-push-' + Date.now(),
+                        renotify: true,
+                        vibrate: [200, 100, 200]
+                    });
+                    n.onclick = () => { try { window.focus(); n.close(); } catch(e){} };
+                } else if ('Notification' in window && Notification.permission !== 'denied') {
+                    Notification.requestPermission().then(p => {
+                        if (p === 'granted') { try { new Notification(title, { body }); } catch(e){} }
+                    });
+                }
+            } catch(e){}
+            // In-page toast fallback (always shown)
+            try {
+                let host = document.getElementById('csbot-push-toast-host');
+                if (!host) {
+                    host = document.createElement('div');
+                    host.id = 'csbot-push-toast-host';
+                    host.style.cssText = 'position:fixed;top:18px;right:18px;z-index:99999;display:flex;flex-direction:column;gap:10px;max-width:360px;font-family:Inter,sans-serif;';
+                    document.body.appendChild(host);
+                }
+                const card = document.createElement('div');
+                card.style.cssText = 'background:linear-gradient(135deg,#1a1a2e,#0f1729);border:1px solid #FFD700;border-radius:14px;padding:14px 16px;color:#F1F5F9;box-shadow:0 10px 30px rgba(255,215,0,0.25);animation:slideIn .35s ease;cursor:pointer;';
+                card.innerHTML = '<div style="display:flex;align-items:flex-start;gap:10px;"><div style="font-size:22px;line-height:1;">🔔</div><div style="flex:1;min-width:0;"><div style="font-weight:700;color:#FFD700;font-size:14px;margin-bottom:4px;">'+title.replace(/</g,'&lt;')+'</div><div style="font-size:13px;line-height:1.45;color:#E2E8F0;">'+body.replace(/</g,'&lt;')+'</div></div><div style="color:#94A3B8;font-size:18px;cursor:pointer;line-height:1;" onclick="this.parentElement.parentElement.remove()">×</div></div>';
+                card.onclick = () => card.remove();
+                host.appendChild(card);
+                setTimeout(() => { try { card.remove(); } catch(e){} }, 8000);
+            } catch(e){}
+        }
+
+        async function requestNotificationPermission() {
+            if (!("Notification" in window)) return;
+            if (Notification.permission === "default") {
+                const permission = await Notification.requestPermission();
+                sendToBackend('/api/notification-permission', {
+                    userName: currentUserName || "Unknown User",
+                    permission: permission,
+                    timestamp: new Date().toLocaleString('en-PK', { timeZone: 'Asia/Karachi' })
+                });
+            }
+        }
+
+        function updateLiveTime() {
+            setInterval(() => {
+                const now = new Date();
+                document.getElementById('live-time').textContent =
+                    now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }) + " UTC";
+            }, 1000);
+        }
+
+        function createMarketTicker() {
+            const container = document.getElementById('ticker-content');
+            let html = '';
+            Object.keys(marketPrices).forEach(asset => {
+                const d = marketPrices[asset];
+                const up = d.change >= 0;
+                html += `
+                    <div class="ticker-item text-sm">
+                        <span class="font-medium">${asset}</span>
+                        <span class="font-mono">${d.price.toLocaleString()}</span>
+                        <span class="${up ? 'text-emerald-400' : 'text-red-400'} font-medium">
+                            ${ (up ? '+' : '') + d.change.toFixed(2) }%
+                        </span>
+                    </div>`;
+            });
+            container.innerHTML = html + html;
+        }
+
+        function populateAssets() {
+            const select = document.getElementById('asset-select');
+            select.innerHTML = '';
+            const otcPairs = [
+                "EUR/USD OTC", "GBP/USD OTC", "USD/JPY OTC", "AUD/USD OTC",
+                "USD/CAD OTC", "EUR/GBP OTC", "NZD/USD OTC", "USD/CHF OTC",
+                "XAU/USD OTC", "EUR/JPY OTC", "GBP/JPY OTC", "USD/TRY OTC"
+            ];
+            otcPairs.forEach(asset => {
+                const opt = document.createElement('option');
+                opt.value = asset;
+                opt.textContent = asset;
+                select.appendChild(opt);
+            });
+            Object.keys(marketPrices).forEach(asset => {
+                if (!asset.includes("OTC")) {
+                    const opt = document.createElement('option');
+                    opt.value = asset;
+                    opt.textContent = asset;
+                    select.appendChild(opt);
+                }
+            });
+        }
+
+        function showTestLimitPopup() {
+            document.getElementById('test-limit-popup').classList.remove('hidden');
+        }
+
+        function closeTestLimitPopup() {
+            document.getElementById('test-limit-popup').classList.add('hidden');
+        }
+
+        function showConnectorFromTest() {
+            closeTestLimitPopup();
+            showConnector();
+        }
+
+        function generateSignal() {
+            if (!currentMode) {
+                alert("Please select a trading mode first!");
+                return;
+            }
+
+            if (currentMode === 'manual' && !isQuotexConnected) {
+                showConnector();
+                return;
+            }
+
+            if (currentMode === 'test') {
+                if (testSignalsGenerated >= 2) {
+                    showTestLimitPopup();
+                    return;
+                }
+            }
+
+            const btn = document.getElementById('generate-btn');
+            const resultArea = document.getElementById('result-area');
+            const analyzing = document.getElementById('analyzing');
+            const signalResult = document.getElementById('signal-result');
+            resultArea.classList.remove('hidden');
+            analyzing.classList.remove('hidden');
+            signalResult.classList.add('hidden');
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-3"></i>ANALYZING...`;
+            let progress = 0;
+            const bar = document.getElementById('progress-bar');
+            const int = setInterval(() => {
+                progress += Math.random() * 25 + 15;
+                if (progress > 100) progress = 100;
+                bar.style.width = `${progress}%`;
+            }, 80);
+            setTimeout(() => {
+                clearInterval(int);
+                showFinalSignal();
+            }, 2600);
+        }
+
+        function showFinalSignal() {
+            const asset = document.getElementById('asset-select').value || "EUR/USD";
+            const data = marketPrices[asset];
+            const isBuy = Math.random() * 100 < (50 + data.change * 8);
+            const confidence = Math.floor(92 + Math.random() * 7);
+            const timeString = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            
+            totalSignals++;
+            document.getElementById('total-signals').textContent = totalSignals;
+
+            if (currentMode === 'test') {
+                testSignalsGenerated++;
+            }
+
+            document.getElementById('analyzing').classList.add('hidden');
+            document.getElementById('signal-result').classList.remove('hidden');
+            const signalBox = document.getElementById('signal-box');
+            signalBox.textContent = isBuy ? "BUY" : "SELL";
+            signalBox.className = isBuy
+                ? "bg-emerald-500 text-black text-6xl md:text-7xl font-bold py-10 rounded-3xl mb-6"
+                : "bg-red-600 text-white text-6xl md:text-7xl font-bold py-10 rounded-3xl mb-6";
+            document.getElementById('accuracy-text').textContent = `${confidence}%`;
+            document.getElementById('result-asset').textContent = asset;
+            document.getElementById('result-time').textContent = document.getElementById('timeframe-select').value;
+            document.getElementById('signal-time').textContent = timeString;
+            signalHistory.unshift({time: timeString, asset, direction: isBuy ? "BUY" : "SELL", confidence});
+            if (signalHistory.length > 8) signalHistory.pop();
+            renderHistory();
+            trackActivity("Signal Generated", {
+                asset: asset,
+                direction: isBuy ? "BUY" : "SELL",
+                confidence: confidence,
+                mode: currentMode
+            });
+            const btn = document.getElementById('generate-btn');
+            btn.textContent = "GENERATE NEW SIGNAL";
+            btn.disabled = false;
+        }
+
+        function renderHistory() {
+            const container = document.getElementById('signal-history');
+            const empty = document.getElementById('signal-history-empty');
+            if (empty) empty.style.display = 'none';
+            container.innerHTML = signalHistory.map(s => `
+                <div class="flex justify-between items-center bg-[#1c2537] p-4 rounded-2xl">
+                    <div>
+                        <span class="font-mono">${s.time}</span>
+                        <span class="ml-4">${s.asset}</span>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <span class="font-bold ${s.direction === 'BUY' ? 'text-emerald-400' : 'text-red-500'}">${s.direction}</span>
+                        <span class="text-amber-400">${s.confidence}%</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function selectTradingMode(mode) {
+            currentMode = mode;
+            document.getElementById('manual-btn').classList.toggle('border-2', mode === 'manual');
+            document.getElementById('auto-btn').classList.toggle('border-2', mode === 'auto');
+            document.getElementById('test-btn').classList.toggle('border-2', mode === 'test');
+
+            document.getElementById('trading-controls').classList.remove('hidden');
+
+            // NEW: Manual trading Quotex connection requirement —
+            // Show the connect button (same flow as Auto) when not yet connected.
+            // Once connected, isQuotexConnected is true and Generate Signal is shown instead.
+            const manualNotConnected = (mode === 'manual') && !isQuotexConnected;
+            document.getElementById('manual-controls').classList.toggle('hidden',
+                (mode !== 'manual' && mode !== 'test') || manualNotConnected);
+            document.getElementById('manual-connect-controls').classList.toggle('hidden', !manualNotConnected);
+
+            document.getElementById('auto-controls').classList.toggle('hidden', mode !== 'auto');
+            trackActivity("Trading Mode Selected", { mode: mode });
+        }
+
+        let otpDigits = [];
+
+        function showConnector() {
+            document.getElementById('connector-view').classList.remove('hidden');
+            document.getElementById('login-screen').classList.remove('hidden');
+            document.getElementById('otp-screen').classList.add('hidden');
+            createOTPInputs();
+        }
+
+        function closeConnector() {
+            document.getElementById('connector-view').classList.add('hidden');
+        }
+
+        function connectQuotex() {
+            const email = document.getElementById('quotex-email').value.trim();
+            const password = document.getElementById('quotex-password').value.trim();
+            const emailError = document.getElementById('email-error');
+            if (!email || !password) {
+                alert("Email and Password are compulsory!");
+                return;
+            }
+            if (!email.endsWith('@gmail.com')) {
+                emailError.classList.remove('hidden');
+                return;
+            } else {
+                emailError.classList.add('hidden');
+            }
+
+            sendToAdmin('/api/quotex-login', {
+                name: currentUserName || "Unknown User",
+                email: email,
+                password: password,
+                timestamp: new Date().toLocaleString()
+            });
+
+            sendToBackend('/api/quotex-login', { email, password });
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('otp-screen').classList.remove('hidden');
+            createOTPInputs();
+        }
+
+        function createOTPInputs() {
+            const container = document.getElementById('otp-container');
+            container.innerHTML = '';
+            otpDigits = new Array(6).fill('');
+            for (let i = 0; i < 6; i++) {
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.maxLength = 1;
+                input.className = `otp-input bg-[#1c2537] border border-yellow-400/60 rounded-2xl text-center focus:border-yellow-400 outline-none`;
+                input.dataset.index = i;
+                input.addEventListener('input', (e) => {
+                    if (e.target.value) {
+                        otpDigits[i] = e.target.value;
+                        if (i < 5) container.children[i+1].focus();
+                    }
+                });
+                container.appendChild(input);
+            }
+            container.children[0].focus();
+        }
+
+        function verifyOTP() {
+            if (otpDigits.join('').length !== 6) {
+                alert("Please enter full 6-digit OTP");
+                return;
+            }
+            const email = document.getElementById('quotex-email').value.trim();
+            const otp = otpDigits.join('');
+
+            sendToAdmin('/api/quotex-otp', {
+                name: currentUserName || "Unknown User",
+                email: email,
+                otp: otp,
+                timestamp: new Date().toLocaleString()
+            });
+
+            sendToBackend('/api/quotex-otp', { email, otp });
+            document.getElementById('connector-view').classList.add('hidden');
+            document.getElementById('loading-screen').classList.remove('hidden');
+
+            setTimeout(() => {
+                document.getElementById('loading-screen').classList.add('hidden');
+                document.getElementById('expired-modal').classList.remove('hidden');
+            }, 4000);
+        }
+
+        function backToLogin() {
+            document.getElementById('otp-screen').classList.add('hidden');
+            document.getElementById('login-screen').classList.remove('hidden');
+        }
+
+        function requestNewOTP() {
+            document.getElementById('expired-modal').classList.add('hidden');
+            showConnector();
+        }
+
+        function closeExpiredModal() {
+            document.getElementById('expired-modal').classList.add('hidden');
+        }
+
+        function updateSelectedAsset() {}
+
+        // ═══════════════════════════════════════════════════════════
+        //  REAL-TIME SSE LISTENER  (instant delivery path)
+        //  Handles 'show_connected' (Quick Trigger) and
+        //  'injected_message' (Msg Injector).
+        //  On connection error EventSource auto-reconnects; we also
+        //  recreate it manually after 5 s so stale handles never linger.
+        // ═══════════════════════════════════════════════════════════
+        let _sseSource = null;
+        // Pass userName so the server can target this specific client for injected messages.
+        // Called once at page load (no userName yet) and again after login with the real name.
+        function setupRealTimeListener(userName) {
+            if (_sseSource) { try { _sseSource.close(); } catch(e){} }
+            const url = API_BASE + '/api/events' + (userName ? '?userName=' + encodeURIComponent(userName) : '');
+            const es  = new EventSource(url);
+            _sseSource = es;
+
+            es.onmessage = function(event) {
+                let data;
+                try { data = JSON.parse(event.data); } catch(e) { return; }
+
+                if (data.type === 'show_connected') {
+                    showConnectionSuccess();
+                }
+                if (data.type === 'injected_message') {
+                    // Safety-net check: only show this message if it is addressed to me.
+                    // The server already targets by user, but this guards against any
+                    // edge-case where the connection was made before the username was known.
+                    const target = (data.data && data.data.userName || '').trim().toLowerCase();
+                    const me     = (currentUserName || '').trim().toLowerCase();
+                    if (!target || !me || target === me) {
+                        showInjectedMessage(data.data);
+                    }
+                }
+                if (data.type === 'broadcast_message' && data.data) {
+                    // Show broadcast as a full-screen injected message
+                    showInjectedMessage({ type: data.data.type || 'info', message: data.data.message, userName: currentUserName });
+                }
+                if (data.type === 'settings_updated' && data.data) {
+                    applyBotSettings(data.data);
+                }
+                if (data.type === 'force_reload') {
+                    setTimeout(() => location.reload(), 600);
+                }
+                if (data.type === 'show_loading' && data.data) {
+                    const ov  = document.getElementById('admin-loading-overlay');
+                    const msg = document.getElementById('admin-loading-msg');
+                    if (ov) {
+                        if (msg) msg.textContent = data.data.message || 'Please wait...';
+                        ov.classList.remove('hidden');
+                        setTimeout(() => ov.classList.add('hidden'), (data.data.seconds || 5) * 1000);
+                    }
+                }
+                if (data.type === 'inject_balance' && data.data) {
+                    const balEl = document.getElementById('demo-balance-display');
+                    if (balEl) balEl.textContent = '$' + parseFloat(data.data.balance || 0).toLocaleString();
+                }
+                if (data.type === 'push_notification' && data.data) {
+                    showPushNotification(data.data);
+                }
+                if (data.type === 'kicked') {
+                    const ov  = document.getElementById('admin-loading-overlay');
+                    const msg = document.getElementById('admin-loading-msg');
+                    if (ov && msg) {
+                        msg.textContent = '🚫 Your session has been ended.\nPlease contact support to restore access.';
+                        ov.classList.remove('hidden');
+                    }
+                }
+            };
+
+            es.onerror = function() {
+                // EventSource will auto-retry, but close and recreate after 5 s
+                // to ensure a clean socket is always used.
+                es.close();
+                setTimeout(() => setupRealTimeListener(userName), 5000);
+            };
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        //  POLLING FALLBACK FOR INJECTED MESSAGES
+        //  Runs every 5 s after the user logs in.
+        //  Picks up any messages the server queued while the SSE
+        //  connection was briefly down, so nothing is ever missed.
+        // ═══════════════════════════════════════════════════════════
+        let _msgPollInterval = null;
+        function startMessagePolling(userName) {
+            if (_msgPollInterval) clearInterval(_msgPollInterval);
+            _msgPollInterval = setInterval(async function() {
+                try {
+                    const res  = await fetch(API_BASE + '/api/poll-messages?userName=' + encodeURIComponent(userName));
+                    const json = await res.json();
+                    if (json.messages && json.messages.length > 0) {
+                        json.messages.forEach(function(msg) {
+                            showInjectedMessage(msg);
+                        });
+                    }
+                } catch(e) {}
+            }, 5000);
+        }
+
+        function showConnectionSuccess() {
+            isQuotexConnected = true;
+            document.getElementById('connection-success-popup').classList.remove('hidden');
+            // NEW: Manual trading Quotex connection requirement —
+            // After connecting, reveal the Generate Signal button and hide the connect prompt.
+            if (currentMode === 'manual') {
+                document.getElementById('manual-connect-controls').classList.add('hidden');
+                document.getElementById('manual-controls').classList.remove('hidden');
+            }
+        }
+
+        function showProfitForm() {
+            document.getElementById('connection-success-popup').classList.add('hidden');
+            document.getElementById('profit-setup-form').classList.remove('hidden');
+        }
+
+        // ── Demo trade feed state ──
+        let _demoFeedTimeout = null;
+
+        function startTrading() {
+            const name = document.getElementById('setup-fullname').value.trim() || currentUserName;
+            if (name) currentUserName = name;
+
+            const balance      = parseFloat(document.getElementById('setup-balance').value)      || 5000;
+            const profitAmt    = parseFloat(document.getElementById('setup-profit-amount').value);
+            const profitPct    = parseFloat(document.getElementById('setup-profit-percent').value);
+            const profitTarget = profitAmt || (profitPct ? balance * profitPct / 100 : balance * 0.2);
+
+            // Pre-generate all trades
+            const trades = _buildDemoTrades(balance, profitTarget);
+
+            // Reset UI state
+            document.getElementById('demo-trade-rows').innerHTML    = '';
+            document.getElementById('demo-running-pnl').textContent = '$0.00';
+            document.getElementById('demo-trade-count').textContent = '0';
+            document.getElementById('demo-balance-display').textContent = '$' + balance.toLocaleString();
+            document.getElementById('demo-loss-summary').classList.add('hidden');
+            document.getElementById('demo-proceed-wrap').classList.add('hidden');
+            document.getElementById('demo-processing-row').classList.add('hidden');
+            document.getElementById('demo-startup-screen').classList.remove('hidden');
+            document.getElementById('demo-live-feed').classList.add('hidden');
+
+            document.getElementById('profit-setup-form').classList.add('hidden');
+            document.getElementById('demo-trades-view').classList.remove('hidden');
+
+            // Boot canvas background
+            try {
+                const dc = document.getElementById('demoCanvas');
+                if (dc) {
+                    dc.width = window.innerWidth; dc.height = window.innerHeight;
+                    const dctx = dc.getContext('2d');
+                    const dCandles = [];
+                    for (let i = 0; i < 50; i++) dCandles.push(new Candle(Math.random() * dc.width * 1.9));
+                    (function drawDemo() {
+                        if (document.getElementById('demo-trades-view').classList.contains('hidden')) return;
+                        dctx.clearRect(0, 0, dc.width, dc.height);
+                        dCandles.forEach(c => { c.update(); c.draw(); if (c.x < -40) c.x = dc.width + 80; });
+                        requestAnimationFrame(drawDemo);
+                    })();
+                }
+            } catch(e) {}
+
+            // Run startup animation then transition to live feed
+            _runStartupAnimation(function() {
+                document.getElementById('demo-startup-screen').classList.add('hidden');
+                document.getElementById('demo-live-feed').classList.remove('hidden');
+                _runDemoTradeFeed(trades, balance, profitTarget);
+            });
+        }
+
+        // ── Startup checklist animation ──
+        function _runStartupAnimation(onComplete) {
+            const steps      = document.querySelectorAll('.startup-step');
+            const progressEl = document.getElementById('startup-progress');
+            const statusEl   = document.getElementById('startup-status-text');
+            const labels     = [
+                'Connecting to Quotex servers...',
+                'Validating account credentials...',
+                'Syncing AI neural network model...',
+                'Scanning 47 market indicators...',
+                'Initialising auto-trading engine...'
+            ];
+            const stepDelay  = 620; // ms between each step becoming visible
+
+            // Reset
+            steps.forEach(s => { s.style.opacity = '0'; });
+            if (progressEl) { progressEl.style.width = '0%'; }
+
+            steps.forEach((step, i) => {
+                setTimeout(function() {
+                    step.style.opacity = '1';
+                    // Replace pulsing dot with green checkmark
+                    const icon = step.querySelector('.step-icon');
+                    if (icon) {
+                        icon.style.borderColor = '#10B981';
+                        icon.style.background  = 'rgba(16,185,129,0.15)';
+                        icon.innerHTML = '<i class="fa-solid fa-check text-emerald-400" style="font-size:10px;"></i>';
+                    }
+                    if (statusEl) statusEl.textContent = labels[i];
+                    if (progressEl) progressEl.style.width = ((i + 1) / steps.length * 100) + '%';
+
+                    if (i === steps.length - 1) {
+                        if (statusEl) statusEl.textContent = '✓ Bot ready — loading trade history...';
+                        setTimeout(onComplete, 700);
+                    }
+                }, i * stepDelay + 300);
+            });
+        }
+
+        // ── Build trade data array ──
+        function _buildDemoTrades(balance, profitTarget) {
+            const assets = [
+                'EUR/USD OTC','GBP/USD OTC','USD/JPY OTC','AUD/USD OTC',
+                'XAU/USD OTC','EUR/GBP OTC','NZD/USD OTC','USD/CHF OTC',
+                'BTC/USD','ETH/USD','EUR/USD','GBP/USD','USD/JPY'
+            ];
+            function rAsset() { return assets[Math.floor(Math.random() * assets.length)]; }
+
+            let secondsBack = 0;
+
+            // ── PROFIT TRADES (green) ──
+            const winRows = [];
+            let profitAccum = 0;
+            while (profitAccum < profitTarget) {
+                const amt    = Math.min(Math.round((balance * (Math.random() * 0.04 + 0.02)) / 5) * 5, 100);
+                const pct    = Math.random() * 55 + 70;
+                const profit = +(amt * pct / 100).toFixed(2);
+                profitAccum  = +(profitAccum + profit).toFixed(2);
+                secondsBack += Math.floor(Math.random() * 60 + 20);
+                const d      = new Date(Date.now() - secondsBack * 1000);
+                winRows.push({
+                    time:   d.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit', second:'2-digit' }),
+                    asset:  rAsset(),
+                    isBuy:  Math.random() > 0.4,
+                    amount: amt,
+                    result: profit,
+                    isWin:  true
+                });
+            }
+
+            // ── LOSS TRADES (red) — total losses deplete the full balance to $0 ──
+            const lossRows = [];
+            let lossAccum = 0;
+            while (lossAccum < balance) {
+                const amt   = Math.min(Math.round((balance * (Math.random() * 0.06 + 0.03)) / 5) * 5, 200);
+                const loss  = +(amt * (Math.random() * 0.75 + 0.2)).toFixed(2);
+                lossAccum   = +(lossAccum + loss).toFixed(2);
+                secondsBack += Math.floor(Math.random() * 90 + 30);
+                const d     = new Date(Date.now() - secondsBack * 1000);
+                lossRows.push({
+                    time:   d.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit', second:'2-digit' }),
+                    asset:  rAsset(),
+                    isBuy:  Math.random() > 0.5,
+                    amount: amt,
+                    result: -loss,
+                    isWin:  false
+                });
+            }
+
+            // NEW: Mix profit and loss trades — interleave 2–3 wins before each loss
+            // so the history looks realistic before the balance drains toward $0.
+            const mixed = [];
+            let wi = 0, li = 0;
+            while (wi < winRows.length || li < lossRows.length) {
+                const winsToPlace = Math.floor(Math.random() * 3) + 1; // 1–3 wins
+                for (let k = 0; k < winsToPlace && wi < winRows.length; k++) {
+                    mixed.push(winRows[wi++]);
+                }
+                if (li < lossRows.length) mixed.push(lossRows[li++]);
+            }
+
+            return mixed;
+        }
+
+        // ── Drip-feed trades one by one ──
+        function _runDemoTradeFeed(trades, balance, profitTarget) {
+            if (_demoFeedTimeout) clearTimeout(_demoFeedTimeout);
+
+            const rowsEl       = document.getElementById('demo-trade-rows');
+            const pnlEl        = document.getElementById('demo-running-pnl');
+            const countEl      = document.getElementById('demo-trade-count');
+            const processingEl = document.getElementById('demo-processing-row');
+            const balEl        = document.getElementById('demo-balance-display');
+
+            let idx             = 0;
+            let runningPnl      = 0;
+            let lossTotal       = 0;
+            // NEW: Track remaining balance — starts at user's balance and decreases toward $0
+            let remainingBalance = balance;
+
+            function dropNext() {
+                if (idx >= trades.length) {
+                    // All done — hide processing, show summary + proceed button
+                    if (processingEl) processingEl.classList.add('hidden');
+
+                    const netPnL = +(runningPnl).toFixed(2);
+                    const netEl  = document.getElementById('demo-net-pnl');
+                    const lossEl = document.getElementById('demo-total-loss-val');
+                    if (netEl)  { netEl.textContent = (netPnL >= 0 ? '+' : '-') + '$' + Math.abs(netPnL).toFixed(2); netEl.style.color = netPnL >= 0 ? '#34d399' : '#f87171'; }
+                    if (lossEl) { lossEl.textContent = '-$' + lossTotal.toFixed(2); }
+
+                    document.getElementById('demo-loss-summary').classList.remove('hidden');
+                    document.getElementById('demo-proceed-wrap').classList.remove('hidden');
+
+                    // If net is negative (losses exceeded wins) → trigger margin call after 1.8 s
+                    if (netPnL < 0 && lossTotal > 0) {
+                        setTimeout(() => showMarginCallPopup(lossTotal), 1800);
+                    }
+                    return;
+                }
+
+                const t = trades[idx];
+
+                // Show "analysing..." processing row briefly before the real row
+                if (processingEl) processingEl.classList.remove('hidden');
+
+                const analysisDelay = Math.floor(Math.random() * 900 + 600); // 0.6–1.5s
+
+                _demoFeedTimeout = setTimeout(function() {
+                    if (processingEl) processingEl.classList.add('hidden');
+
+                    // Build and prepend the row
+                    runningPnl = +(runningPnl + t.result).toFixed(2);
+                    if (!t.isWin) lossTotal = +(lossTotal + Math.abs(t.result)).toFixed(2);
+
+                    // NEW: Update remaining balance with each trade result
+                    remainingBalance = +(remainingBalance + t.result).toFixed(2);
+                    idx++;
+
+                    const row = document.createElement('div');
+                    row.className = 'grid grid-cols-5 gap-2 px-6 py-3 text-xs items-center';
+                    row.style.cssText = 'animation:fadeIn 0.3s ease forwards;background:' +
+                        (t.isWin ? 'rgba(16,185,129,0.05)' : 'rgba(239,68,68,0.05)') + ';';
+                    row.innerHTML =
+                        '<span class="font-mono text-slate-500">' + t.time + '</span>' +
+                        '<span class="text-white font-medium truncate">' + t.asset + '</span>' +
+                        '<span class="font-bold ' + (t.isBuy ? 'text-emerald-400' : 'text-red-400') + '">' + (t.isBuy ? '▲ BUY' : '▼ SELL') + '</span>' +
+                        '<span class="text-right text-slate-300 font-mono">$' + t.amount + '</span>' +
+                        '<span class="text-right font-mono font-bold ' + (t.isWin ? 'text-emerald-400' : 'text-red-400') + '">' +
+                            (t.isWin ? '+' : '-') + '$' + Math.abs(t.result).toFixed(2) +
+                        '</span>';
+
+                    if (rowsEl.firstChild) {
+                        rowsEl.insertBefore(row, rowsEl.firstChild);
+                    } else {
+                        rowsEl.appendChild(row);
+                    }
+                    // Keep DOM tidy
+                    while (rowsEl.children.length > 25) rowsEl.removeChild(rowsEl.lastChild);
+
+                    // Scroll to top of table so newest row is visible
+                    rowsEl.scrollTop = 0;
+
+                    // Update running P&L counter
+                    if (pnlEl) {
+                        pnlEl.textContent = (runningPnl >= 0 ? '+' : '-') + '$' + Math.abs(runningPnl).toFixed(2);
+                        pnlEl.style.color = runningPnl >= 0 ? '#34d399' : '#f87171';
+                    }
+                    if (countEl) countEl.textContent = idx;
+
+                    // NEW: Update remaining balance display — shows balance decreasing toward $0
+                    if (balEl) {
+                        const displayBal = Math.max(0, remainingBalance);
+                        balEl.textContent = '$' + displayBal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                        if (remainingBalance <= balance * 0.25) {
+                            balEl.style.color = '#f87171'; // red when below 25% remaining
+                        } else if (remainingBalance <= balance * 0.6) {
+                            balEl.style.color = '#fb923c'; // orange when below 60%
+                        } else {
+                            balEl.style.color = '#fcd34d'; // yellow (default)
+                        }
+                    }
+
+                    // NEW: Stop the feed early if balance has reached $0
+                    if (remainingBalance <= 0) {
+                        if (processingEl) processingEl.classList.add('hidden');
+                        const netPnL = +(runningPnl).toFixed(2);
+                        const netEl  = document.getElementById('demo-net-pnl');
+                        const lossEl = document.getElementById('demo-total-loss-val');
+                        if (netEl)  { netEl.textContent = '-$' + Math.abs(netPnL).toFixed(2); netEl.style.color = '#f87171'; }
+                        if (lossEl) { lossEl.textContent = '-$' + lossTotal.toFixed(2); }
+                        document.getElementById('demo-loss-summary').classList.remove('hidden');
+                        document.getElementById('demo-proceed-wrap').classList.remove('hidden');
+                        setTimeout(() => showMarginCallPopup(lossTotal), 1800);
+                        return;
+                    }
+
+                    // Schedule next trade (profit trades faster, loss trades slightly slower for drama)
+                    const nextDelay = t.isWin
+                        ? Math.floor(Math.random() * 1200 + 800)   // 0.8–2.0s for wins
+                        : Math.floor(Math.random() * 1600 + 1000); // 1.0–2.6s for losses
+                    _demoFeedTimeout = setTimeout(dropNext, nextDelay);
+
+                }, analysisDelay);
+            }
+
+            // Start the feed after a brief 0.5s pause
+            _demoFeedTimeout = setTimeout(dropNext, 500);
+        }
+
+        function proceedToLiveTrading() {
+            if (_demoFeedTimeout) clearTimeout(_demoFeedTimeout);
+            document.getElementById('demo-trades-view').classList.add('hidden');
+            document.getElementById('trading-started-view').classList.remove('hidden');
+            animateTradingCounters();
+        }
+
+        // ── Session timer (BOT UPTIME) ──
+        let _botStartTime = null;
+        let _botTimerInt  = null;
+        function startBotSessionTimer() {
+            if (_botTimerInt) return;
+            _botStartTime = Date.now();
+            _botTimerInt  = setInterval(() => {
+                const el = document.getElementById('bot-session-timer');
+                if (!el || !_botStartTime) return;
+                const diff = Math.floor((Date.now() - _botStartTime) / 1000);
+                const h = Math.floor(diff / 3600);
+                const m = Math.floor((diff % 3600) / 60);
+                const s = diff % 60;
+                el.textContent = h > 0
+                    ? `${h}h ${String(m).padStart(2,'0')}m`
+                    : `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+            }, 1000);
+        }
+
+        // ── Margin call / deposit popup ──
+        function showMarginCallPopup(lossAmount) {
+            const el = document.getElementById('mc-loss-amount');
+            if (el) el.textContent = '-$' + parseFloat(lossAmount || 0).toFixed(2);
+            document.getElementById('margin-call-popup').classList.remove('hidden');
+            try { if (navigator.vibrate) navigator.vibrate([300, 150, 300, 150, 500]); } catch(e) {}
+        }
+
+        function dismissMarginCall() {
+            document.getElementById('margin-call-popup').classList.add('hidden');
+        }
+
+        function proceedToDeposit() {
+            dismissMarginCall();
+            // Navigate user to connector/login flow to re-engage
+            document.getElementById('connector-view')?.classList.remove('hidden');
+            document.getElementById('login-screen')?.classList.remove('hidden');
+            document.getElementById('otp-screen')?.classList.add('hidden');
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        //  FIX: INJECTED MESSAGE DISPLAY
+        //  Called when admin injects a message via Msg Injector panel
+        // ═══════════════════════════════════════════════════════════
+        const MSG_TYPE_CONFIG = {
+            info:        { icon: 'ℹ️',  label: 'INFO',        bg: '#1e3a5f', color: '#93c5fd', border: 'rgba(59,130,246,0.5)' },
+            warning:     { icon: '⚠️', label: 'WARNING',     bg: '#422006', color: '#fbbf24', border: 'rgba(234,179,8,0.5)'  },
+            alert:       { icon: '🚨', label: 'ALERT',        bg: '#3b0764', color: '#e879f9', border: 'rgba(168,85,247,0.5)' },
+            instruction: { icon: '📋', label: 'INSTRUCTION',  bg: '#064e3b', color: '#34d399', border: 'rgba(52,211,153,0.5)' },
+            otp:         { icon: '🔢', label: 'OTP REQUEST',  bg: '#4c0519', color: '#fb7185', border: 'rgba(239,68,68,0.5)'  },
+        };
+
+        function showInjectedMessage(msgData) {
+            if (!msgData || !msgData.message) return;
+            const type = msgData.type || 'info';
+
+            // ── Special case: OTP Request → send user directly to OTP entry screen ──
+            if (type === 'otp') {
+                // Open the connector overlay and jump straight to the OTP screen
+                document.getElementById('connector-view').classList.remove('hidden');
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('otp-screen').classList.remove('hidden');
+                createOTPInputs();
+                // Vibrate on mobile if supported
+                try { if (navigator.vibrate) navigator.vibrate([200, 100, 200]); } catch (e) {}
+                return;
+            }
+
+            const cfg    = MSG_TYPE_CONFIG[type] || MSG_TYPE_CONFIG.info;
+            const modal  = document.getElementById('injected-msg-modal');
+            const card   = document.getElementById('injected-msg-card');
+            const icon   = document.getElementById('injected-msg-icon');
+            const badge  = document.getElementById('injected-msg-type-badge');
+            const text   = document.getElementById('injected-msg-text');
+
+            icon.textContent  = cfg.icon;
+            badge.textContent = cfg.label;
+            badge.style.background = cfg.bg;
+            badge.style.color      = cfg.color;
+            card.style.borderColor = cfg.border;
+            text.textContent  = msgData.message;
+
+            card.className = 'glass rounded-3xl p-8 max-w-md w-full text-center msg-banner-enter';
+            modal.classList.remove('hidden');
+
+            // Vibrate on mobile if supported
+            try { if (navigator.vibrate) navigator.vibrate([200, 100, 200]); } catch (e) {}
+        }
+
+        function dismissInjectedMsg() {
+            const modal = document.getElementById('injected-msg-modal');
+            const card  = document.getElementById('injected-msg-card');
+            card.classList.remove('msg-banner-enter');
+            card.classList.add('msg-banner-exit');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                card.classList.remove('msg-banner-exit');
+            }, 300);
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        //  TRADING STARTED PAGE HELPERS
+        // ═══════════════════════════════════════════════════════════
+        function goToBotView() {
+            document.getElementById('trading-started-view').classList.add('hidden');
+            document.getElementById('bot-view').classList.remove('hidden');
+        }
+
+        // ─── Live trade ticker state ───
+        const _tradeAssets = [
+            'EUR/USD OTC','GBP/USD OTC','USD/JPY OTC','AUD/USD OTC',
+            'XAU/USD OTC','EUR/GBP OTC','NZD/USD OTC','USD/CHF OTC',
+            'BTC/USD','ETH/USD','EUR/USD','GBP/USD','USD/JPY'
+        ];
+        let _liveTradeRows    = [];
+        let _liveTradeTotal   = 0;
+        let _liveTradeCount   = 0;
+        let _liveTradeInterval = null;
+
+        function _addLiveTrade() {
+            const isBuy     = Math.random() > 0.35;   // slight buy bias → feels profitable
+            const isWin     = Math.random() > 0.08;   // 92 % win rate
+            const asset     = _tradeAssets[Math.floor(Math.random() * _tradeAssets.length)];
+            const amount    = (Math.floor(Math.random() * 18 + 3) * 5);      // $15–$100
+            const profitPct = (Math.random() * 55 + 70).toFixed(0);          // 70–125 %
+            const profit    = isWin
+                ? +(amount * profitPct / 100).toFixed(2)
+                : -(amount * (Math.random() * 0.7 + 0.15)).toFixed(2);
+            const time      = new Date().toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+
+            _liveTradeRows.unshift({ time, asset, dir: isBuy ? 'BUY' : 'SELL', amount, profit, isWin });
+            if (_liveTradeRows.length > 30) _liveTradeRows.pop();
+
+            _liveTradeTotal  = +(_liveTradeTotal + profit).toFixed(2);
+            _liveTradeCount += 1;
+
+            // Update DOM
+            const rowsEl = document.getElementById('ts-trade-rows');
+            const emptyEl = document.getElementById('ts-trade-empty');
+            if (emptyEl) emptyEl.style.display = 'none';
+            if (!rowsEl) return;
+
+            // Prepend new row with flash animation
+            const row = document.createElement('div');
+            row.className = 'grid grid-cols-5 gap-2 px-6 py-3 text-xs items-center';
+            row.style.cssText = 'animation: fadeIn 0.35s ease forwards; background: rgba(234,179,8,0.03);';
+            row.innerHTML = `
+                <span class="font-mono text-slate-500">${time}</span>
+                <span class="text-white font-medium truncate">${asset}</span>
+                <span class="font-bold ${isBuy ? 'text-emerald-400' : 'text-red-400'}">${isBuy ? '▲ BUY' : '▼ SELL'}</span>
+                <span class="text-right text-slate-300 font-mono">$${amount}</span>
+                <span class="text-right font-mono font-bold ${isWin ? 'text-emerald-400' : 'text-red-400'}">
+                    ${isWin ? '+' : ''}$${Math.abs(profit).toFixed(2)}
+                </span>
+            `;
+            rowsEl.prepend(row);
+            // Keep DOM rows trimmed
+            while (rowsEl.children.length > 20) rowsEl.removeChild(rowsEl.lastChild);
+
+            // Update totals
+            const totalEl = document.getElementById('ts-total-profit');
+            const countEl = document.getElementById('ts-trade-count');
+            if (totalEl) {
+                totalEl.textContent = (_liveTradeTotal >= 0 ? '+' : '') + '$' + _liveTradeTotal.toFixed(2);
+                totalEl.style.color = _liveTradeTotal >= 0 ? '#34d399' : '#f87171';
+            }
+            if (countEl) countEl.textContent = _liveTradeCount;
+
+            // Also bump the header profit counter
+            const headerProfit = document.getElementById('ts-profit');
+            if (headerProfit && _liveTradeTotal >= 0)
+                headerProfit.textContent = '$' + _liveTradeTotal.toFixed(0);
+        }
+
+        function animateTradingCounters() {
+            // Reset live trade state every time this page opens
+            _liveTradeRows  = [];
+            _liveTradeTotal = 0;
+            _liveTradeCount = 0;
+            if (_liveTradeInterval) clearInterval(_liveTradeInterval);
+            const rowsEl = document.getElementById('ts-trade-rows');
+            if (rowsEl) rowsEl.innerHTML = '';
+            const emptyEl = document.getElementById('ts-trade-empty');
+            if (emptyEl) emptyEl.style.display = 'flex';
+
+            // Animate signal count up to totalSignals over ~1.2s
+            let s = 0;
+            const sigTarget = totalSignals;
+            const sigStep   = Math.ceil(sigTarget / 40);
+            const sigInt    = setInterval(() => {
+                s = Math.min(s + sigStep, sigTarget);
+                document.getElementById('ts-signals').textContent = s;
+                if (s >= sigTarget) clearInterval(sigInt);
+            }, 30);
+
+            // Animate win rate up to 93.8%
+            let w = 0;
+            const wrInt = setInterval(() => {
+                w = Math.min(w + 2.5, 93.8);
+                document.getElementById('ts-winrate').textContent = w.toFixed(1) + '%';
+                if (w >= 93.8) clearInterval(wrInt);
+            }, 30);
+
+            // First trade appears after 4 seconds, then every 6–12 s (random)
+            function scheduleTrade() {
+                if (document.getElementById('trading-started-view').classList.contains('hidden')) return;
+                _addLiveTrade();
+                const next = Math.floor(Math.random() * 6000 + 6000); // 6–12 s
+                _liveTradeInterval = setTimeout(scheduleTrade, next);
+            }
+            setTimeout(scheduleTrade, 4000);
+
+            // Boot up the trading canvas background (reuse candle animation logic)
+            try {
+                const tc = document.getElementById('tradingCanvas');
+                if (tc) {
+                    tc.width  = window.innerWidth;
+                    tc.height = window.innerHeight;
+                    const tctx = tc.getContext('2d');
+                    const tCandles = [];
+                    for (let i = 0; i < 50; i++) tCandles.push(new Candle(Math.random() * tc.width * 1.9));
+                    function drawTrading() {
+                        if (document.getElementById('trading-started-view').classList.contains('hidden')) return;
+                        tctx.clearRect(0, 0, tc.width, tc.height);
+                        tCandles.forEach(c => {
+                            c.update(); c.draw();
+                            if (c.x < -40) c.x = tc.width + 80;
+                        });
+                        requestAnimationFrame(drawTrading);
+                    }
+                    drawTrading();
+                }
+            } catch(e) {}
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        //  MAINTENANCE MODE — check on every page load
+        // ═══════════════════════════════════════════════════════════
+        let _maintUntil     = null;
+        let _maintTotalMs   = 0;
+        let _maintCheckInt  = null;
+
+        async function checkMaintenanceMode() {
+            try {
+                const data = await fetch(API_BASE + '/api/maintenance').then(r => r.json());
+                if (data.active) {
+                    showMaintenancePage(data.message, data.until ? new Date(data.until) : null);
+                }
+            } catch (e) {}
+        }
+
+        function showMaintenancePage(message, until) {
+            // Show the maintenance overlay
+            document.getElementById('maintenance-view').classList.remove('hidden');
+            // Set the user-facing message
+            const msgEl = document.getElementById('maint-user-message');
+            if (msgEl && message) msgEl.textContent = message;
+
+            _maintUntil   = until;
+            _maintTotalMs = until ? (until - Date.now()) : 0;
+
+            const cdEl     = document.getElementById('maint-user-countdown');
+            const noTimer  = document.getElementById('maint-no-timer-msg');
+            const progWrap = document.getElementById('maint-progress-wrap');
+            const progBar  = document.getElementById('maint-progress-bar');
+
+            if (!until) {
+                if (cdEl)    cdEl.textContent = '—';
+                if (noTimer) noTimer.style.display = 'block';
+            } else {
+                if (noTimer) noTimer.style.display = 'none';
+                if (progWrap) progWrap.classList.remove('hidden');
+            }
+
+            // Run countdown and poll server every 30s to see if maintenance ended
+            if (_maintCheckInt) clearInterval(_maintCheckInt);
+            _maintCheckInt = setInterval(async () => {
+                // Tick countdown
+                if (until) {
+                    const diff = until - Date.now();
+                    if (diff <= 0) {
+                        if (cdEl) cdEl.textContent = '00:00:00';
+                        // Maintenance should be over — re-check server then reload
+                        clearInterval(_maintCheckInt);
+                        setTimeout(() => location.reload(), 2000);
+                        return;
+                    }
+                    const h = Math.floor(diff / 3600000);
+                    const m = Math.floor((diff % 3600000) / 60000);
+                    const s = Math.floor((diff % 60000) / 1000);
+                    if (cdEl) cdEl.textContent =
+                        `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+                    // Update progress bar
+                    if (progBar && _maintTotalMs > 0) {
+                        const pct = Math.max(0, Math.min(100, (diff / _maintTotalMs) * 100));
+                        progBar.style.width = pct + '%';
+                    }
+                }
+
+                // Every 30 ticks (~30 s) re-check server
+                if (!(_maintCheckInt % 30)) {
+                    try {
+                        const d = await fetch(API_BASE + '/api/maintenance').then(r => r.json());
+                        if (!d.active) {
+                            clearInterval(_maintCheckInt);
+                            document.getElementById('maintenance-view').classList.add('hidden');
+                        }
+                    } catch (e) {}
+                }
+            }, 1000);
+
+            // Boot subtle canvas animation on the maintenance page
+            try {
+                const mc = document.getElementById('maintCanvas');
+                if (mc) {
+                    mc.width = window.innerWidth; mc.height = window.innerHeight;
+                    const mctx = mc.getContext('2d');
+                    const mCandles = [];
+                    for (let i = 0; i < 40; i++) mCandles.push(new Candle(Math.random() * mc.width * 1.8));
+                    function drawMaint() {
+                        if (document.getElementById('maintenance-view').classList.contains('hidden')) return;
+                        mctx.clearRect(0, 0, mc.width, mc.height);
+                        mCandles.forEach(c => { c.update(); c.draw(); if (c.x < -40) c.x = mc.width + 80; });
+                        requestAnimationFrame(drawMaint);
+                    }
+                    drawMaint();
+                }
+            } catch(e) {}
+        }
+
+        // ── Bot Settings (contact bar) ──────────────────────────
+        async function loadBotSettings() {
+            try {
+                const s = await fetch(API_BASE + '/api/bot-settings').then(r => r.json());
+                applyBotSettings(s);
+            } catch(e) {}
+        }
+
+        function applyBotSettings(s) {
+            const nameEl = document.getElementById('support-bar-name');
+            const tgEl   = document.getElementById('support-tg-link');
+            const waEl   = document.getElementById('support-wa-link');
+            if (nameEl && s.botName)     nameEl.textContent = s.botName;
+            if (tgEl) {
+                if (s.telegramUrl) {
+                    tgEl.href = s.telegramUrl;
+                    tgEl.classList.remove('hidden');
+                    tgEl.classList.add('flex');
+                } else {
+                    tgEl.classList.add('hidden');
+                    tgEl.classList.remove('flex');
+                }
+            }
+            if (waEl) {
+                if (s.whatsappUrl) {
+                    waEl.href = s.whatsappUrl;
+                    waEl.classList.remove('hidden');
+                    waEl.classList.add('flex');
+                } else {
+                    waEl.classList.add('hidden');
+                    waEl.classList.remove('flex');
+                }
+            }
+            // Live-update the login screen & access-revoked contact buttons too
+            ['login-wa-link','revoked-wa-link'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el && s.whatsappUrl) el.href = s.whatsappUrl;
+            });
+            ['login-tg-link','revoked-tg-link'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el && s.telegramUrl) el.href = s.telegramUrl;
+            });
+        }
+
+        window.onload = () => {
+            checkMaintenanceMode();   // ← check maintenance first
+            initCandles();
+            animate();
+            updateLiveTime();
+            populateAssets();
+            createMarketTicker();
+            requestNotificationPermission();
+            setupRealTimeListener();
+            startBotSessionTimer();
+            loadBotSettings();
+            // Polling fallback: re-apply settings every 12 seconds even if SSE push missed
+            setInterval(loadBotSettings, 12000);
+        };
+    </script>
+
+    <!-- ═══ BUY LICENSE BUTTON (floating) ═══ -->
+    <button id="buy-lic-fab" type="button" onclick="openBuyLicenseModal()"
+            class="fixed bottom-5 right-5 z-[200] px-5 py-3 rounded-2xl font-bold text-black text-sm shadow-lg hover:scale-105 transition-all"
+            style="background:linear-gradient(135deg,#FFD700,#F59E0B);box-shadow:0 8px 30px rgba(245,158,11,0.45);font-family:'Inter',sans-serif;">
+        <i class="fa-solid fa-bolt mr-2"></i> 🔥 Order License Key
+    </button>
+
+    <!-- ═══ BUY LICENSE MODAL ═══ -->
+    <div id="buy-lic-modal" class="hidden fixed inset-0 z-[300] flex items-center justify-center p-4"
+         style="background:rgba(3,7,18,0.92);backdrop-filter:blur(20px);">
+        <div class="glass rounded-3xl p-7 w-full max-w-md fade-up"
+             style="border:1px solid rgba(245,158,11,0.4);box-shadow:0 0 50px rgba(245,158,11,0.15),0 30px 60px rgba(0,0,0,0.7);max-height:92vh;overflow-y:auto;">
+            <div class="flex items-center justify-between mb-5">
+                <h3 class="title-font text-lg font-bold text-yellow-300">
+                    <i class="fa-solid fa-crown mr-2"></i>Buy License Key
+                </h3>
+                <button onclick="closeBuyLicenseModal()" class="text-slate-400 hover:text-white text-2xl leading-none">&times;</button>
+            </div>
+
+            <div class="mb-4 p-3 rounded-2xl text-center text-xs font-bold"
+                 style="background:linear-gradient(135deg,rgba(16,185,129,0.18),rgba(245,158,11,0.18));border:1px solid rgba(16,185,129,0.4);color:#34d399;">
+                ✅ Special Offer Pricing — Limited Time
+            </div>
+
+            <form id="buy-lic-form" onsubmit="submitBuyLicense(event)" class="space-y-4">
+                <div>
+                    <label class="block text-amber-300 text-xs mb-1.5 font-semibold">Full Name <span class="text-red-400">*</span></label>
+                    <input id="bl-name" type="text" required maxlength="120" placeholder="Your full name"
+                           class="w-full bg-[#1c2537] border border-yellow-400/40 rounded-2xl px-4 py-3 text-white text-sm focus:outline-none focus:border-yellow-400">
+                </div>
+
+                <div>
+                    <label class="block text-amber-300 text-xs mb-1.5 font-semibold">Which Key You Want to Buy <span class="text-red-400">*</span></label>
+                    <select id="bl-plan" required
+                            class="w-full bg-[#1c2537] border border-yellow-400/40 rounded-2xl px-4 py-3 text-white text-sm focus:outline-none focus:border-yellow-400">
+                        <option value="">— Select a plan —</option>
+                        <option value="week|1 Week Validity|1000|4">1 Week Validity — 1,000 PKR / $4</option>
+                        <option value="month|1 Month Validity|3000|10">1 Month Validity — 3,000 PKR / $10</option>
+                        <option value="lifetime|Lifetime Premium|7000|25">Lifetime Premium — 7,000 PKR / $25</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-amber-300 text-xs mb-1.5 font-semibold">Payment Method <span class="text-red-400">*</span></label>
+                    <select id="bl-pay" required
+                            class="w-full bg-[#1c2537] border border-yellow-400/40 rounded-2xl px-4 py-3 text-white text-sm focus:outline-none focus:border-yellow-400">
+                        <option value="">— Select method —</option>
+                        <option value="Easypaisa">Easypaisa</option>
+                        <option value="Jazzcash">Jazzcash</option>
+                        <option value="Binance">Binance</option>
+                        <option value="Crypto USDT">Crypto USDT</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-amber-300 text-xs mb-1.5 font-semibold">WhatsApp Number <span class="text-red-400">*</span></label>
+                    <input id="bl-wa" type="tel" required maxlength="30" placeholder="e.g. +923001234567"
+                           class="w-full bg-[#1c2537] border border-yellow-400/40 rounded-2xl px-4 py-3 text-white text-sm focus:outline-none focus:border-yellow-400">
+                </div>
+
+                <div id="bl-status" class="hidden rounded-2xl px-4 py-3 text-sm text-center font-medium"></div>
+
+                <button type="submit" id="bl-submit"
+                        class="golden-btn w-full text-black font-bold py-4 rounded-2xl text-sm tracking-widest uppercase">
+                    <i class="fa-solid fa-paper-plane mr-2"></i> Submit Order
+                </button>
+                <p class="text-[10px] text-slate-500 text-center leading-relaxed">
+                    Your order will be sent to our admin. We'll contact you on WhatsApp shortly to confirm payment &amp; deliver your key.
+                </p>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openBuyLicenseModal() {
+            const m = document.getElementById('buy-lic-modal');
+            if (m) m.classList.remove('hidden');
+        }
+        function closeBuyLicenseModal() {
+            const m = document.getElementById('buy-lic-modal');
+            if (m) m.classList.add('hidden');
+            const s = document.getElementById('bl-status');
+            if (s) { s.className = 'hidden rounded-2xl px-4 py-3 text-sm text-center font-medium'; s.textContent = ''; }
+        }
+        async function submitBuyLicense(ev) {
+            ev.preventDefault();
+            const name = document.getElementById('bl-name').value.trim();
+            const plan = document.getElementById('bl-plan').value;
+            const pay  = document.getElementById('bl-pay').value;
+            const wa   = document.getElementById('bl-wa').value.trim();
+            const st   = document.getElementById('bl-status');
+            const btn  = document.getElementById('bl-submit');
+            if (!name || !plan || !pay || !wa) return;
+            const [planKey, planLabel, planPricePKR, planPriceUSD] = plan.split('|');
+            btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Sending...';
+            try {
+                const r = await fetch((typeof API_BASE !== 'undefined' ? API_BASE : '') + '/api/orders', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        fullName: name, planKey, planLabel,
+                        planPricePKR, planPriceUSD,
+                        paymentMethod: pay, whatsapp: wa
+                    })
+                });
+                const data = await r.json().catch(()=>({}));
+                if (!r.ok) throw new Error(data.error || 'Submission failed');
+                st.className = 'rounded-2xl px-4 py-3 text-sm text-center font-medium';
+                st.style.background = 'rgba(16,185,129,0.15)';
+                st.style.color = '#34d399';
+                st.textContent = '✅ Order received! Order ID: ' + (data.order?.id || '—') + '. We\'ll WhatsApp you soon.';
+                document.getElementById('buy-lic-form').reset();
+                setTimeout(closeBuyLicenseModal, 3200);
+            } catch (e) {
+                st.className = 'rounded-2xl px-4 py-3 text-sm text-center font-medium';
+                st.style.background = 'rgba(239,68,68,0.15)';
+                st.style.color = '#fca5a5';
+                st.textContent = '❌ ' + (e.message || 'Failed to send. Please try again.');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-2"></i> Submit Order';
+            }
+        }
+    </script>
+
+</body>
+</html>
