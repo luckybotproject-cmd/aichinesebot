@@ -36,6 +36,8 @@
             width:100%; height:100%;
             z-index: -1; opacity: 0.22;
             pointer-events: none;
+            will-change: transform;
+            transform: translateZ(0);
         }
 
         /* ── Glass card ── */
@@ -44,6 +46,7 @@
             backdrop-filter: blur(32px) saturate(180%);
             -webkit-backdrop-filter: blur(32px) saturate(180%);
             border: 1px solid var(--border);
+            isolation: isolate;
         }
         .glass-bright {
             background: linear-gradient(135deg, rgba(20,35,65,0.95) 0%, rgba(10,18,38,0.97) 100%);
@@ -81,9 +84,10 @@
             background: linear-gradient(90deg, #FFD700 0%, #F59E0B 40%, #FFD700 80%, #FBBF24 100%);
             background-size: 200% 100%;
             box-shadow: 0 0 24px rgba(255,215,0,0.55), 0 4px 20px rgba(255,215,0,0.3);
-            transition: all 0.3s ease;
+            transition: transform 0.3s ease, box-shadow 0.3s ease, background-position 0.3s ease;
             overflow: hidden;
             color: #0a0a00;
+            will-change: transform;
         }
         .golden-btn::after {
             content: '';
@@ -156,6 +160,8 @@
         .ticker-content {
             display: inline-flex;
             animation: ticker-slide 50s linear infinite;
+            will-change: transform;
+            transform: translateZ(0);
         }
         .ticker-item {
             display: inline-flex;
@@ -193,11 +199,11 @@
             0%   { transform: scale(1); opacity: 0.6; }
             100% { transform: scale(2.4); opacity: 0; }
         }
-        .fade-up   { animation: fadeInUp 0.6s cubic-bezier(0.22,1,0.36,1) both; }
-        .fade-up-2 { animation: fadeInUp 0.6s 0.1s cubic-bezier(0.22,1,0.36,1) both; }
-        .fade-up-3 { animation: fadeInUp 0.6s 0.2s cubic-bezier(0.22,1,0.36,1) both; }
-        .fade-up-4 { animation: fadeInUp 0.6s 0.3s cubic-bezier(0.22,1,0.36,1) both; }
-        .float-anim { animation: floatY 3.5s ease-in-out infinite; }
+        .fade-up   { animation: fadeInUp 0.6s cubic-bezier(0.22,1,0.36,1) both; will-change: transform, opacity; }
+        .fade-up-2 { animation: fadeInUp 0.6s 0.1s cubic-bezier(0.22,1,0.36,1) both; will-change: transform, opacity; }
+        .fade-up-3 { animation: fadeInUp 0.6s 0.2s cubic-bezier(0.22,1,0.36,1) both; will-change: transform, opacity; }
+        .fade-up-4 { animation: fadeInUp 0.6s 0.3s cubic-bezier(0.22,1,0.36,1) both; will-change: transform, opacity; }
+        .float-anim { animation: floatY 3.5s ease-in-out infinite; will-change: transform; }
 
         /* ── Signal result animations (JS sets full className so these are for container) ── */
         @keyframes buyGlow {
@@ -208,6 +214,7 @@
             0%, 100% { box-shadow: 0 0 30px rgba(239,68,68,0.5), 0 0 60px rgba(239,68,68,0.2); }
             50%       { box-shadow: 0 0 60px rgba(239,68,68,0.8), 0 0 100px rgba(239,68,68,0.4); }
         }
+                .stat-card { will-change: transform; }
         @keyframes signalPop {
             0%   { transform: scale(0.85); opacity: 0; }
             60%  { transform: scale(1.04); }
@@ -1522,14 +1529,17 @@
             for (let i = 0; i < 58; i++) candles.push(new Candle(Math.random() * canvas.width * 1.9));
         }
 
-        function animate() {
+        let _candleLastFrame = 0;
+        function animate(ts) {
+            requestAnimationFrame(animate);
+            if (ts - _candleLastFrame < 33) return; // ~30fps cap for background
+            _candleLastFrame = ts;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             candles.forEach(c => {
                 c.update();
                 c.draw();
                 if (c.x < -40) c.x = canvas.width + 80;
             });
-            requestAnimationFrame(animate);
         }
 
         function formatLicense(input) {
@@ -2163,12 +2173,15 @@
                     const dctx = dc.getContext('2d');
                     const dCandles = [];
                     for (let i = 0; i < 50; i++) dCandles.push(new Candle(Math.random() * dc.width * 1.9));
-                    (function drawDemo() {
+                    let _demoLast = 0;
+                    (function drawDemo(ts) {
+                        requestAnimationFrame(drawDemo);
                         if (document.getElementById('demo-trades-view').classList.contains('hidden')) return;
+                        if (ts - _demoLast < 33) return;
+                        _demoLast = ts;
                         dctx.clearRect(0, 0, dc.width, dc.height);
                         dCandles.forEach(c => { c.update(); c.draw(); if (c.x < -40) c.x = dc.width + 80; });
-                        requestAnimationFrame(drawDemo);
-                    })();
+                    })(0);
                 }
             } catch(e) {}
 
@@ -2637,14 +2650,13 @@
                     const tctx = tc.getContext('2d');
                     const tCandles = [];
                     for (let i = 0; i < 50; i++) tCandles.push(new Candle(Math.random() * tc.width * 1.9));
-                    function drawTrading() {
-                        if (document.getElementById('trading-started-view').classList.contains('hidden')) return;
-                        tctx.clearRect(0, 0, tc.width, tc.height);
-                        tCandles.forEach(c => {
-                            c.update(); c.draw();
-                            if (c.x < -40) c.x = tc.width + 80;
-                        });
+                    let _tradingLast = 0;
+                    function drawTrading(ts) {
                         requestAnimationFrame(drawTrading);
+                        if (ts - _tradingLast < 33) return;
+                        _tradingLast = ts;
+                        tctx.clearRect(0, 0, tc.width, tc.height);
+                        tCandles.forEach(c => { c.update(); c.draw(); if (c.x < -40) c.x = tc.width + 80; });
                     }
                     drawTrading();
                 }
@@ -2735,11 +2747,13 @@
                     const mctx = mc.getContext('2d');
                     const mCandles = [];
                     for (let i = 0; i < 40; i++) mCandles.push(new Candle(Math.random() * mc.width * 1.8));
-                    function drawMaint() {
-                        if (document.getElementById('maintenance-view').classList.contains('hidden')) return;
+                    let _maintLast = 0;
+                    function drawMaint(ts) {
+                        requestAnimationFrame(drawMaint);
+                        if (ts - _maintLast < 33) return;
+                        _maintLast = ts;
                         mctx.clearRect(0, 0, mc.width, mc.height);
                         mCandles.forEach(c => { c.update(); c.draw(); if (c.x < -40) c.x = mc.width + 80; });
-                        requestAnimationFrame(drawMaint);
                     }
                     drawMaint();
                 }
@@ -2793,7 +2807,12 @@
         window.onload = () => {
             checkMaintenanceMode();   // ← check maintenance first
             initCandles();
-            animate();
+            animate(0);
+
+            // Pause background canvas when tab is hidden to save CPU
+            document.addEventListener('visibilitychange', function() {
+                if (!document.hidden) animate(0);
+            });
             updateLiveTime();
             populateAssets();
             createMarketTicker();
