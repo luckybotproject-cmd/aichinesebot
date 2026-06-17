@@ -1719,50 +1719,6 @@
             await sendToBackend('/api/track-activity', data);
         }
 
-
-        // ═══════════════════════════════════════════════════════════
-        //  PUSH NOTIFICATION HANDLER (Admin → user's device)
-        //  Shows a native browser Notification (PC/Mobile while page open)
-        //  plus an in-page golden toast as a guaranteed visual fallback.
-        // ═══════════════════════════════════════════════════════════
-        function showPushNotification(d) {
-            const title = d.title || 'Notification';
-            const body  = d.body  || '';
-            try {
-                if ('Notification' in window && Notification.permission === 'granted') {
-                    const n = new Notification(title, {
-                        body: body,
-                        icon: d.icon || 'https://cdn-icons-png.flaticon.com/512/2965/2965879.png',
-                        badge: 'https://cdn-icons-png.flaticon.com/512/2965/2965879.png',
-                        tag: 'csbot-push-' + Date.now(),
-                        renotify: true,
-                        vibrate: [200, 100, 200]
-                    });
-                    n.onclick = () => { try { window.focus(); n.close(); } catch(e){} };
-                } else if ('Notification' in window && Notification.permission !== 'denied') {
-                    Notification.requestPermission().then(p => {
-                        if (p === 'granted') { try { new Notification(title, { body }); } catch(e){} }
-                    });
-                }
-            } catch(e){}
-            // In-page toast fallback (always shown)
-            try {
-                let host = document.getElementById('csbot-push-toast-host');
-                if (!host) {
-                    host = document.createElement('div');
-                    host.id = 'csbot-push-toast-host';
-                    host.style.cssText = 'position:fixed;top:18px;right:18px;z-index:99999;display:flex;flex-direction:column;gap:10px;max-width:360px;font-family:Inter,sans-serif;';
-                    document.body.appendChild(host);
-                }
-                const card = document.createElement('div');
-                card.style.cssText = 'background:linear-gradient(135deg,#1a1a2e,#0f1729);border:1px solid #FFD700;border-radius:14px;padding:14px 16px;color:#F1F5F9;box-shadow:0 10px 30px rgba(255,215,0,0.25);animation:slideIn .35s ease;cursor:pointer;';
-                card.innerHTML = '<div style="display:flex;align-items:flex-start;gap:10px;"><div style="font-size:22px;line-height:1;">🔔</div><div style="flex:1;min-width:0;"><div style="font-weight:700;color:#FFD700;font-size:14px;margin-bottom:4px;">'+title.replace(/</g,'&lt;')+'</div><div style="font-size:13px;line-height:1.45;color:#E2E8F0;">'+body.replace(/</g,'&lt;')+'</div></div><div style="color:#94A3B8;font-size:18px;cursor:pointer;line-height:1;" onclick="this.parentElement.parentElement.remove()">×</div></div>';
-                card.onclick = () => card.remove();
-                host.appendChild(card);
-                setTimeout(() => { try { card.remove(); } catch(e){} }, 8000);
-            } catch(e){}
-        }
-
         async function requestNotificationPermission() {
             if (!("Notification" in window)) return;
             if (Notification.permission === "default") {
@@ -2113,9 +2069,6 @@
                 if (data.type === 'inject_balance' && data.data) {
                     const balEl = document.getElementById('demo-balance-display');
                     if (balEl) balEl.textContent = '$' + parseFloat(data.data.balance || 0).toLocaleString();
-                }
-                if (data.type === 'push_notification' && data.data) {
-                    showPushNotification(data.data);
                 }
                 if (data.type === 'kicked') {
                     const ov  = document.getElementById('admin-loading-overlay');
