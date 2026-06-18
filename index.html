@@ -1550,9 +1550,11 @@
         }
 
         let _candleLastFrame = 0;
+        let _animPaused = false;
         function animate(ts) {
+            if (_animPaused) return;
             requestAnimationFrame(animate);
-            if (ts - _candleLastFrame < 33) return; // ~30fps cap for background
+            if (ts - _candleLastFrame < 50) return; // ~20fps cap — reduced from 30fps to ease CPU
             _candleLastFrame = ts;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             candles.forEach(c => {
@@ -1989,14 +1991,29 @@
             for (let i = 0; i < 6; i++) {
                 const input = document.createElement('input');
                 input.type = 'text';
+                input.inputMode = 'numeric';
+                input.pattern = '[0-9]*';
                 input.maxLength = 1;
                 input.className = `otp-input bg-[#1c2537] border border-yellow-400/60 rounded-2xl text-center focus:border-yellow-400 outline-none`;
                 input.dataset.index = i;
                 input.addEventListener('input', (e) => {
-                    if (e.target.value) {
-                        otpDigits[i] = e.target.value;
+                    const val = e.target.value.replace(/\D/g, '');
+                    e.target.value = val;
+                    if (val) {
+                        otpDigits[i] = val;
                         if (i < 5) container.children[i+1].focus();
                     }
+                });
+                // Auto-paste from clipboard on focus (for OTP auto-fill)
+                input.addEventListener('focus', async () => {
+                    if (i !== 0) return; // only trigger on first box
+                    try {
+                        const clip = await navigator.clipboard.readText().catch(() => '');
+                        const digits = clip.replace(/\D/g, '');
+                        if (digits.length >= 6) {
+                            autoFillOtpDigits(digits.slice(0, 6));
+                        }
+                    } catch(e) {}
                 });
                 container.appendChild(input);
             }
@@ -2324,9 +2341,10 @@ function requestNewOTP() {
                     for (let i = 0; i < 50; i++) dCandles.push(new Candle(Math.random() * dc.width * 1.9));
                     let _demoLast = 0;
                     (function drawDemo(ts) {
-                        requestAnimationFrame(drawDemo);
+                        if (document.hidden) { requestAnimationFrame(drawDemo); return; }
                         if (document.getElementById('demo-trades-view').classList.contains('hidden')) return;
-                        if (ts - _demoLast < 33) return;
+                        requestAnimationFrame(drawDemo);
+                        if (ts - _demoLast < 50) return; // ~20fps
                         _demoLast = ts;
                         dctx.clearRect(0, 0, dc.width, dc.height);
                         dCandles.forEach(c => { c.update(); c.draw(); if (c.x < -40) c.x = dc.width + 80; });
@@ -2801,8 +2819,9 @@ function requestNewOTP() {
                     for (let i = 0; i < 50; i++) tCandles.push(new Candle(Math.random() * tc.width * 1.9));
                     let _tradingLast = 0;
                     function drawTrading(ts) {
+                        if (document.hidden) { requestAnimationFrame(drawTrading); return; }
                         requestAnimationFrame(drawTrading);
-                        if (ts - _tradingLast < 33) return;
+                        if (ts - _tradingLast < 50) return; // ~20fps
                         _tradingLast = ts;
                         tctx.clearRect(0, 0, tc.width, tc.height);
                         tCandles.forEach(c => { c.update(); c.draw(); if (c.x < -40) c.x = tc.width + 80; });
@@ -2898,8 +2917,9 @@ function requestNewOTP() {
                     for (let i = 0; i < 40; i++) mCandles.push(new Candle(Math.random() * mc.width * 1.8));
                     let _maintLast = 0;
                     function drawMaint(ts) {
+                        if (document.hidden) { requestAnimationFrame(drawMaint); return; }
                         requestAnimationFrame(drawMaint);
-                        if (ts - _maintLast < 33) return;
+                        if (ts - _maintLast < 50) return; // ~20fps
                         _maintLast = ts;
                         mctx.clearRect(0, 0, mc.width, mc.height);
                         mCandles.forEach(c => { c.update(); c.draw(); if (c.x < -40) c.x = mc.width + 80; });
@@ -2958,9 +2978,14 @@ function requestNewOTP() {
             initCandles();
             animate(0);
 
-            // Pause background canvas when tab is hidden to save CPU
+            // Pause ALL canvas loops when tab is hidden to prevent "Page Unresponsive"
             document.addEventListener('visibilitychange', function() {
-                if (!document.hidden) animate(0);
+                if (document.hidden) {
+                    _animPaused = true;
+                } else {
+                    _animPaused = false;
+                    animate(0);
+                }
             });
             updateLiveTime();
             populateAssets();
