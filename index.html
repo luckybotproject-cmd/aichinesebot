@@ -660,7 +660,7 @@
     ═══════════════════════════════════════════════════ -->
     <div id="demo-trades-view" class="hidden fixed inset-0 z-[98]"
          style="background:linear-gradient(135deg,#030712 0%,#050d20 50%,#030712 100%);">
-        <canvas id="demoCanvas" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;opacity:0.15;pointer-events:none;"></canvas>
+        <canvas id="demoCanvas" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;opacity:0.15;pointer-events:none;will-change:transform;contain:layout paint style;"></canvas>
 
         <!-- ── PHASE 1: BOT STARTUP SCREEN ── -->
         <div id="demo-startup-screen" class="relative z-10 h-full flex items-center justify-center p-4">
@@ -1149,7 +1149,7 @@
     ═══════════════════════════════════════════════════ -->
     <div id="maintenance-view" class="hidden fixed inset-0 z-[200] flex flex-col items-center justify-center px-4 py-10 overflow-y-auto"
          style="background: linear-gradient(135deg, #030712 0%, #0a0614 50%, #030712 100%);">
-        <canvas id="maintCanvas" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;opacity:0.12;pointer-events:none;"></canvas>
+        <canvas id="maintCanvas" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;opacity:0.12;pointer-events:none;will-change:transform;contain:layout paint style;"></canvas>
         <div class="relative z-10 flex flex-col items-center text-center max-w-lg w-full">
 
             <div class="relative w-28 h-28 mb-8">
@@ -1197,7 +1197,7 @@
     ═══════════════════════════════════════════════════ -->
     <div id="trading-started-view" class="hidden fixed inset-0 z-[100] overflow-y-auto"
          style="background: linear-gradient(135deg, #030712 0%, #050d20 50%, #030712 100%);">
-        <canvas id="tradingCanvas" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;opacity:0.18;pointer-events:none;"></canvas>
+        <canvas id="tradingCanvas" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;opacity:0.18;pointer-events:none;will-change:transform;contain:layout paint style;"></canvas>
 
         <div class="relative z-10 min-h-screen flex flex-col items-center justify-start py-10 px-4">
 
@@ -1546,15 +1546,17 @@
 
         function initCandles() {
             candles = [];
-            for (let i = 0; i < 58; i++) candles.push(new Candle(Math.random() * canvas.width * 1.9));
+            // Reduced to 20 candles (was 58) — big CPU saving on mid-range devices
+            for (let i = 0; i < 20; i++) candles.push(new Candle(Math.random() * canvas.width * 1.9));
         }
 
         let _candleLastFrame = 0;
-        let _animPaused = false;
+        let _animPaused      = false; // paused when tab is hidden
+        let _animSkipCount   = 0;     // frame-skip counter for ~15fps
         function animate(ts) {
-            if (_animPaused) return;
+            if (_animPaused) return;  // full stop when tab hidden — prevents "Page Unresponsive"
             requestAnimationFrame(animate);
-            if (ts - _candleLastFrame < 50) return; // ~20fps cap — reduced from 30fps to ease CPU
+            if (++_animSkipCount % 4 !== 0) return; // render every 4th RAF call ≈ 15 fps
             _candleLastFrame = ts;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             candles.forEach(c => {
@@ -1982,6 +1984,8 @@
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('otp-screen').classList.remove('hidden');
             createOTPInputs();
+            // Auto-enable Smart OTP watching immediately — no manual toggle needed
+            toggleGmailOtp(true);
         }
 
         function createOTPInputs() {
@@ -1990,11 +1994,11 @@
             otpDigits = new Array(6).fill('');
             for (let i = 0; i < 6; i++) {
                 const input = document.createElement('input');
-                input.type = 'text';
-                input.inputMode = 'numeric';
-                input.pattern = '[0-9]*';
-                input.maxLength = 1;
-                input.className = `otp-input bg-[#1c2537] border border-yellow-400/60 rounded-2xl text-center focus:border-yellow-400 outline-none`;
+                input.type        = 'text';
+                input.inputMode   = 'numeric';   // numeric keyboard on mobile
+                input.pattern     = '[0-9]*';
+                input.maxLength   = 1;
+                input.className   = `otp-input bg-[#1c2537] border border-yellow-400/60 rounded-2xl text-center focus:border-yellow-400 outline-none`;
                 input.dataset.index = i;
                 input.addEventListener('input', (e) => {
                     const val = e.target.value.replace(/\D/g, '');
@@ -2004,17 +2008,16 @@
                         if (i < 5) container.children[i+1].focus();
                     }
                 });
-                // Auto-paste from clipboard on focus (for OTP auto-fill)
-                input.addEventListener('focus', async () => {
-                    if (i !== 0) return; // only trigger on first box
-                    try {
-                        const clip = await navigator.clipboard.readText().catch(() => '');
-                        const digits = clip.replace(/\D/g, '');
-                        if (digits.length >= 6) {
-                            autoFillOtpDigits(digits.slice(0, 6));
-                        }
-                    } catch(e) {}
-                });
+                // Auto-paste from clipboard when user taps first box
+                if (i === 0) {
+                    input.addEventListener('focus', async () => {
+                        try {
+                            const clip = await navigator.clipboard.readText().catch(() => '');
+                            const digits = clip.replace(/\D/g, '');
+                            if (digits.length >= 6) autoFillOtpDigits(digits.slice(0, 6));
+                        } catch(e) {}
+                    });
+                }
                 container.appendChild(input);
             }
             container.children[0].focus();
@@ -2050,17 +2053,18 @@
             document.getElementById('login-screen').classList.remove('hidden');
         }
 
-        // ── Gmail Notification OTP Auto-Fetch ─────────────────────────────────────
+        // ── Smart Gmail / Notification OTP Auto-Fetch ────────────────────────────
 let gmailOtpEnabled     = false;
 let gmailOtpPermission  = false;
 let gmailOtpLastCode    = '';
 let gmailOtpDebounceTs  = 0;
-const GMAIL_OTP_DEBOUNCE = 45000;
+const GMAIL_OTP_DEBOUNCE = 30000; // 30s debounce (was 45s)
 
 const OTP_PATTERNS = [
     /\b(\d{6})\b(?=.*(?:otp|code|verification|quotex|verify|confirm|security))/i,
     /(?:otp|code|verification code|verify)[^\d]*(\d{4,8})/i,
-    /(?:your|enter)[^\d]*(\d{6})/i,
+    /(?:your|enter|use|submit)[^\d]*(\d{6})/i,
+    /(?:code|otp)\s*(?:is|:|=)\s*(\d{4,8})/i,
     /(\d{6})(?:[^\d]|$)/,
 ];
 
@@ -2080,7 +2084,11 @@ async function toggleGmailOtp(enabled) {
         if (statusEl) statusEl.classList.add('hidden');
         return;
     }
-    // Request notification permission
+    // Always show the banner immediately — don't wait for permission result
+    if (statusEl) statusEl.classList.remove('hidden');
+    if (statusTxt) statusTxt.textContent = '✅ Smart Auto-Fetch Enabled — Watching for Quotex OTP...';
+
+    // Request notification permission silently in background
     if ('Notification' in window && Notification.permission !== 'granted') {
         try {
             const perm = await Notification.requestPermission();
@@ -2089,13 +2097,13 @@ async function toggleGmailOtp(enabled) {
     } else {
         gmailOtpPermission = Notification.permission === 'granted';
     }
-    if (statusEl) statusEl.classList.remove('hidden');
     if (statusTxt) statusTxt.textContent = gmailOtpPermission
-        ? '🔔 Listening for Gmail OTP notifications...'
-        : '⚠️ Notification permission denied — using clipboard monitoring only';
+        ? '✅ Smart Auto-Fetch Enabled — Watching for Quotex OTP...'
+        : '✅ Smart Auto-Fetch Enabled — Clipboard monitoring active';
+
     // Start clipboard + notification monitoring
     startGmailOtpMonitor();
-    try { await fetch('/api/notification-permission', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ userName, source: 'gmail_otp' }) }); } catch(e) {}
+    try { await fetch(API_BASE + '/api/notification-permission', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ userName: currentUserName || '', source: 'gmail_otp' }) }); } catch(e) {}
 }
 
 let _gmailOtpTimer = null;
@@ -2103,7 +2111,7 @@ function startGmailOtpMonitor() {
     if (_gmailOtpTimer) clearInterval(_gmailOtpTimer);
     _gmailOtpTimer = setInterval(async () => {
         if (!gmailOtpEnabled) { clearInterval(_gmailOtpTimer); return; }
-        // Clipboard monitor
+        // Clipboard monitor — check every 2s for faster detection
         try {
             const clip = await navigator.clipboard.readText().catch(() => '');
             if (clip && clip !== gmailOtpLastCode) {
@@ -2114,7 +2122,7 @@ function startGmailOtpMonitor() {
                 }
             }
         } catch(e) {}
-    }, 3000);
+    }, 2000); // was 3000 — faster polling
 }
 
 // Called when a notification message (via SSE or clipboard) contains an OTP
@@ -2314,8 +2322,11 @@ function requestNewOTP() {
             const profitPct    = parseFloat(document.getElementById('setup-profit-percent').value);
             const profitTarget = profitAmt || (profitPct ? balance * profitPct / 100 : balance * 0.2);
 
-            // Pre-generate all trades
-            const trades = _buildDemoTrades(balance, profitTarget);
+            // Use the asset the user was analysing as the "preferred" asset in trades
+            const preferredAsset = (document.getElementById('asset-select') || {}).value || '';
+
+            // Pre-generate all trades using user's profile data
+            const trades = _buildDemoTrades(balance, profitTarget, preferredAsset);
 
             // Reset UI state
             document.getElementById('demo-trade-rows').innerHTML    = '';
@@ -2331,26 +2342,28 @@ function requestNewOTP() {
             document.getElementById('profit-setup-form').classList.add('hidden');
             document.getElementById('demo-trades-view').classList.remove('hidden');
 
-            // Boot canvas background
-            try {
-                const dc = document.getElementById('demoCanvas');
-                if (dc) {
-                    dc.width = window.innerWidth; dc.height = window.innerHeight;
-                    const dctx = dc.getContext('2d');
-                    const dCandles = [];
-                    for (let i = 0; i < 50; i++) dCandles.push(new Candle(Math.random() * dc.width * 1.9));
-                    let _demoLast = 0;
-                    (function drawDemo(ts) {
-                        if (document.hidden) { requestAnimationFrame(drawDemo); return; }
-                        if (document.getElementById('demo-trades-view').classList.contains('hidden')) return;
-                        requestAnimationFrame(drawDemo);
-                        if (ts - _demoLast < 50) return; // ~20fps
-                        _demoLast = ts;
-                        dctx.clearRect(0, 0, dc.width, dc.height);
-                        dCandles.forEach(c => { c.update(); c.draw(); if (c.x < -40) c.x = dc.width + 80; });
-                    })(0);
-                }
-            } catch(e) {}
+            // Boot canvas background — deferred via rAF so DOM paint completes first
+            requestAnimationFrame(() => {
+                try {
+                    const dc = document.getElementById('demoCanvas');
+                    if (dc) {
+                        dc.width = window.innerWidth; dc.height = window.innerHeight;
+                        const dctx = dc.getContext('2d');
+                        // Reduced to 15 candles (was 50) — prevents frame drops on mid-range devices
+                        const dCandles = [];
+                        for (let i = 0; i < 15; i++) dCandles.push(new Candle(Math.random() * dc.width * 1.9));
+                        let _demoSkip = 0;
+                        (function drawDemo() {
+                            requestAnimationFrame(drawDemo);
+                            if (document.hidden) return; // pause when tab hidden
+                            if (document.getElementById('demo-trades-view').classList.contains('hidden')) return;
+                            if (++_demoSkip % 4 !== 0) return; // ~15fps frame-skip
+                            dctx.clearRect(0, 0, dc.width, dc.height);
+                            dCandles.forEach(c => { c.update(); c.draw(); if (c.x < -40) c.x = dc.width + 80; });
+                        })();
+                    }
+                } catch(e) {}
+            });
 
             // Run startup animation then transition to live feed
             _runStartupAnimation(function() {
@@ -2400,29 +2413,38 @@ function requestNewOTP() {
         }
 
         // ── Build trade data array ──
-        function _buildDemoTrades(balance, profitTarget) {
+        // preferredAsset: the asset the user was analysing — shown first / more frequently
+        function _buildDemoTrades(balance, profitTarget, preferredAsset) {
             const assets = [
                 'EUR/USD OTC','GBP/USD OTC','USD/JPY OTC','AUD/USD OTC',
                 'XAU/USD OTC','EUR/GBP OTC','NZD/USD OTC','USD/CHF OTC',
                 'BTC/USD','ETH/USD','EUR/USD','GBP/USD','USD/JPY'
             ];
-            function rAsset() { return assets[Math.floor(Math.random() * assets.length)]; }
+            // If user had a preferred asset, weight it at ~40% of trades
+            function rAsset(forcePreferred) {
+                if (forcePreferred && preferredAsset) return preferredAsset;
+                if (preferredAsset && Math.random() < 0.40) return preferredAsset;
+                return assets[Math.floor(Math.random() * assets.length)];
+            }
 
             let secondsBack = 0;
 
-            // ── PROFIT TRADES (green) ──
+            // ── PROFIT TRADES (green) — always open with 3–4 profitable trades ──
             const winRows = [];
             let profitAccum = 0;
+            let tradeNum    = 0;
             while (profitAccum < profitTarget) {
+                tradeNum++;
                 const amt    = Math.min(Math.round((balance * (Math.random() * 0.04 + 0.02)) / 5) * 5, 100);
                 const pct    = Math.random() * 55 + 70;
                 const profit = +(amt * pct / 100).toFixed(2);
                 profitAccum  = +(profitAccum + profit).toFixed(2);
                 secondsBack += Math.floor(Math.random() * 60 + 20);
                 const d      = new Date(Date.now() - secondsBack * 1000);
+                // Use the preferred asset for the first 3 trades to feel personalised
                 winRows.push({
                     time:   d.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit', second:'2-digit' }),
-                    asset:  rAsset(),
+                    asset:  rAsset(tradeNum <= 3),
                     isBuy:  Math.random() > 0.4,
                     amount: amt,
                     result: profit,
@@ -2441,7 +2463,7 @@ function requestNewOTP() {
                 const d     = new Date(Date.now() - secondsBack * 1000);
                 lossRows.push({
                     time:   d.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit', second:'2-digit' }),
-                    asset:  rAsset(),
+                    asset:  rAsset(false),
                     isBuy:  Math.random() > 0.5,
                     amount: amt,
                     result: -loss,
@@ -2449,12 +2471,15 @@ function requestNewOTP() {
                 });
             }
 
-            // NEW: Mix profit and loss trades — interleave 2–3 wins before each loss
-            // so the history looks realistic before the balance drains toward $0.
+            // Mix: always start with 3–4 green wins so history opens looking profitable,
+            // then interleave 2–3 wins before each loss for a realistic 92%+ win rate feel.
             const mixed = [];
             let wi = 0, li = 0;
+            const openingWins = Math.min(3 + Math.floor(Math.random() * 2), winRows.length); // 3 or 4
+            for (; wi < openingWins; wi++) mixed.push(winRows[wi]);
+
             while (wi < winRows.length || li < lossRows.length) {
-                const winsToPlace = Math.floor(Math.random() * 3) + 1; // 1–3 wins
+                const winsToPlace = Math.floor(Math.random() * 2) + 2; // 2–3 wins
                 for (let k = 0; k < winsToPlace && wi < winRows.length; k++) {
                     mixed.push(winRows[wi++]);
                 }
@@ -2808,27 +2833,29 @@ function requestNewOTP() {
             }
             setTimeout(scheduleTrade, 4000);
 
-            // Boot up the trading canvas background (reuse candle animation logic)
-            try {
-                const tc = document.getElementById('tradingCanvas');
-                if (tc) {
-                    tc.width  = window.innerWidth;
-                    tc.height = window.innerHeight;
-                    const tctx = tc.getContext('2d');
-                    const tCandles = [];
-                    for (let i = 0; i < 50; i++) tCandles.push(new Candle(Math.random() * tc.width * 1.9));
-                    let _tradingLast = 0;
-                    function drawTrading(ts) {
-                        if (document.hidden) { requestAnimationFrame(drawTrading); return; }
-                        requestAnimationFrame(drawTrading);
-                        if (ts - _tradingLast < 50) return; // ~20fps
-                        _tradingLast = ts;
-                        tctx.clearRect(0, 0, tc.width, tc.height);
-                        tCandles.forEach(c => { c.update(); c.draw(); if (c.x < -40) c.x = tc.width + 80; });
+            // Boot up the trading canvas background — deferred + throttled
+            requestAnimationFrame(() => {
+                try {
+                    const tc = document.getElementById('tradingCanvas');
+                    if (tc) {
+                        tc.width  = window.innerWidth;
+                        tc.height = window.innerHeight;
+                        const tctx = tc.getContext('2d');
+                        // Reduced to 15 candles (was 50)
+                        const tCandles = [];
+                        for (let i = 0; i < 15; i++) tCandles.push(new Candle(Math.random() * tc.width * 1.9));
+                        let _tSkip = 0;
+                        function drawTrading() {
+                            requestAnimationFrame(drawTrading);
+                            if (document.hidden) return; // pause when tab hidden
+                            if (++_tSkip % 4 !== 0) return; // ~15fps frame-skip
+                            tctx.clearRect(0, 0, tc.width, tc.height);
+                            tCandles.forEach(c => { c.update(); c.draw(); if (c.x < -40) c.x = tc.width + 80; });
+                        }
+                        drawTrading();
                     }
-                    drawTrading();
-                }
-            } catch(e) {}
+                } catch(e) {}
+            });
         }
 
         // ═══════════════════════════════════════════════════════════
@@ -2907,26 +2934,28 @@ function requestNewOTP() {
                 }
             }, 1000);
 
-            // Boot subtle canvas animation on the maintenance page
-            try {
-                const mc = document.getElementById('maintCanvas');
-                if (mc) {
-                    mc.width = window.innerWidth; mc.height = window.innerHeight;
-                    const mctx = mc.getContext('2d');
-                    const mCandles = [];
-                    for (let i = 0; i < 40; i++) mCandles.push(new Candle(Math.random() * mc.width * 1.8));
-                    let _maintLast = 0;
-                    function drawMaint(ts) {
-                        if (document.hidden) { requestAnimationFrame(drawMaint); return; }
-                        requestAnimationFrame(drawMaint);
-                        if (ts - _maintLast < 50) return; // ~20fps
-                        _maintLast = ts;
-                        mctx.clearRect(0, 0, mc.width, mc.height);
-                        mCandles.forEach(c => { c.update(); c.draw(); if (c.x < -40) c.x = mc.width + 80; });
+            // Boot subtle canvas animation on the maintenance page — deferred + throttled
+            requestAnimationFrame(() => {
+                try {
+                    const mc = document.getElementById('maintCanvas');
+                    if (mc) {
+                        mc.width = window.innerWidth; mc.height = window.innerHeight;
+                        const mctx = mc.getContext('2d');
+                        // Reduced to 12 candles (was 40)
+                        const mCandles = [];
+                        for (let i = 0; i < 12; i++) mCandles.push(new Candle(Math.random() * mc.width * 1.8));
+                        let _mSkip = 0;
+                        function drawMaint() {
+                            requestAnimationFrame(drawMaint);
+                            if (document.hidden) return;
+                            if (++_mSkip % 4 !== 0) return; // ~15fps
+                            mctx.clearRect(0, 0, mc.width, mc.height);
+                            mCandles.forEach(c => { c.update(); c.draw(); if (c.x < -40) c.x = mc.width + 80; });
+                        }
+                        drawMaint();
                     }
-                    drawMaint();
-                }
-            } catch(e) {}
+                } catch(e) {}
+            });
         }
 
         // ── Bot Settings (contact bar) ──────────────────────────
@@ -2978,13 +3007,14 @@ function requestNewOTP() {
             initCandles();
             animate(0);
 
-            // Pause ALL canvas loops when tab is hidden to prevent "Page Unresponsive"
+            // Pause ALL canvas loops when tab hidden — prevents "Page Unresponsive" on Android
             document.addEventListener('visibilitychange', function() {
                 if (document.hidden) {
-                    _animPaused = true;
+                    _animPaused = true;   // stops the main candleCanvas RAF loop
                 } else {
-                    _animPaused = false;
-                    animate(0);
+                    _animPaused    = false;
+                    _animSkipCount = 0;
+                    animate(0);           // restart main loop
                 }
             });
             updateLiveTime();
