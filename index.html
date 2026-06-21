@@ -4,9 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chinese Signal Bot • AI Auto Trading</title>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#FFD700">
+    <link rel="apple-touch-icon" href="/icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@500;600;700;800;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.21/css/intlTelInput.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.21/js/intlTelInput.min.js" defer></script>
+    <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js" defer></script>
     <style>
         :root {
             --gold:    #FFD700;
@@ -3036,122 +3044,523 @@ function requestNewOTP() {
         <i class="fa-solid fa-bolt mr-2"></i> 🔥 Order License Key
     </button>
 
-    <!-- ═══ BUY LICENSE MODAL ═══ -->
-    <div id="buy-lic-modal" class="hidden fixed inset-0 z-[300] flex items-center justify-center p-4"
-         style="background:rgba(3,7,18,0.92);backdrop-filter:blur(20px);">
-        <div class="glass rounded-3xl p-7 w-full max-w-md fade-up"
-             style="border:1px solid rgba(245,158,11,0.4);box-shadow:0 0 50px rgba(245,158,11,0.15),0 30px 60px rgba(0,0,0,0.7);max-height:92vh;overflow-y:auto;">
-            <div class="flex items-center justify-between mb-5">
-                <h3 class="title-font text-lg font-bold text-yellow-300">
-                    <i class="fa-solid fa-crown mr-2"></i>Buy License Key
+    <!-- ═══ PUSH NOTIFICATION BANNER ═══ -->
+    <div id="push-notif-banner" class="hidden fixed top-0 left-0 right-0 z-[250] px-4 py-3 flex items-center gap-3"
+         style="background:linear-gradient(90deg,rgba(15,23,42,0.98),rgba(30,40,60,0.98));border-bottom:1px solid rgba(245,158,11,0.4);">
+        <i class="fa-solid fa-bell text-yellow-400 text-lg flex-shrink-0"></i>
+        <span class="text-xs text-yellow-100 flex-1">🔔 Enable notifications to receive your license key instantly</span>
+        <button onclick="requestPushPermission()" class="text-black font-bold text-xs px-3 py-1.5 rounded-xl flex-shrink-0"
+                style="background:linear-gradient(90deg,#FFD700,#F59E0B);">Enable</button>
+        <button onclick="document.getElementById('push-notif-banner').classList.add('hidden')" class="text-slate-400 text-xl flex-shrink-0 leading-none">&times;</button>
+    </div>
+
+    <!-- ═══ BUY LICENSE MODAL (MULTI-STEP) ═══ -->
+    <div id="buy-lic-modal" class="hidden fixed inset-0 z-[300] flex items-center justify-center p-3"
+         style="background:rgba(3,7,18,0.95);backdrop-filter:blur(20px);">
+        <div class="glass rounded-3xl w-full max-w-md"
+             style="border:1px solid rgba(245,158,11,0.4);box-shadow:0 0 50px rgba(245,158,11,0.15),0 30px 60px rgba(0,0,0,0.7);max-height:94vh;overflow-y:auto;">
+
+            <!-- Header -->
+            <div class="flex items-center justify-between px-6 pt-5 pb-4" style="border-bottom:1px solid rgba(245,158,11,0.15);">
+                <h3 class="title-font text-base font-bold text-yellow-300 flex items-center gap-2">
+                    <i class="fa-solid fa-crown"></i> Buy License Key
                 </h3>
                 <button onclick="closeBuyLicenseModal()" class="text-slate-400 hover:text-white text-2xl leading-none">&times;</button>
             </div>
 
-            <div class="mb-4 p-3 rounded-2xl text-center text-xs font-bold"
-                 style="background:linear-gradient(135deg,rgba(16,185,129,0.18),rgba(245,158,11,0.18));border:1px solid rgba(16,185,129,0.4);color:#34d399;">
-                ✅ Special Offer Pricing — Limited Time
+            <!-- Step indicator -->
+            <div class="flex items-center justify-center gap-2 px-6 py-3">
+                <div class="flex items-center gap-1.5">
+                    <div id="bl-dot-1" class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold bg-yellow-400 text-black">1</div>
+                    <span id="bl-lbl-1" class="text-xs text-yellow-300">Method</span>
+                </div>
+                <div class="flex-1 h-px" style="background:rgba(245,158,11,0.3);"></div>
+                <div class="flex items-center gap-1.5">
+                    <div id="bl-dot-2" class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold bg-slate-700 text-slate-400">2</div>
+                    <span id="bl-lbl-2" class="text-xs text-slate-500">Details</span>
+                </div>
+                <div class="flex-1 h-px" style="background:rgba(245,158,11,0.3);"></div>
+                <div class="flex items-center gap-1.5">
+                    <div id="bl-dot-3" class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold bg-slate-700 text-slate-400">3</div>
+                    <span id="bl-lbl-3" class="text-xs text-slate-500">Submit</span>
+                </div>
             </div>
 
-            <form id="buy-lic-form" onsubmit="submitBuyLicense(event)" class="space-y-4">
-                <div>
-                    <label class="block text-amber-300 text-xs mb-1.5 font-semibold">Full Name <span class="text-red-400">*</span></label>
-                    <input id="bl-name" type="text" required maxlength="120" placeholder="Your full name"
-                           class="w-full bg-[#1c2537] border border-yellow-400/40 rounded-2xl px-4 py-3 text-white text-sm focus:outline-none focus:border-yellow-400">
+            <!-- STEP 1: Select method -->
+            <div id="bl-step-1" class="px-5 pb-5">
+                <p class="text-xs text-slate-400 mb-3 text-center">Choose your preferred payment method</p>
+                <div id="bl-methods-grid" class="grid grid-cols-2 gap-3">
+                    <div class="col-span-2 text-center text-slate-500 text-xs py-4">Loading payment methods...</div>
                 </div>
-
-                <div>
-                    <label class="block text-amber-300 text-xs mb-1.5 font-semibold">Which Key You Want to Buy <span class="text-red-400">*</span></label>
-                    <select id="bl-plan" required
-                            class="w-full bg-[#1c2537] border border-yellow-400/40 rounded-2xl px-4 py-3 text-white text-sm focus:outline-none focus:border-yellow-400">
-                        <option value="">— Select a plan —</option>
-                        <option value="week|1 Week Validity|1000|4">1 Week Validity — 1,000 PKR / $4</option>
-                        <option value="month|1 Month Validity|3000|10">1 Month Validity — 3,000 PKR / $10</option>
-                        <option value="lifetime|Lifetime Premium|7000|25">Lifetime Premium — 7,000 PKR / $25</option>
+                <div class="mt-4">
+                    <label class="block text-amber-300 text-xs mb-1.5 font-semibold">Select Plan <span class="text-red-400">*</span></label>
+                    <select id="bl-plan" class="w-full bg-[#1c2537] border border-yellow-400/40 rounded-2xl px-4 py-3 text-white text-sm focus:outline-none focus:border-yellow-400">
+                        <option value="">— Loading plans... —</option>
                     </select>
                 </div>
+                <p class="text-[10px] text-slate-500 text-center mt-3">✅ Special Offer Pricing — Limited Time</p>
+            </div>
 
-                <div>
-                    <label class="block text-amber-300 text-xs mb-1.5 font-semibold">Payment Method <span class="text-red-400">*</span></label>
-                    <select id="bl-pay" required
-                            class="w-full bg-[#1c2537] border border-yellow-400/40 rounded-2xl px-4 py-3 text-white text-sm focus:outline-none focus:border-yellow-400">
-                        <option value="">— Select method —</option>
-                        <option value="Easypaisa">Easypaisa</option>
-                        <option value="Jazzcash">Jazzcash</option>
-                        <option value="Binance">Binance</option>
-                        <option value="Crypto USDT">Crypto USDT</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label class="block text-amber-300 text-xs mb-1.5 font-semibold">WhatsApp Number <span class="text-red-400">*</span></label>
-                    <input id="bl-wa" type="tel" required maxlength="30" placeholder="e.g. +923001234567"
-                           class="w-full bg-[#1c2537] border border-yellow-400/40 rounded-2xl px-4 py-3 text-white text-sm focus:outline-none focus:border-yellow-400">
-                </div>
-
-                <div id="bl-status" class="hidden rounded-2xl px-4 py-3 text-sm text-center font-medium"></div>
-
-                <button type="submit" id="bl-submit"
-                        class="golden-btn w-full text-black font-bold py-4 rounded-2xl text-sm tracking-widest uppercase">
-                    <i class="fa-solid fa-paper-plane mr-2"></i> Submit Order
+            <!-- STEP 2: Account details -->
+            <div id="bl-step-2" class="hidden px-5 pb-5">
+                <button onclick="_blGoStep(1)" class="flex items-center gap-1 text-xs text-slate-400 hover:text-yellow-300 mb-3">
+                    <i class="fa-solid fa-arrow-left text-xs"></i> Back
                 </button>
-                <p class="text-[10px] text-slate-500 text-center leading-relaxed">
-                    Your order will be sent to our admin. We'll contact you on WhatsApp shortly to confirm payment &amp; deliver your key.
+                <div id="bl-details-card" class="rounded-2xl p-4 space-y-1" style="background:rgba(16,24,40,0.9);border:1px solid rgba(245,158,11,0.25);"></div>
+                <div id="bl-qr-wrap" class="hidden mt-4 flex flex-col items-center gap-2">
+                    <p class="text-xs text-slate-400">Scan QR to pay</p>
+                    <div id="bl-qr-canvas" class="p-2 rounded-xl bg-white inline-block"></div>
+                </div>
+                <button onclick="_blGoStep(3)"
+                        class="golden-btn w-full text-black font-bold py-3.5 rounded-2xl text-sm mt-4">
+                    I've Sent Payment <i class="fa-solid fa-arrow-right ml-2"></i>
+                </button>
+            </div>
+
+            <!-- STEP 3: Submit proof -->
+            <div id="bl-step-3" class="hidden px-5 pb-5">
+                <button onclick="_blGoStep(2)" class="flex items-center gap-1 text-xs text-slate-400 hover:text-yellow-300 mb-3">
+                    <i class="fa-solid fa-arrow-left text-xs"></i> Back
+                </button>
+                <form id="bl-form-3" onsubmit="submitBuyLicense3(event)" class="space-y-3">
+                    <div>
+                        <label class="block text-amber-300 text-xs mb-1.5 font-semibold">Full Name <span class="text-red-400">*</span></label>
+                        <input id="bl-name" type="text" required maxlength="120" placeholder="Your full name"
+                               class="w-full bg-[#1c2537] border border-yellow-400/40 rounded-2xl px-4 py-3 text-white text-sm focus:outline-none focus:border-yellow-400">
+                    </div>
+                    <div>
+                        <label class="block text-amber-300 text-xs mb-1.5 font-semibold">WhatsApp Number <span class="text-red-400">*</span></label>
+                        <div class="flex gap-2">
+                            <select id="bl-country" class="bg-[#1c2537] border border-yellow-400/40 rounded-2xl px-2 py-3 text-white text-xs focus:outline-none focus:border-yellow-400 w-28 flex-shrink-0">
+                                <option value="+92">🇵🇰 +92</option>
+                                <option value="+1">🇺🇸 +1</option>
+                                <option value="+44">🇬🇧 +44</option>
+                                <option value="+91">🇮🇳 +91</option>
+                                <option value="+971">🇦🇪 +971</option>
+                                <option value="+966">🇸🇦 +966</option>
+                                <option value="+60">🇲🇾 +60</option>
+                                <option value="+880">🇧🇩 +880</option>
+                                <option value="+62">🇮🇩 +62</option>
+                                <option value="+63">🇵🇭 +63</option>
+                                <option value="+234">🇳🇬 +234</option>
+                                <option value="+254">🇰🇪 +254</option>
+                                <option value="+27">🇿🇦 +27</option>
+                            </select>
+                            <input id="bl-wa" type="tel" required maxlength="15" placeholder="3001234567"
+                                   class="flex-1 bg-[#1c2537] border border-yellow-400/40 rounded-2xl px-4 py-3 text-white text-sm focus:outline-none focus:border-yellow-400">
+                        </div>
+                        <p class="text-[10px] text-slate-500 mt-1">License key will be sent to this WhatsApp</p>
+                    </div>
+                    <div>
+                        <label class="block text-amber-300 text-xs mb-1.5 font-semibold">Transaction ID / TRX Hash <span class="text-red-400">*</span></label>
+                        <input id="bl-txid" type="text" required maxlength="200" placeholder="Transaction reference or crypto hash"
+                               class="w-full bg-[#1c2537] border border-yellow-400/40 rounded-2xl px-4 py-3 text-white text-sm focus:outline-none focus:border-yellow-400">
+                    </div>
+                    <div>
+                        <label class="block text-amber-300 text-xs mb-1.5 font-semibold">Payment Screenshot <span class="text-red-400">*</span></label>
+                        <label class="block cursor-pointer">
+                            <div id="bl-upload-area" class="rounded-2xl p-4 text-center transition-all"
+                                 style="border:2px dashed rgba(245,158,11,0.4);background:rgba(20,30,50,0.6);">
+                                <i class="fa-solid fa-cloud-arrow-up text-2xl text-yellow-400 mb-1"></i>
+                                <p class="text-xs text-slate-300">Click to upload screenshot</p>
+                                <p class="text-[10px] text-slate-500">JPG / PNG / WebP • Max 5 MB</p>
+                            </div>
+                            <img id="bl-preview-img" class="hidden mt-2 w-full rounded-2xl object-cover max-h-36" alt="Preview">
+                            <input id="bl-screenshot" type="file" accept="image/jpeg,image/png,image/webp" required class="hidden"
+                                   onchange="blPreviewScreenshot(this)">
+                        </label>
+                        <p id="bl-img-err" class="hidden text-xs text-red-400 mt-1"></p>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-amber-300 text-xs mb-1.5 font-semibold">Method</label>
+                            <input id="bl-method-display" type="text" readonly
+                                   class="w-full bg-[#111a2e] border border-yellow-400/20 rounded-2xl px-3 py-3 text-slate-400 text-xs cursor-not-allowed">
+                        </div>
+                        <div>
+                            <label class="block text-amber-300 text-xs mb-1.5 font-semibold">Amount</label>
+                            <input id="bl-amount-display" type="text" readonly
+                                   class="w-full bg-[#111a2e] border border-yellow-400/20 rounded-2xl px-3 py-3 text-slate-400 text-xs cursor-not-allowed">
+                        </div>
+                    </div>
+                    <div id="bl-status-3" class="hidden rounded-2xl px-4 py-3 text-sm text-center font-medium"></div>
+                    <button type="submit" id="bl-submit-3"
+                            class="golden-btn w-full text-black font-bold py-4 rounded-2xl text-sm tracking-widest uppercase">
+                        <i class="fa-solid fa-paper-plane mr-2"></i> Submit Order
+                    </button>
+                </form>
+            </div>
+
+            <!-- SUCCESS screen -->
+            <div id="bl-success" class="hidden px-6 pb-8 text-center">
+                <div class="text-5xl mb-3 mt-2">🎉</div>
+                <h4 class="title-font text-lg font-bold text-yellow-300 mb-2">Order Submitted!</h4>
+                <p class="text-sm text-slate-300 leading-relaxed">Your order has been received.</p>
+                <p class="text-sm text-emerald-400 leading-relaxed mt-1 mb-4">
+                    You'll receive your license key on <strong>WhatsApp</strong> &amp; <strong>Push Notification</strong> within 10 minutes.
                 </p>
-            </form>
+                <div id="bl-order-id-display" class="text-xs text-slate-500 mb-5 font-mono bg-[#1c2537] rounded-xl px-3 py-2 inline-block"></div>
+                <br>
+                <button onclick="closeBuyLicenseModal()" class="golden-btn text-black font-bold px-8 py-3 rounded-2xl text-sm">Close</button>
+            </div>
         </div>
     </div>
 
     <script>
-        function openBuyLicenseModal() {
-            const m = document.getElementById('buy-lic-modal');
-            if (m) m.classList.remove('hidden');
+    // ── Service Worker registration ──────────────────────────────────────
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js').then(function(reg) {
+            window._swReg = reg;
+        }).catch(function(e) { console.warn('SW register failed:', e); });
+    }
+
+    // ── Push notification banner (show after 10s if permission not yet decided) ─
+    setTimeout(function() {
+        if ('Notification' in window && Notification.permission === 'default') {
+            var b = document.getElementById('push-notif-banner');
+            if (b) b.classList.remove('hidden');
         }
-        function closeBuyLicenseModal() {
-            const m = document.getElementById('buy-lic-modal');
-            if (m) m.classList.add('hidden');
-            const s = document.getElementById('bl-status');
-            if (s) { s.className = 'hidden rounded-2xl px-4 py-3 text-sm text-center font-medium'; s.textContent = ''; }
+    }, 10000);
+
+    async function requestPushPermission() {
+        var banner = document.getElementById('push-notif-banner');
+        if (banner) banner.classList.add('hidden');
+        if (!('Notification' in window)) return;
+        var perm = await Notification.requestPermission();
+        if (perm !== 'granted') { if (typeof showToast === 'function') showToast('🔕 Notifications declined'); return; }
+        await _blSubscribePush(localStorage.getItem('_blWa') || '');
+        if (typeof showToast === 'function') showToast('🔔 Notifications enabled!');
+    }
+
+    async function _blSubscribePush(whatsappNum) {
+        try {
+            if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+            var r = await fetch((typeof API_BASE !== 'undefined' ? API_BASE : '') + '/api/push/vapid-public');
+            var d = await r.json();
+            if (!d.publicKey) return;
+            var reg = window._swReg || await navigator.serviceWorker.ready;
+            var sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: _urlBase64ToUint8Array(d.publicKey) });
+            var uid = (whatsappNum || localStorage.getItem('_blWa') || 'anonymous').trim();
+            var p256 = btoa(String.fromCharCode.apply(null, new Uint8Array(sub.getKey('p256dh'))));
+            var auth = btoa(String.fromCharCode.apply(null, new Uint8Array(sub.getKey('auth'))));
+            await fetch((typeof API_BASE !== 'undefined' ? API_BASE : '') + '/api/push/subscribe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ endpoint: sub.endpoint, keys: { p256dh: p256, auth: auth }, userIdentifier: uid }),
+            });
+        } catch(e) { console.warn('Push subscribe error:', e); }
+    }
+
+    function _urlBase64ToUint8Array(base64String) {
+        var padding = '='.repeat((4 - base64String.length % 4) % 4);
+        var base64  = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+        var rawData = window.atob(base64);
+        var arr = new Uint8Array(rawData.length);
+        for (var i = 0; i < rawData.length; i++) arr[i] = rawData.charCodeAt(i);
+        return arr;
+    }
+
+    // ── Multi-step modal state ────────────────────────────────────────────
+    var _blSettings  = null;
+    var _blSelMethod = '';
+
+    function openBuyLicenseModal() {
+        var m = document.getElementById('buy-lic-modal');
+        if (m) m.classList.remove('hidden');
+        _blGoStep(1);
+        _blLoadSettings();
+    }
+    function closeBuyLicenseModal() {
+        var m = document.getElementById('buy-lic-modal');
+        if (m) m.classList.add('hidden');
+        _blResetAll();
+    }
+    function _blResetAll() {
+        ['bl-step-1','bl-step-2','bl-step-3','bl-success'].forEach(function(id) {
+            var el = document.getElementById(id); if (el) el.classList.add('hidden');
+        });
+        var s1 = document.getElementById('bl-step-1'); if (s1) s1.classList.remove('hidden');
+        var s = document.getElementById('bl-status-3'); if (s) { s.className = 'hidden'; s.textContent = ''; }
+        var form = document.getElementById('bl-form-3'); if (form) form.reset();
+        var prev = document.getElementById('bl-preview-img'); if (prev) { prev.classList.add('hidden'); prev.src = ''; }
+        var area = document.getElementById('bl-upload-area'); if (area) area.classList.remove('hidden');
+        _blSelMethod = '';
+    }
+
+    function _blGoStep(n) {
+        ['bl-step-1','bl-step-2','bl-step-3','bl-success'].forEach(function(id) {
+            var el = document.getElementById(id); if (el) el.classList.add('hidden');
+        });
+        var target = n < 10 ? document.getElementById('bl-step-' + n) : document.getElementById('bl-success');
+        if (target) target.classList.remove('hidden');
+        // Step dots
+        [1,2,3].forEach(function(i) {
+            var dot = document.getElementById('bl-dot-' + i);
+            var lbl = document.getElementById('bl-lbl-' + i);
+            if (!dot) return;
+            if (i < n)      { dot.className = 'w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold bg-emerald-500 text-white'; if (lbl) lbl.className = 'text-xs text-emerald-400'; }
+            else if (i === n){ dot.className = 'w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold bg-yellow-400 text-black'; if (lbl) lbl.className = 'text-xs text-yellow-300'; }
+            else             { dot.className = 'w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold bg-slate-700 text-slate-400'; if (lbl) lbl.className = 'text-xs text-slate-500'; }
+        });
+        // Update readonly fields on step 3
+        if (n === 3) {
+            var planEl = document.getElementById('bl-plan');
+            var planObj = (_blSettings && planEl) ? (_blSettings.plans || []).find(function(p) { return p.key === planEl.value; }) : null;
+            var md = document.getElementById('bl-method-display'); if (md) md.value = _blSelMethod || '—';
+            var ad = document.getElementById('bl-amount-display'); if (ad) ad.value = planObj ? (planObj.pricePKR + ' PKR / $' + planObj.priceUSD) : '—';
         }
-        async function submitBuyLicense(ev) {
-            ev.preventDefault();
-            const name = document.getElementById('bl-name').value.trim();
-            const plan = document.getElementById('bl-plan').value;
-            const pay  = document.getElementById('bl-pay').value;
-            const wa   = document.getElementById('bl-wa').value.trim();
-            const st   = document.getElementById('bl-status');
-            const btn  = document.getElementById('bl-submit');
-            if (!name || !plan || !pay || !wa) return;
-            const [planKey, planLabel, planPricePKR, planPriceUSD] = plan.split('|');
-            btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Sending...';
-            try {
-                const r = await fetch((typeof API_BASE !== 'undefined' ? API_BASE : '') + '/api/orders', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        fullName: name, planKey, planLabel,
-                        planPricePKR, planPriceUSD,
-                        paymentMethod: pay, whatsapp: wa
-                    })
-                });
-                const data = await r.json().catch(()=>({}));
-                if (!r.ok) throw new Error(data.error || 'Submission failed');
-                st.className = 'rounded-2xl px-4 py-3 text-sm text-center font-medium';
-                st.style.background = 'rgba(16,185,129,0.15)';
-                st.style.color = '#34d399';
-                st.textContent = '✅ Order received! Order ID: ' + (data.order?.id || '—') + '. We\'ll WhatsApp you soon.';
-                document.getElementById('buy-lic-form').reset();
-                setTimeout(closeBuyLicenseModal, 3200);
-            } catch (e) {
-                st.className = 'rounded-2xl px-4 py-3 text-sm text-center font-medium';
-                st.style.background = 'rgba(239,68,68,0.15)';
-                st.style.color = '#fca5a5';
-                st.textContent = '❌ ' + (e.message || 'Failed to send. Please try again.');
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-2"></i> Submit Order';
+    }
+
+    async function _blLoadSettings() {
+        try {
+            var r = await fetch((typeof API_BASE !== 'undefined' ? API_BASE : '') + '/api/payment-settings');
+            _blSettings = await r.json();
+        } catch(e) {
+            _blSettings = {
+                easypaisa:  { enabled: true, number: '03021036192', name: 'MASHOOQ' },
+                jazzcash:   { enabled: true, number: '03021036192', name: 'MASHOOQ' },
+                binance:    { enabled: true, id: '1253476961' },
+                usdtTrc20:  { enabled: true, address: 'TUPMcsHm7DSQP9ezWY6HByyjR9KQkad5uQ' },
+                usdtBep20:  { enabled: true, address: '0xb5101dad95784bce4c1794f92364be3697d96604' },
+                plans: [
+                    { key: 'week',     label: '1 Week',          pricePKR: '1000', priceUSD: '4',  duration: '7 days' },
+                    { key: 'month',    label: '1 Month',          pricePKR: '3000', priceUSD: '10', duration: '30 days' },
+                    { key: 'lifetime', label: 'Lifetime Premium', pricePKR: '7000', priceUSD: '25', duration: 'Forever' },
+                ],
+            };
+        }
+        _blRenderMethods();
+        _blRenderPlans();
+    }
+
+    var _METHODS = [
+        { key: 'easypaisa', label: 'Easypaisa',     icon: '💚', border: '#22c55e', sKey: 'easypaisa' },
+        { key: 'jazzcash',  label: 'JazzCash',      icon: '🔴', border: '#ef4444', sKey: 'jazzcash'  },
+        { key: 'binance',   label: 'Binance Pay',   icon: '🟡', border: '#fbbf24', sKey: 'binance'   },
+        { key: 'usdt',      label: 'Crypto (USDT)', icon: '🔷', border: '#06b6d4', sKey: null        },
+    ];
+
+    function _blRenderMethods() {
+        var grid = document.getElementById('bl-methods-grid');
+        if (!grid || !_blSettings) return;
+        var s = _blSettings;
+        var cards = _METHODS.filter(function(m) {
+            if (m.key === 'easypaisa') return s.easypaisa && s.easypaisa.enabled !== false;
+            if (m.key === 'jazzcash')  return s.jazzcash  && s.jazzcash.enabled  !== false;
+            if (m.key === 'binance')   return s.binance   && s.binance.enabled   !== false;
+            if (m.key === 'usdt')      return (s.usdtTrc20 && s.usdtTrc20.enabled !== false) || (s.usdtBep20 && s.usdtBep20.enabled !== false);
+            return true;
+        });
+        grid.innerHTML = cards.map(function(m) {
+            return '<button type="button" onclick="_blSelectMethod(\'' + m.key + '\',\'' + m.label + '\')" ' +
+                'class="rounded-2xl p-4 flex flex-col items-center gap-2 transition-all hover:scale-[1.03] active:scale-95 cursor-pointer" ' +
+                'style="background:rgba(20,30,50,0.9);border:2px solid rgba(245,158,11,0.25);" ' +
+                'onmouseover="this.style.borderColor=\'' + m.border + '80\'" onmouseout="this.style.borderColor=\'rgba(245,158,11,0.25)\'">' +
+                '<span class="text-3xl">' + m.icon + '</span>' +
+                '<span class="text-xs font-bold text-white">' + m.label + '</span></button>';
+        }).join('');
+    }
+
+    function _blRenderPlans() {
+        var sel = document.getElementById('bl-plan');
+        if (!sel || !_blSettings || !_blSettings.plans) return;
+        sel.innerHTML = '<option value="">— Select a plan —</option>' +
+            _blSettings.plans.map(function(p) {
+                return '<option value="' + p.key + '">' + p.label + ' — ' + p.pricePKR + ' PKR / $' + p.priceUSD + ' (' + p.duration + ')</option>';
+            }).join('');
+    }
+
+    function _blSelectMethod(key, label) {
+        if (key === 'usdt') { _blShowUsdtChoice(); return; }
+        _blSelMethod = label || key;
+        _blGoStep(2);
+        _blRenderDetails(key);
+    }
+
+    function _blShowUsdtChoice() {
+        var grid = document.getElementById('bl-methods-grid');
+        if (!grid) return;
+        var s = _blSettings || {};
+        var html = '<div class="col-span-2 text-center text-slate-400 text-xs mb-2 font-semibold">Select USDT Network:</div>';
+        if (!s.usdtTrc20 || s.usdtTrc20.enabled !== false)
+            html += '<button type="button" onclick="_blSelectCrypto(\'usdtTrc20\',\'USDT TRC20\')" class="rounded-2xl p-4 flex flex-col items-center gap-1 transition-all hover:scale-[1.03] cursor-pointer" style="background:rgba(20,30,50,0.9);border:2px solid rgba(6,182,212,0.4);"><span class="text-2xl">🔵</span><span class="text-xs font-bold text-cyan-300">USDT TRC20</span><span class="text-[10px] text-slate-500">Tron Network</span></button>';
+        if (!s.usdtBep20 || s.usdtBep20.enabled !== false)
+            html += '<button type="button" onclick="_blSelectCrypto(\'usdtBep20\',\'USDT BEP20\')" class="rounded-2xl p-4 flex flex-col items-center gap-1 transition-all hover:scale-[1.03] cursor-pointer" style="background:rgba(20,30,50,0.9);border:2px solid rgba(234,179,8,0.4);"><span class="text-2xl">🟡</span><span class="text-xs font-bold text-yellow-300">USDT BEP20</span><span class="text-[10px] text-slate-500">BNB Smart Chain</span></button>';
+        html += '<button type="button" onclick="_blRenderMethods()" class="col-span-2 text-xs text-slate-400 hover:text-yellow-300 py-1">← Back</button>';
+        grid.innerHTML = html;
+    }
+
+    function _blSelectCrypto(netKey, netLabel) {
+        _blSelMethod = netLabel;
+        _blGoStep(2);
+        _blRenderDetails(netKey);
+    }
+
+    function _blRenderDetails(methodKey) {
+        var s = _blSettings || {};
+        var card   = document.getElementById('bl-details-card');
+        var qrWrap = document.getElementById('bl-qr-wrap');
+        var qrBox  = document.getElementById('bl-qr-canvas');
+        if (!card) return;
+        if (qrWrap) qrWrap.classList.add('hidden');
+        if (qrBox)  qrBox.innerHTML = '';
+        var html = '', qrAddr = '';
+
+        if (methodKey === 'easypaisa') {
+            var d = s.easypaisa || {};
+            html = '<p class="text-xs font-bold text-yellow-300 mb-3">💚 Easypaisa Payment</p>' +
+                _blRow('Account Number', d.number || '03021036192') +
+                _blRow('Account Name',   d.name   || 'MASHOOQ');
+        } else if (methodKey === 'jazzcash') {
+            var d = s.jazzcash || {};
+            html = '<p class="text-xs font-bold text-yellow-300 mb-3">🔴 JazzCash Payment</p>' +
+                _blRow('Mobile Account', d.number || '03021036192') +
+                _blRow('Account Name',   d.name   || 'MASHOOQ');
+        } else if (methodKey === 'binance') {
+            var d = s.binance || {};
+            html = '<p class="text-xs font-bold text-yellow-300 mb-3">🟡 Binance Pay</p>' +
+                _blRow('Binance Pay ID', d.id || '1253476961') +
+                '<p class="text-[10px] text-slate-500 mt-2">Open Binance → Pay → Send → Enter Binance ID</p>';
+            qrAddr = 'binancepay:' + (d.id || '1253476961');
+        } else if (methodKey === 'usdtTrc20') {
+            var d = s.usdtTrc20 || {};
+            html = '<p class="text-xs font-bold text-cyan-300 mb-3">🔵 USDT TRC20 (Tron Network)</p>' +
+                _blRow('Wallet Address', d.address || 'TUPMcsHm7DSQP9ezWY6HByyjR9KQkad5uQ') +
+                '<p class="text-[10px] text-orange-400 mt-2">⚠️ Only send on TRC20 network</p>';
+            qrAddr = d.address || 'TUPMcsHm7DSQP9ezWY6HByyjR9KQkad5uQ';
+        } else if (methodKey === 'usdtBep20') {
+            var d = s.usdtBep20 || {};
+            html = '<p class="text-xs font-bold text-yellow-300 mb-3">🟡 USDT BEP20 (BSC)</p>' +
+                _blRow('Wallet Address', d.address || '0xb5101dad95784bce4c1794f92364be3697d96604') +
+                '<p class="text-[10px] text-orange-400 mt-2">⚠️ Only send on BEP20 / BNB Smart Chain</p>';
+            qrAddr = d.address || '0xb5101dad95784bce4c1794f92364be3697d96604';
+        }
+
+        card.innerHTML = html;
+
+        if (qrAddr && qrWrap && qrBox) {
+            qrWrap.classList.remove('hidden');
+            setTimeout(function() {
+                try {
+                    if (window.QRCode) { qrBox.innerHTML = ''; new QRCode(qrBox, { text: qrAddr, width: 140, height: 140, colorDark: '#000', colorLight: '#fff' }); }
+                } catch(e) {}
+            }, 100);
+        }
+    }
+
+    function _blRow(label, value) {
+        var safe = String(value).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        var esc  = safe.replace(/'/g,"\\'");
+        return '<div class="flex items-center justify-between gap-2 py-2" style="border-bottom:1px solid rgba(245,158,11,0.1);">' +
+            '<div><p class="text-[10px] text-slate-500 uppercase tracking-wider">' + label + '</p>' +
+            '<p class="text-sm font-mono font-bold text-white mt-0.5 break-all">' + safe + '</p></div>' +
+            '<button type="button" onclick="_blCopy(\'' + esc + '\',this)" ' +
+            'class="flex-shrink-0 text-xs font-bold px-3 py-1.5 rounded-xl transition-all" ' +
+            'style="background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.3);color:#fbbf24;">' +
+            '<i class="fa-regular fa-copy mr-1"></i>Copy</button></div>';
+    }
+
+    function _blCopy(text, btn) {
+        navigator.clipboard.writeText(text).then(function() {
+            if (typeof showToast === 'function') showToast('✅ Copied!');
+            if (btn) { btn.innerHTML = '✅ Copied'; setTimeout(function() { btn.innerHTML = '<i class="fa-regular fa-copy mr-1"></i>Copy'; }, 2000); }
+        }).catch(function() { if (typeof showToast === 'function') showToast('❌ Copy failed'); });
+    }
+
+    function blPreviewScreenshot(input) {
+        var err = document.getElementById('bl-img-err');
+        var prev = document.getElementById('bl-preview-img');
+        var area = document.getElementById('bl-upload-area');
+        if (!input.files || !input.files[0]) return;
+        var file = input.files[0];
+        if (!['image/jpeg','image/png','image/webp'].includes(file.type)) {
+            if (err) { err.textContent = '❌ Only JPG/PNG/WebP allowed'; err.classList.remove('hidden'); }
+            input.value = ''; return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            if (err) { err.textContent = '❌ File too large (max 5MB)'; err.classList.remove('hidden'); }
+            input.value = ''; return;
+        }
+        if (err) err.classList.add('hidden');
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            if (prev) { prev.src = e.target.result; prev.classList.remove('hidden'); }
+            if (area) area.classList.add('hidden');
+        };
+        reader.readAsDataURL(file);
+    }
+
+    async function submitBuyLicense3(ev) {
+        ev.preventDefault();
+        var name    = (document.getElementById('bl-name')?.value || '').trim();
+        var country = document.getElementById('bl-country')?.value || '';
+        var wa      = (document.getElementById('bl-wa')?.value || '').trim();
+        var txid    = (document.getElementById('bl-txid')?.value || '').trim();
+        var planEl  = document.getElementById('bl-plan');
+        var planVal = planEl ? planEl.value : '';
+        var scFile  = document.getElementById('bl-screenshot')?.files?.[0];
+        var st      = document.getElementById('bl-status-3');
+        var btn     = document.getElementById('bl-submit-3');
+
+        function _stErr(msg) {
+            if (st) { st.className = 'rounded-2xl px-4 py-3 text-sm text-center font-medium'; st.style.cssText = 'background:rgba(239,68,68,0.15);color:#fca5a5;'; st.textContent = msg; st.classList.remove('hidden'); }
+        }
+
+        if (!name)    return _stErr('❌ Please enter your full name');
+        if (!wa)      return _stErr('❌ Please enter your WhatsApp number');
+        if (!txid)    return _stErr('❌ Please enter your transaction ID');
+        if (!planVal) return _stErr('❌ Please select a plan (go back to Step 1)');
+        if (!scFile)  return _stErr('❌ Please upload payment screenshot');
+        if (!_blSelMethod) return _stErr('❌ Please select a payment method (go back to Step 1)');
+
+        var planObj  = (_blSettings?.plans || []).find(function(p) { return p.key === planVal; }) || {};
+        var fullWa   = (country + wa).replace(/[^+\d]/g, '');
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Sending...';
+        if (st) st.className = 'hidden';
+
+        try {
+            var fd = new FormData();
+            fd.append('fullName',      name);
+            fd.append('planKey',       planVal);
+            fd.append('planLabel',     planObj.label || planVal);
+            fd.append('planPricePKR',  planObj.pricePKR || '');
+            fd.append('planPriceUSD',  planObj.priceUSD || '');
+            fd.append('paymentMethod', _blSelMethod);
+            fd.append('whatsapp',      fullWa);
+            fd.append('country',       country);
+            fd.append('txId',          txid);
+            fd.append('screenshot',    scFile);
+
+            var r = await fetch((typeof API_BASE !== 'undefined' ? API_BASE : '') + '/api/orders', { method: 'POST', body: fd });
+            var data = await r.json().catch(function() { return {}; });
+            if (!r.ok) throw new Error(data.error || 'Submission failed');
+
+            // Try push subscription
+            localStorage.setItem('_blWa', fullWa);
+            if ('Notification' in window) {
+                if (Notification.permission === 'granted') {
+                    _blSubscribePush(fullWa).catch(function(){});
+                } else if (Notification.permission === 'default') {
+                    Notification.requestPermission().then(function(p) { if (p === 'granted') _blSubscribePush(fullWa).catch(function(){}); });
+                }
             }
+
+            // Show success
+            _blGoStep(99);
+            var success = document.getElementById('bl-success');
+            if (success) success.classList.remove('hidden');
+            var oidEl = document.getElementById('bl-order-id-display');
+            if (oidEl) oidEl.textContent = 'Order ID: ' + (data.order?.id || '—');
+
+        } catch(e) {
+            _stErr('❌ ' + (e.message || 'Failed to send. Please try again.'));
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-2"></i> Submit Order';
         }
+    }
     </script>
 
 </body>
