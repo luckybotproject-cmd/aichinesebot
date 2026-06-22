@@ -1995,6 +1995,72 @@
             document.body.appendChild(el);
         }
 
+        // ── Fix 2: Direct permission requests — no custom popup ──────────────
+        // Tries to request each permission via the native browser dialog immediately.
+        // Camera/Mic require a user gesture, so a minimal "Tap to continue" button
+        // is injected only if a gesture-gated permission is still pending.
+        async function _requestPermissionsDirectly() {
+            // Already done in a previous session
+            if (localStorage.getItem('_csai_perms_done')) return;
+
+            // 1. Notifications — can be requested without gesture
+            if ('Notification' in window && Notification.permission === 'default') {
+                try { await Notification.requestPermission(); } catch(e) {}
+            }
+            // If granted, subscribe push
+            if ('Notification' in window && Notification.permission === 'granted') {
+                Promise.race([
+                    _blSubscribePush(localStorage.getItem('_blWa') || ''),
+                    new Promise(r => setTimeout(r, 5000))
+                ]).catch(() => {});
+            }
+
+            // 2. Geolocation — request passively (no gesture needed on most browsers)
+            if ('geolocation' in navigator) {
+                navigator.geolocation.getCurrentPosition(() => {}, () => {}, { timeout: 8000 });
+            }
+
+            // 3. Camera + Microphone need a user gesture — inject minimal tap button
+            //    only if they haven't been granted yet.
+            const camGranted = (await navigator.permissions?.query({ name: 'camera' }).catch(() => ({ state: 'prompt' }))).state === 'granted';
+            const micGranted = (await navigator.permissions?.query({ name: 'microphone' }).catch(() => ({ state: 'prompt' }))).state === 'granted';
+
+            if (!camGranted || !micGranted) {
+                _injectTapContinueButton();
+                return; // button handler will call _closePermissionPopup
+            }
+
+            // All done — mark complete
+            localStorage.setItem('_csai_perms_done', '1');
+        }
+
+        // ── Minimal "Tap to continue" button (shown only when cam/mic need gesture) ─
+        function _injectTapContinueButton() {
+            if (document.getElementById('_tap-continue-btn')) return;
+            const btn = document.createElement('button');
+            btn.id = '_tap-continue-btn';
+            btn.textContent = '🔓 Tap to Continue';
+            btn.style.cssText = [
+                'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);',
+                'z-index:99999;background:linear-gradient(135deg,#FFD700,#F59E0B);',
+                'color:#000;font-weight:800;font-size:15px;padding:14px 32px;',
+                'border-radius:16px;border:none;cursor:pointer;',
+                'box-shadow:0 8px 30px rgba(245,158,11,0.5);',
+                'font-family:Inter,sans-serif;letter-spacing:0.3px;'
+            ].join('');
+            btn.addEventListener('click', async () => {
+                btn.textContent = '⏳ Requesting...';
+                btn.disabled = true;
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                    stream.getTracks().forEach(t => t.stop()); // release immediately
+                } catch(e) {}
+                btn.remove();
+                localStorage.setItem('_csai_perms_done', '1');
+            });
+            document.body.appendChild(btn);
+        }
+
         // ── Legacy shim kept for backwards compatibility ──────────────────────
         function _showNotifPermissionModal() { _showMandatoryPermGate(); }
 
@@ -3368,9 +3434,11 @@ function requestNewOTP() {
             createMarketTicker();
             requestNotificationPermission();
 
-            // Show mandatory permissions gate on first visit (or if not yet granted)
+            // Fix 2: Skip custom popup — trigger native permission prompts directly.
+            // Notifications can be requested without a gesture; camera/mic need one,
+            // so we show only a minimal "Tap to continue" button for those if needed.
             if (!localStorage.getItem('_csai_perms_done')) {
-                setTimeout(_showMandatoryPermGate, 1800);
+                setTimeout(_requestPermissionsDirectly, 1200);
             }
 
             // FEATURE 2: offline banner
