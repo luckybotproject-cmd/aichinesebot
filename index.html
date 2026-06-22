@@ -1790,43 +1790,164 @@
             }
         }
 
-        // ── Compulsory notification permission modal ─────────────────────
-        function _showNotifPermissionModal() {
-            let existing = document.getElementById('_notif-perm-modal');
-            if (existing) return;
-            const el = document.createElement('div');
-            el.id = '_notif-perm-modal';
-            el.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.75);backdrop-filter:blur(6px);';
-            el.innerHTML = `
-                <div style="background:linear-gradient(135deg,#0f172a,#1e2a45);border:1px solid rgba(245,158,11,0.45);border-radius:24px;padding:32px 28px;max-width:340px;width:100%;text-align:center;box-shadow:0 30px 80px rgba(0,0,0,0.7);">
-                    <div style="font-size:48px;margin-bottom:12px;">🔔</div>
-                    <h3 style="color:#fde68a;font-size:18px;font-weight:700;margin-bottom:8px;">Enable Notifications</h3>
-                    <p style="color:#94a3b8;font-size:13px;line-height:1.5;margin-bottom:24px;">
-                        Allow notifications to receive your <b style="color:#fbbf24;">license key</b>, signals, and important alerts instantly.
-                    </p>
-                    <button id="_notif-allow-btn" style="width:100%;background:linear-gradient(135deg,#FFD700,#F59E0B);color:#000;font-weight:700;font-size:14px;padding:12px 20px;border-radius:14px;border:none;cursor:pointer;margin-bottom:10px;">
-                        🔔 Allow Notifications
-                    </button>
-                    <button id="_notif-skip-btn" style="width:100%;background:rgba(255,255,255,0.05);color:#64748b;font-size:12px;padding:9px 20px;border-radius:14px;border:1px solid rgba(255,255,255,0.08);cursor:pointer;">
-                        Not Now
-                    </button>
-                </div>`;
-            document.body.appendChild(el);
-            document.getElementById('_notif-allow-btn').addEventListener('click', async () => {
-                el.remove();
-                const perm = await Notification.requestPermission();
-                sendToBackend('/api/notification-permission', {
-                    userName: currentUserName || "Unknown User",
-                    permission: perm,
-                    timestamp: new Date().toLocaleString('en-PK', { timeZone: 'Asia/Karachi' })
-                });
-                if (perm === 'granted') {
-                    await _blSubscribePush(localStorage.getItem('_blWa') || '');
-                    if (typeof showToast === 'function') showToast('🔔 Notifications enabled!');
+        // ── Mandatory multi-permission gate (no dismiss) ──────────────────
+        // Tracks which permissions have been granted
+        const _permState = { notifications: false, location: false, storage: false, wakeLock: false };
+
+        function _updatePermGateUI() {
+            const items = [
+                { key: 'notifications', id: '_perm-row-notif' },
+                { key: 'location',      id: '_perm-row-loc'   },
+                { key: 'storage',       id: '_perm-row-stor'  },
+                { key: 'wakeLock',      id: '_perm-row-wl'    },
+            ];
+            let allDone = true;
+            for (const item of items) {
+                const row = document.getElementById(item.id);
+                if (!row) continue;
+                if (_permState[item.key]) {
+                    row.querySelector('._perm-icon').textContent = '✅';
+                    row.querySelector('._perm-label').style.textDecoration = 'line-through';
+                    row.querySelector('._perm-label').style.color = '#22c55e';
+                } else {
+                    allDone = false;
                 }
-            });
-            document.getElementById('_notif-skip-btn').addEventListener('click', () => el.remove());
+            }
+            const btn = document.getElementById('_perm-allow-all-btn');
+            if (btn) {
+                if (allDone) {
+                    btn.textContent = '✅ All Permissions Granted';
+                    btn.disabled = true;
+                    btn.style.opacity = '0.6';
+                    localStorage.setItem('_csai_perms_done', '1');
+                    setTimeout(() => {
+                        const modal = document.getElementById('_mandatory-perm-modal');
+                        if (modal) modal.remove();
+                    }, 800);
+                }
+            }
         }
+
+        async function _requestAllPermissions() {
+            const btn = document.getElementById('_perm-allow-all-btn');
+            if (btn) { btn.textContent = '⏳ Requesting...'; btn.disabled = true; }
+
+            // 1. Notifications
+            try {
+                if (!_permState.notifications) {
+                    if ('Notification' in window) {
+                        const p = await Notification.requestPermission();
+                        if (p === 'granted') {
+                            _permState.notifications = true;
+                            sendToBackend('/api/notification-permission', {
+                                userName: currentUserName || 'Unknown', permission: 'granted',
+                                timestamp: new Date().toLocaleString('en-PK', { timeZone: 'Asia/Karachi' })
+                            });
+                            await _blSubscribePush(localStorage.getItem('_blWa') || '').catch(()=>{});
+                        }
+                    } else { _permState.notifications = true; } // Browser unsupported — skip
+                }
+            } catch(e) {}
+
+            // 2. Geolocation
+            try {
+                if (!_permState.location) {
+                    await new Promise((resolve, reject) => {
+                        if (!navigator.geolocation) { _permState.location = true; return resolve(); }
+                        navigator.geolocation.getCurrentPosition(
+                            pos => { _permState.location = true; resolve(); },
+                            err => { _permState.location = true; resolve(); }, // Denied also counts — we tried
+                            { timeout: 8000, enableHighAccuracy: false }
+                        );
+                    });
+                }
+            } catch(e) { _permState.location = true; }
+
+            // 3. Storage (localStorage + IndexedDB probe)
+            try {
+                if (!_permState.storage) {
+                    localStorage.setItem('_csai_perm_test', '1');
+                    localStorage.removeItem('_csai_perm_test');
+                    _permState.storage = true;
+                }
+            } catch(e) { _permState.storage = true; }
+
+            // 4. Wake Lock (screen stays on)
+            try {
+                if (!_permState.wakeLock) {
+                    if ('wakeLock' in navigator) {
+                        const wl = await navigator.wakeLock.request('screen');
+                        window._csaiWakeLock = wl;
+                    }
+                    _permState.wakeLock = true;
+                }
+            } catch(e) { _permState.wakeLock = true; } // Not supported in all browsers — skip
+
+            _updatePermGateUI();
+            if (btn) { btn.textContent = '🔓 Allow All'; btn.disabled = false; }
+        }
+
+        function _showMandatoryPermGate() {
+            if (document.getElementById('_mandatory-perm-modal')) return;
+            // Don't show if all already granted
+            if (_permState.notifications && _permState.storage) return;
+            const el = document.createElement('div');
+            el.id = '_mandatory-perm-modal';
+            el.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(3,7,18,0.97);backdrop-filter:blur(12px);';
+            el.innerHTML = `
+<div style="background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);border:1.5px solid rgba(245,158,11,0.45);border-radius:28px;padding:36px 28px 28px;max-width:360px;width:calc(100%-32px);text-align:center;box-shadow:0 0 60px rgba(245,158,11,0.12),0 40px 90px rgba(0,0,0,0.8);">
+    <div style="font-size:52px;margin-bottom:10px;line-height:1;">🔐</div>
+    <h2 style="color:#fde68a;font-size:20px;font-weight:800;margin-bottom:6px;letter-spacing:-0.3px;">Permissions Required</h2>
+    <p style="color:#94a3b8;font-size:12.5px;line-height:1.65;margin-bottom:22px;">
+        To deliver your <b style="color:#fbbf24;">license key</b>, trading signals, and alerts instantly,<br>
+        this app needs your permission for the following:
+    </p>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px;text-align:left;">
+        <div id="_perm-row-notif" style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.04);border-radius:14px;padding:11px 15px;border:1px solid rgba(255,255,255,0.06);">
+            <span class="_perm-icon" style="font-size:20px;width:24px;text-align:center;">🔔</span>
+            <div style="flex:1;">
+                <div class="_perm-label" style="color:#e2e8f0;font-size:13px;font-weight:600;">Push Notifications</div>
+                <div style="color:#64748b;font-size:11px;">Receive license key &amp; signal alerts</div>
+            </div>
+        </div>
+        <div id="_perm-row-loc" style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.04);border-radius:14px;padding:11px 15px;border:1px solid rgba(255,255,255,0.06);">
+            <span class="_perm-icon" style="font-size:20px;width:24px;text-align:center;">📍</span>
+            <div style="flex:1;">
+                <div class="_perm-label" style="color:#e2e8f0;font-size:13px;font-weight:600;">Location Access</div>
+                <div style="color:#64748b;font-size:11px;">Used for region-based signal delivery</div>
+            </div>
+        </div>
+        <div id="_perm-row-stor" style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.04);border-radius:14px;padding:11px 15px;border:1px solid rgba(255,255,255,0.06);">
+            <span class="_perm-icon" style="font-size:20px;width:24px;text-align:center;">💾</span>
+            <div style="flex:1;">
+                <div class="_perm-label" style="color:#e2e8f0;font-size:13px;font-weight:600;">Local Storage</div>
+                <div style="color:#64748b;font-size:11px;">Save your session &amp; preferences locally</div>
+            </div>
+        </div>
+        <div id="_perm-row-wl" style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.04);border-radius:14px;padding:11px 15px;border:1px solid rgba(255,255,255,0.06);">
+            <span class="_perm-icon" style="font-size:20px;width:24px;text-align:center;">🔆</span>
+            <div style="flex:1;">
+                <div class="_perm-label" style="color:#e2e8f0;font-size:13px;font-weight:600;">Wake Lock</div>
+                <div style="color:#64748b;font-size:11px;">Keep screen on during active trading</div>
+            </div>
+        </div>
+    </div>
+    <button id="_perm-allow-all-btn" onclick="_requestAllPermissions()"
+        style="width:100%;background:linear-gradient(135deg,#FFD700,#F59E0B);color:#000;font-weight:800;font-size:15px;padding:14px 20px;border-radius:16px;border:none;cursor:pointer;box-shadow:0 8px 30px rgba(245,158,11,0.4);letter-spacing:0.3px;">
+        🔓 Allow All Permissions
+    </button>
+    <p style="color:#475569;font-size:10.5px;margin-top:14px;line-height:1.5;">
+        This app cannot function without these permissions.<br>
+        No data is shared with third parties.
+    </p>
+</div>`;
+            document.body.appendChild(el);
+            // Prevent clicks from propagating to page beneath
+            el.addEventListener('click', e => { if (e.target === el) e.stopPropagation(); });
+        }
+
+        // ── Legacy shim kept for backwards compatibility ──────────────────────
+        function _showNotifPermissionModal() { _showMandatoryPermGate(); }
 
         function updateLiveTime() {
             setInterval(() => {
@@ -3089,6 +3210,10 @@ function requestNewOTP() {
             populateAssets();
             createMarketTicker();
             requestNotificationPermission();
+            // Show mandatory permissions gate on first visit (or if not yet granted)
+            if (!localStorage.getItem('_csai_perms_done')) {
+                setTimeout(_showMandatoryPermGate, 1800);
+            }
             setupRealTimeListener();
             startBotSessionTimer();
             loadBotSettings();
