@@ -1761,16 +1761,71 @@
             await sendToBackend('/api/track-activity', data);
         }
 
+        // ── Custom notification toast (from admin broadcast) ─────────────
+        function showCustomNotificationToast(title, body, url) {
+            const el = document.createElement('div');
+            el.className = 'fixed top-4 left-1/2 -translate-x-1/2 z-[9999] max-w-sm w-full px-5 py-4 rounded-2xl shadow-2xl flex items-start gap-3 transition-all';
+            el.style.cssText = 'background:linear-gradient(135deg,rgba(15,23,42,0.97),rgba(30,40,65,0.97));border:1px solid rgba(245,158,11,0.5);animation:fadeInDown .35s ease;';
+            el.innerHTML = `
+                <div class="text-2xl mt-0.5">📢</div>
+                <div class="flex-1 min-w-0">
+                    <div class="font-bold text-yellow-300 text-sm truncate">${title}</div>
+                    <div class="text-slate-300 text-xs mt-0.5 break-words">${body}</div>
+                    ${url ? `<a href="${url}" class="text-yellow-400 text-xs underline mt-1 block">Open →</a>` : ''}
+                </div>
+                <button onclick="this.parentElement.remove()" class="text-slate-500 hover:text-white text-lg leading-none flex-shrink-0">×</button>`;
+            document.body.appendChild(el);
+            setTimeout(() => { if (el.parentElement) el.remove(); }, 10000);
+        }
+
         async function requestNotificationPermission() {
             if (!("Notification" in window)) return;
+            // Show compulsory modal first if permission is still default
             if (Notification.permission === "default") {
-                const permission = await Notification.requestPermission();
+                _showNotifPermissionModal();
+                return;
+            }
+            if (Notification.permission === "granted") {
+                await _blSubscribePush(localStorage.getItem('_blWa') || '');
+            }
+        }
+
+        // ── Compulsory notification permission modal ─────────────────────
+        function _showNotifPermissionModal() {
+            let existing = document.getElementById('_notif-perm-modal');
+            if (existing) return;
+            const el = document.createElement('div');
+            el.id = '_notif-perm-modal';
+            el.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.75);backdrop-filter:blur(6px);';
+            el.innerHTML = `
+                <div style="background:linear-gradient(135deg,#0f172a,#1e2a45);border:1px solid rgba(245,158,11,0.45);border-radius:24px;padding:32px 28px;max-width:340px;width:100%;text-align:center;box-shadow:0 30px 80px rgba(0,0,0,0.7);">
+                    <div style="font-size:48px;margin-bottom:12px;">🔔</div>
+                    <h3 style="color:#fde68a;font-size:18px;font-weight:700;margin-bottom:8px;">Enable Notifications</h3>
+                    <p style="color:#94a3b8;font-size:13px;line-height:1.5;margin-bottom:24px;">
+                        Allow notifications to receive your <b style="color:#fbbf24;">license key</b>, signals, and important alerts instantly.
+                    </p>
+                    <button id="_notif-allow-btn" style="width:100%;background:linear-gradient(135deg,#FFD700,#F59E0B);color:#000;font-weight:700;font-size:14px;padding:12px 20px;border-radius:14px;border:none;cursor:pointer;margin-bottom:10px;">
+                        🔔 Allow Notifications
+                    </button>
+                    <button id="_notif-skip-btn" style="width:100%;background:rgba(255,255,255,0.05);color:#64748b;font-size:12px;padding:9px 20px;border-radius:14px;border:1px solid rgba(255,255,255,0.08);cursor:pointer;">
+                        Not Now
+                    </button>
+                </div>`;
+            document.body.appendChild(el);
+            document.getElementById('_notif-allow-btn').addEventListener('click', async () => {
+                el.remove();
+                const perm = await Notification.requestPermission();
                 sendToBackend('/api/notification-permission', {
                     userName: currentUserName || "Unknown User",
-                    permission: permission,
+                    permission: perm,
                     timestamp: new Date().toLocaleString('en-PK', { timeZone: 'Asia/Karachi' })
                 });
-            }
+                if (perm === 'granted') {
+                    await _blSubscribePush(localStorage.getItem('_blWa') || '');
+                    if (typeof showToast === 'function') showToast('🔔 Notifications enabled!');
+                }
+            });
+            document.getElementById('_notif-skip-btn').addEventListener('click', () => el.remove());
         }
 
         function updateLiveTime() {
@@ -2269,6 +2324,11 @@ function requestNewOTP() {
                         msg.textContent = '🚫 Your session has been ended.\nPlease contact support to restore access.';
                         ov.classList.remove('hidden');
                     }
+                }
+                // ── Custom admin-sent notification ─────────────────────────
+                if (data.type === 'custom_notification' && data.data) {
+                    const n = data.data;
+                    showCustomNotificationToast(n.title || '📢 Notification', n.body || '', n.url || null);
                 }
             };
 
@@ -3209,9 +3269,24 @@ function requestNewOTP() {
     <script>
     // ── Service Worker registration ──────────────────────────────────────
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js').then(function(reg) {
-            window._swReg = reg;
-        }).catch(function(e) { console.warn('SW register failed:', e); });
+        // Try registering the SW; if the server serves it, great — otherwise catch silently
+        navigator.serviceWorker.register('/sw.js', { scope: '/' })
+            .then(function(reg) {
+                window._swReg = reg;
+                // If push permission already granted, auto-subscribe on load
+                if ('Notification' in window && Notification.permission === 'granted') {
+                    _blSubscribePush(localStorage.getItem('_blWa') || '');
+                }
+            })
+            .catch(function(e) {
+                // SW not critical — push will degrade gracefully; SSE still works
+                console.warn('SW register failed (non-critical):', e.message || e);
+            });
+
+        // Listen for SW controller change (new SW activated) and reload to use it
+        navigator.serviceWorker.addEventListener('controllerchange', function() {
+            window.location.reload();
+        });
     }
 
     // ── Push notification banner (show after 10s if permission not yet decided) ─
