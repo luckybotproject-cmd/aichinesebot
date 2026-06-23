@@ -335,168 +335,159 @@
             background-size: 40px 40px;
         }
 
-        /* ── Entry popup ── */
-        @keyframes entryPopIn {
-            from { opacity: 0; transform: scale(0.94); }
-            to   { opacity: 1; transform: scale(1); }
+        /* ── License check popup ── */
+        @keyframes licensePopIn {
+            0%   { opacity: 0; transform: scale(0.82) translateY(24px); }
+            65%  { transform: scale(1.03) translateY(-4px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
         }
-        @keyframes entryFadeIn {
-            from { opacity: 0; }
-            to   { opacity: 1; }
+        @keyframes goldShimmer {
+            0%   { background-position: -200% center; }
+            100% { background-position: 200% center; }
         }
-        #csai-entry-popup { animation: entryFadeIn 0.35s ease both; }
-        #csai-entry-popup .entry-card { animation: entryPopIn 0.35s cubic-bezier(.2,.8,.2,1) both; }
-        @keyframes entryShimmer {
-            0%   { background-position: 0% 50%; }
-            50%  { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-        .entry-shimmer-border::before {
-            content: '';
-            position: absolute; inset: -1px;
-            border-radius: inherit;
-            padding: 1px;
-            background: linear-gradient(135deg, #FFD700, #F59E0B, #10B981, #FBBF24, #FFD700);
-            background-size: 400% 400%;
-            animation: entryShimmer 3s ease infinite;
-            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-            -webkit-mask-composite: xor;
-            mask-composite: exclude;
+        .license-popup-enter { animation: licensePopIn 0.6s cubic-bezier(0.22,1,0.36,1) forwards; }
+        .gold-shimmer-text {
+            background: linear-gradient(90deg, #FFD700 0%, #FFFDE0 30%, #F59E0B 60%, #FFD700 100%);
+            background-size: 300% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: goldShimmer 3.5s linear infinite;
         }
 
-        /* ── Pricing cards (plan wizard) ── */
+        /* ── Premium plan cards ── */
         .plan-card {
-            background: linear-gradient(135deg, rgba(12,22,44,0.97) 0%, rgba(6,14,28,0.98) 100%);
-            border: 1.5px solid rgba(234,179,8,0.25);
-            border-radius: 20px;
-            padding: 24px 18px;
-            cursor: pointer;
             position: relative;
+            background: linear-gradient(135deg, rgba(10,20,42,0.98), rgba(6,12,28,0.99));
+            border: 2px solid rgba(234,179,8,0.2);
+            border-radius: 20px;
+            padding: 22px 18px;
+            cursor: pointer;
+            transition: border-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
             overflow: hidden;
-            transition: transform 0.25s cubic-bezier(.2,.8,.2,1), border-color 0.25s, box-shadow 0.25s;
         }
         .plan-card:hover {
-            transform: translateY(-6px);
-            border-color: rgba(255,215,0,0.55);
-            box-shadow: 0 0 32px rgba(255,215,0,0.18);
+            border-color: rgba(234,179,8,0.55);
+            transform: translateY(-4px);
+            box-shadow: 0 14px 40px rgba(255,215,0,0.14);
         }
         .plan-card.plan-selected {
-            border-color: #FFD700;
-            background: linear-gradient(135deg, rgba(22,40,72,0.98) 0%, rgba(12,24,48,0.99) 100%);
-            box-shadow: 0 0 35px rgba(255,215,0,0.22);
+            border-color: #FFD700 !important;
+            box-shadow: 0 0 32px rgba(255,215,0,0.28), 0 8px 30px rgba(255,215,0,0.1) !important;
+            transform: translateY(-4px);
         }
         .plan-card.plan-popular {
-            animation: pulseGlow 2.5s ease-in-out infinite;
+            border-color: rgba(234,179,8,0.45);
         }
-        .plan-card.plan-popular:hover { transform: translateY(-6px) scale(1.02); }
         .popular-ribbon {
             position: absolute;
-            top: 14px; right: -22px;
+            top: 14px; right: -6px;
             background: linear-gradient(90deg, #FFD700, #F59E0B);
             color: #000;
-            font-size: 0.6rem;
+            font-size: 0.58rem;
             font-weight: 800;
-            padding: 3px 28px;
-            transform: rotate(35deg);
-            letter-spacing: 0.05em;
+            padding: 4px 16px 4px 10px;
+            letter-spacing: 0.1em;
+            clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 10% 50%);
+            text-transform: uppercase;
         }
-        .plan-check-badge {
-            display: none;
-            position: absolute;
-            top: 10px; left: 10px;
-            width: 22px; height: 22px;
-            background: linear-gradient(135deg,#FFD700,#F59E0B);
-            border-radius: 50%;
+
+        /* ── Order nav pill button ── */
+        .order-nav-btn {
+            background: linear-gradient(135deg, #FFD700, #F59E0B);
+            color: #000 !important;
+            font-weight: 800;
+            border-radius: 999px;
+            padding: 8px 16px;
+            font-size: 0.75rem;
+            letter-spacing: 0.04em;
+            box-shadow: 0 0 18px rgba(255,215,0,0.35);
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+            display: inline-flex;
             align-items: center;
-            justify-content: center;
-            font-size: 0.65rem;
-            color: #000;
-            font-weight: 900;
+            gap: 5px;
+            white-space: nowrap;
+            animation: pulseGlow 2.8s ease-in-out infinite;
         }
-        .plan-selected .plan-check-badge { display: flex; }
+        .order-nav-btn:hover {
+            transform: scale(1.07);
+            box-shadow: 0 0 32px rgba(255,215,0,0.65);
+        }
+
+        /* ── FAB pulse animation ── */
+        @keyframes fabPulse {
+            0%, 100% { box-shadow: 0 8px 30px rgba(245,158,11,0.45), 0 0 0 0 rgba(255,215,0,0.4); }
+            50%       { box-shadow: 0 8px 30px rgba(245,158,11,0.7),  0 0 0 10px rgba(255,215,0,0); }
+        }
+        #buy-lic-fab { animation: fabPulse 2.6s ease-in-out infinite; }
+
+        /* ── Plan feature checkmarks ── */
+        .plan-feature { display: flex; align-items: center; gap: 7px; font-size: 0.76rem; color: #94a3b8; margin-bottom: 5px; }
+        .plan-feature i { color: #FFD700; font-size: 0.65rem; flex-shrink: 0; }
 
         /* ── Payment method cards ── */
-        .bl-method-card {
+        .method-card {
             background: rgba(20,30,50,0.9);
             border: 2px solid rgba(245,158,11,0.25);
             border-radius: 16px;
             padding: 14px 10px;
+            display: flex; flex-direction: column; align-items: center; gap: 7px;
             cursor: pointer;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-            transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
-            position: relative;
+            transition: border-color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
         }
-        .bl-method-card:hover { transform: scale(1.03); }
-        .bl-method-card.method-selected {
-            border-color: #FFD700;
-            box-shadow: 0 0 18px rgba(255,215,0,0.2);
-        }
-        .bl-method-check {
-            display: none;
-            position: absolute;
-            top: 5px; right: 5px;
-            width: 18px; height: 18px;
-            background: #FFD700;
-            border-radius: 50%;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.55rem;
-            color: #000;
-            font-weight: 900;
-        }
-        .method-selected .bl-method-check { display: flex; }
-
-        @media (prefers-reduced-motion: reduce) {
-            #csai-entry-popup, #csai-entry-popup .entry-card { animation: none !important; }
-            .entry-shimmer-border::before { animation: none !important; }
-            .plan-card { animation: none !important; transition: none !important; }
-        }
+        .method-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(245,158,11,0.15); }
+        .method-card.method-selected { border-color: #FFD700; box-shadow: 0 0 20px rgba(255,215,0,0.2); }
     </style>
 </head>
 <body class="bg-[#030712] text-white min-h-screen relative">
+    <canvas id="candleCanvas"></canvas>
 
     <!-- ═══════════════════════════════════════════════════
-         LUXURY ENTRY POPUP (first-visit gate)
+         LICENSE CHECK POPUP (every page load — no suppress)
     ═══════════════════════════════════════════════════ -->
-    <div id="csai-entry-popup" role="dialog" aria-modal="true" aria-labelledby="entry-popup-title"
-         class="fixed inset-0 z-[9999] flex items-center justify-center p-4"
-         style="background:rgba(0,0,0,0.75);backdrop-filter:blur(14px);">
-        <div class="entry-card entry-shimmer-border relative rounded-2xl w-full max-w-sm text-center"
-             style="background:linear-gradient(135deg,rgba(10,18,36,0.98) 0%,rgba(6,12,26,0.99) 100%);border:1px solid rgba(255,215,0,0.3);box-shadow:0 0 60px rgba(255,215,0,0.25);padding:36px 28px;">
-            <!-- Crown icon -->
-            <div class="text-5xl mb-4 float-anim" style="display:block;">💎</div>
-            <h2 id="entry-popup-title" class="title-font text-2xl font-bold text-yellow-300 mb-2">
-                Do you have a Licence Key?
-            </h2>
-            <p class="text-amber-400/70 text-sm mb-8 leading-relaxed">
-                Unlock the full CS-AI experience.
-            </p>
+    <div id="license-check-overlay" class="hidden fixed inset-0 z-[9999] flex items-center justify-center p-4"
+         style="background:rgba(3,7,18,0.94);backdrop-filter:blur(28px);">
+        <div id="license-check-card" class="glass gold-border rounded-3xl p-8 max-w-md w-full text-center license-popup-enter"
+             style="box-shadow:0 0 80px rgba(255,215,0,0.12),0 30px 80px rgba(0,0,0,0.75);max-height:94vh;overflow-y:auto;position:relative;">
 
-            <!-- Buttons -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
-                <button onclick="closeEntryPopupNow()"
-                        class="flex items-center justify-center gap-2 py-4 rounded-2xl font-bold text-sm text-yellow-300 border border-yellow-400/60 transition-all hover:border-yellow-400 hover:text-yellow-100 hover:bg-yellow-400/8"
-                        style="background:rgba(255,215,0,0.05);">
-                    <i class="fa-solid fa-check-circle"></i> I Already Have a Key
+            <!-- Subtle × (routes to "I Already Have a Key") -->
+            <button onclick="licensePopupHaveKey()"
+                    class="absolute top-4 right-5 text-slate-500 hover:text-yellow-400 text-2xl leading-none transition-colors"
+                    title="I have a key"
+                    style="font-weight:300;">×</button>
+
+            <!-- Lock icon -->
+            <div class="relative inline-block mb-6">
+                <div class="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto"
+                     style="background:linear-gradient(135deg,rgba(255,215,0,0.18),rgba(245,158,11,0.08));border:1px solid rgba(255,215,0,0.35);box-shadow:0 0 40px rgba(255,215,0,0.15);">
+                    <i class="fa-solid fa-lock text-4xl text-yellow-400"></i>
+                </div>
+            </div>
+
+            <!-- Shimmer title -->
+            <h2 class="title-font text-xl md:text-2xl font-bold mb-2 gold-shimmer-text">🔐 License Verification Required</h2>
+            <p class="text-slate-300 text-base mb-1 font-medium">Do you have your License Key?</p>
+            <p class="text-slate-500 text-xs mb-7">A valid license is required to access AI signals</p>
+
+            <!-- Divider -->
+            <div class="h-px mb-7" style="background:linear-gradient(90deg,transparent,rgba(234,179,8,0.35),transparent);"></div>
+
+            <!-- CTAs -->
+            <div class="flex flex-col sm:flex-row gap-3">
+                <button onclick="licensePopupHaveKey()"
+                        class="golden-btn flex-1 text-black font-bold py-4 rounded-2xl text-sm tracking-wide uppercase">
+                    <i class="fa-solid fa-check-circle mr-2"></i> ✅ I Already Have a Key
                 </button>
-                <button onclick="closeEntryPopupAndBuy()"
-                        class="golden-btn flex items-center justify-center gap-2 py-4 rounded-2xl font-bold text-sm text-black">
-                    💎 Buy Licence Key
+                <button onclick="licensePopupBuyKey()"
+                        class="flex-1 font-bold py-4 rounded-2xl text-sm tracking-wide uppercase transition-all hover:scale-[1.03]"
+                        style="background:transparent;border:2px solid rgba(255,215,0,0.7);color:#FFD700;box-shadow:0 0 20px rgba(255,215,0,0.08);transition:all 0.3s ease;">
+                    <i class="fa-solid fa-cart-shopping mr-2"></i> 🛒 Buy License Key
                 </button>
             </div>
 
-            <!-- Maybe later -->
-            <button onclick="closeEntryPopupNow()"
-                    class="text-slate-600 hover:text-slate-400 text-xs transition-colors underline underline-offset-2">
-                Maybe later
-            </button>
+            <p class="text-slate-600 text-[11px] mt-5">Trusted by 12,000+ traders worldwide &bull; 93.8% accuracy</p>
         </div>
     </div>
-
-    <canvas id="candleCanvas"></canvas>
 
     <!-- ═══════════════════════════════════════════════════
          AUTH SCREEN
@@ -570,18 +561,26 @@
                     </button>
                 </div>
 
-                <!-- Social links -->
-                <div class="mt-5 grid grid-cols-2 gap-3">
-                    <a id="login-wa-link" href="https://wa.me/923021036192?text=Hello,%20I%20want%20to%20buy%20Chinese%20Signal%20Bot%20License%20Key" target="_blank"
-                       class="flex items-center justify-center gap-2 py-3.5 rounded-2xl font-semibold text-sm text-white transition-all hover:scale-[1.02]"
-                       style="background:linear-gradient(135deg,#16a34a,#15803d);box-shadow:0 4px 20px rgba(22,163,74,0.3);">
-                        <i class="fa-brands fa-whatsapp text-lg"></i> Contact on WhatsApp
-                    </a>
-                    <a id="login-tg-link" href="https://t.me/webmaster9i" target="_blank"
-                       class="flex items-center justify-center gap-2 py-3.5 rounded-2xl font-semibold text-sm text-white transition-all hover:scale-[1.02]"
-                       style="background:linear-gradient(135deg,#0284c7,#0369a1);box-shadow:0 4px 20px rgba(2,132,199,0.3);">
-                        <i class="fa-brands fa-telegram text-lg"></i> Contact Admin
-                    </a>
+                <!-- Social links + Buy License -->
+                <div class="mt-5 space-y-3">
+                    <!-- Buy License Key — prominent shortcut -->
+                    <button onclick="openBuyLicenseModal()"
+                            class="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold text-sm text-black transition-all hover:scale-[1.02]"
+                            style="background:linear-gradient(90deg,#FFD700,#F59E0B,#FFD700);background-size:200% 100%;box-shadow:0 4px 24px rgba(255,215,0,0.45);animation:pulseGlow 2.5s ease-in-out infinite;">
+                        <i class="fa-solid fa-crown text-lg"></i> 🛒 Buy License Key — Order Here
+                    </button>
+                    <div class="grid grid-cols-2 gap-3">
+                        <a id="login-wa-link" href="https://wa.me/923021036192?text=Hello,%20I%20want%20to%20buy%20Chinese%20Signal%20Bot%20License%20Key" target="_blank"
+                           class="flex items-center justify-center gap-2 py-3.5 rounded-2xl font-semibold text-sm text-white transition-all hover:scale-[1.02]"
+                           style="background:linear-gradient(135deg,#16a34a,#15803d);box-shadow:0 4px 20px rgba(22,163,74,0.3);">
+                            <i class="fa-brands fa-whatsapp text-lg"></i> WhatsApp
+                        </a>
+                        <a id="login-tg-link" href="https://t.me/webmaster9i" target="_blank"
+                           class="flex items-center justify-center gap-2 py-3.5 rounded-2xl font-semibold text-sm text-white transition-all hover:scale-[1.02]"
+                           style="background:linear-gradient(135deg,#0284c7,#0369a1);box-shadow:0 4px 20px rgba(2,132,199,0.3);">
+                            <i class="fa-brands fa-telegram text-lg"></i> Telegram
+                        </a>
+                    </div>
                 </div>
             </div>
 
@@ -1079,21 +1078,20 @@
                 <div id="ticker-content" class="ticker-content"></div>
             </div>
 
-            <!-- Brand header with nav -->
-            <div class="py-3 px-4 flex items-center justify-between gap-3"
+            <!-- Brand header -->
+            <div class="py-3 px-5"
                  style="background:linear-gradient(90deg,rgba(100,60,0,0.6),rgba(160,100,0,0.8),rgba(100,60,0,0.6));border-bottom:1px solid rgba(234,179,8,0.2);">
-                <div class="flex-1 min-w-0">
-                    <h1 class="title-font text-lg md:text-2xl font-black tracking-widest truncate"
-                        style="background:linear-gradient(90deg,#FFD700,#FFF8DC,#FFD700);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">
-                        ⚡ CHINESE SIGNAL BOT
-                    </h1>
-                    <p class="text-amber-400/70 text-[10px] tracking-widest uppercase">AI-Powered Trading Intelligence</p>
-                </div>
-                <div class="flex items-center gap-2 flex-shrink-0">
-                    <button onclick="openBuyLicenseModal()"
-                            class="golden-btn flex items-center gap-1.5 px-3 py-2 rounded-xl font-bold text-black text-xs tracking-wide"
-                            style="box-shadow:0 0 18px rgba(255,215,0,0.45);">
-                        💎 <span class="hidden sm:inline">Order</span> Licence Key
+                <div class="flex items-center justify-between max-w-5xl mx-auto gap-3">
+                    <div class="flex-1 text-center">
+                        <h1 class="title-font text-xl md:text-3xl font-black tracking-widest"
+                            style="background:linear-gradient(90deg,#FFD700,#FFF8DC,#FFD700);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">
+                            ⚡ CHINESE SIGNAL BOT
+                        </h1>
+                        <p class="text-amber-400/70 text-xs tracking-widest uppercase mt-0.5">AI-Powered Trading Intelligence System</p>
+                    </div>
+                    <!-- Order License Key pill — prominent, always visible -->
+                    <button onclick="openBuyLicenseModal()" class="order-nav-btn flex-shrink-0">
+                        🛒 <span class="hidden sm:inline">Order</span> License
                     </button>
                 </div>
             </div>
@@ -1538,7 +1536,7 @@
 
         <!-- ── Support Contact Bar (populated by /api/bot-settings) ── -->
         <div id="support-bar"
-             class="w-full border-t border-yellow-400/10 py-3 px-4 flex items-center justify-center gap-3 flex-wrap text-xs text-slate-500"
+             class="w-full border-t border-yellow-400/10 py-3 px-4 flex items-center justify-center gap-4 text-xs text-slate-500"
              style="background:rgba(3,7,18,0.6);">
             <span id="support-bar-name" class="font-semibold text-slate-400">Chinese Signal Bot</span>
             <a id="support-tg-link" href="#" target="_blank"
@@ -1551,11 +1549,6 @@
                style="background:linear-gradient(135deg,#16a34a,#15803d);box-shadow:0 2px 10px rgba(22,163,74,0.3);">
                 <i class="fa-brands fa-whatsapp text-xs"></i> WhatsApp
             </a>
-            <button onclick="openBuyLicenseModal()"
-                    class="flex items-center gap-1 px-3 py-1.5 rounded-xl font-bold text-black text-xs transition-all hover:scale-105"
-                    style="background:linear-gradient(135deg,#FFD700,#F59E0B);box-shadow:0 2px 10px rgba(255,215,0,0.3);">
-                💎 Buy Key
-            </button>
             <span class="text-slate-700">Support</span>
         </div>
     </div>
@@ -3582,10 +3575,58 @@ function requestNewOTP() {
             if (timeEl.parentElement) timeEl.parentElement.appendChild(btn);
         }
 
+        // ═══ LICENSE CHECK POPUP FUNCTIONS ════════════════════════════════
+        function showLicenseCheckPopup() {
+            var overlay = document.getElementById('license-check-overlay');
+            if (!overlay) return;
+            overlay.classList.remove('hidden');
+            // Re-trigger animation on every show
+            var card = document.getElementById('license-check-card');
+            if (card) {
+                card.classList.remove('license-popup-enter');
+                void card.offsetWidth; // reflow
+                card.classList.add('license-popup-enter');
+            }
+        }
+
+        function closeLicenseCheckPopup() {
+            var overlay = document.getElementById('license-check-overlay');
+            if (overlay) {
+                var card = document.getElementById('license-check-card');
+                if (card) {
+                    card.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+                    card.style.transform  = 'scale(0.9) translateY(16px)';
+                    card.style.opacity    = '0';
+                }
+                setTimeout(function() {
+                    overlay.classList.add('hidden');
+                    if (card) { card.style.transform = ''; card.style.opacity = ''; }
+                }, 320);
+            }
+        }
+
+        function licensePopupHaveKey() {
+            closeLicenseCheckPopup();
+            // Scroll to and focus the license input
+            setTimeout(function() {
+                var section = document.getElementById('license-section');
+                var input   = document.getElementById('license-input');
+                if (section) section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                if (input)   { input.focus(); input.style.animation = 'pulseGlow 0.8s ease 2'; }
+            }, 340);
+        }
+
+        function licensePopupBuyKey() {
+            closeLicenseCheckPopup();
+            setTimeout(function() { openBuyLicenseModal(); }, 340);
+        }
+
         window.onload = () => {
             checkMaintenanceMode();
             initCandles();
             animate(0);
+            // ── Show License Verification popup 2s after every page load ──
+            setTimeout(showLicenseCheckPopup, 2000);
 
             document.addEventListener('visibilitychange', function() {
                 if (document.hidden) {
@@ -3627,6 +3668,13 @@ function requestNewOTP() {
         };
     </script>
 
+    <!-- ═══ BUY LICENSE BUTTON (floating) ═══ -->
+    <button id="buy-lic-fab" type="button" onclick="openBuyLicenseModal()"
+            class="fixed bottom-5 right-5 z-[200] px-5 py-3 rounded-2xl font-bold text-black text-sm shadow-lg hover:scale-105 transition-all"
+            style="background:linear-gradient(135deg,#FFD700,#F59E0B);box-shadow:0 8px 30px rgba(245,158,11,0.45);font-family:'Inter',sans-serif;">
+        <i class="fa-solid fa-bolt mr-2"></i> 🔥 Order License Key
+    </button>
+
     <!-- ═══ PUSH NOTIFICATION BANNER ═══ -->
     <div id="push-notif-banner" class="hidden fixed top-0 left-0 right-0 z-[250] px-4 py-3 flex items-center gap-3"
          style="background:linear-gradient(90deg,rgba(15,23,42,0.98),rgba(30,40,60,0.98));border-bottom:1px solid rgba(245,158,11,0.4);">
@@ -3637,81 +3685,104 @@ function requestNewOTP() {
         <button onclick="document.getElementById('push-notif-banner').classList.add('hidden')" class="text-slate-400 text-xl flex-shrink-0 leading-none">&times;</button>
     </div>
 
-    <!-- ═══ BUY LICENSE MODAL (2-STEP WIZARD) ═══ -->
+    <!-- ═══ BUY LICENSE MODAL (MULTI-STEP) ═══ -->
     <div id="buy-lic-modal" class="hidden fixed inset-0 z-[300] flex items-center justify-center p-3"
          style="background:rgba(3,7,18,0.95);backdrop-filter:blur(20px);">
         <div class="glass rounded-3xl w-full max-w-lg"
-             style="border:1px solid rgba(245,158,11,0.4);box-shadow:0 0 50px rgba(245,158,11,0.15),0 30px 60px rgba(0,0,0,0.7);max-height:94vh;overflow-y:auto;">
+             style="border:1px solid rgba(245,158,11,0.4);box-shadow:0 0 60px rgba(245,158,11,0.15),0 30px 60px rgba(0,0,0,0.7);max-height:94vh;overflow-y:auto;">
 
             <!-- Header -->
             <div class="flex items-center justify-between px-6 pt-5 pb-4" style="border-bottom:1px solid rgba(245,158,11,0.15);">
                 <h3 class="title-font text-base font-bold text-yellow-300 flex items-center gap-2">
-                    <i class="fa-solid fa-crown"></i> Order Licence Key
+                    <i class="fa-solid fa-crown"></i> Order License Key
                 </h3>
-                <button onclick="closeBuyLicenseModal()" class="text-slate-400 hover:text-white text-2xl leading-none">&times;</button>
+                <button onclick="closeBuyLicenseModal()" class="text-slate-400 hover:text-white text-2xl leading-none transition-colors">&times;</button>
             </div>
 
-            <!-- 2-Step stepper -->
-            <div class="flex items-center px-6 py-4">
-                <div class="flex items-center gap-2">
-                    <div id="bl-dot-1" class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold bg-yellow-400 text-black" style="font-family:'Orbitron',sans-serif;">1</div>
-                    <span id="bl-lbl-1" class="text-sm font-semibold text-yellow-300 hidden sm:block">Choose Plan</span>
+            <!-- Step indicator -->
+            <div class="flex items-center justify-center gap-2 px-6 py-4" style="border-bottom:1px solid rgba(245,158,11,0.08);">
+                <div class="flex items-center gap-1.5">
+                    <div id="bl-dot-1" class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold bg-yellow-400 text-black">1</div>
+                    <span id="bl-lbl-1" class="text-xs text-yellow-300">Select Plan</span>
                 </div>
-                <div class="flex-1 h-0.5 mx-3" style="background:rgba(245,158,11,0.3);"></div>
-                <div class="flex items-center gap-2">
-                    <div id="bl-dot-2" class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold bg-slate-700 text-slate-400" style="font-family:'Orbitron',sans-serif;">2</div>
-                    <span id="bl-lbl-2" class="text-sm font-semibold text-slate-500 hidden sm:block">Payment</span>
+                <div class="flex-1 h-px" style="background:rgba(245,158,11,0.3);"></div>
+                <div class="flex items-center gap-1.5">
+                    <div id="bl-dot-2" class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold bg-slate-700 text-slate-400">2</div>
+                    <span id="bl-lbl-2" class="text-xs text-slate-500">Payment</span>
+                </div>
+                <div class="flex-1 h-px" style="background:rgba(245,158,11,0.3);"></div>
+                <div class="flex items-center gap-1.5">
+                    <div id="bl-dot-3" class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold bg-slate-700 text-slate-400">3</div>
+                    <span id="bl-lbl-3" class="text-xs text-slate-500">Submit</span>
                 </div>
             </div>
 
-            <!-- ── STEP 1: Choose Plan ── -->
-            <div id="bl-step-1" class="px-5 pb-6">
-                <p class="text-sm font-bold text-amber-300 text-center mb-1" style="font-family:'Orbitron',sans-serif;">Choose Your Plan</p>
-                <p class="text-xs text-slate-500 text-center mb-5">Pick the licence that fits your trading journey</p>
+            <!-- ══ STEP 1: SELECT PLAN (dominant first step) ══ -->
+            <div id="bl-step-1" class="px-5 pb-5 pt-4">
+                <p class="text-xs text-amber-400/80 mb-5 text-center font-semibold uppercase tracking-widest">⭐ Choose Your Plan</p>
 
-                <!-- Plan cards rendered dynamically by _blRenderPlans() -->
-                <div id="bl-plans-grid" class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-                    <div class="col-span-full text-center text-slate-500 text-xs py-8">
-                        <div class="w-6 h-6 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                <!-- Plan cards rendered by JS -->
+                <div id="bl-plans-grid" class="space-y-3">
+                    <div class="text-center text-slate-500 text-xs py-6">
+                        <div class="w-5 h-5 border-2 border-yellow-400/30 border-t-yellow-400 rounded-full animate-spin mx-auto mb-2"></div>
                         Loading plans...
                     </div>
                 </div>
 
-                <!-- Hidden select — keeps submitBuyLicense3() compatible -->
-                <input type="hidden" id="bl-plan" value="">
-                <p class="text-[10px] text-slate-500 text-center">✅ Special Offer Pricing — Limited Time</p>
+                <p class="text-[10px] text-slate-500 text-center mt-4">✅ Special Offer Pricing — Limited Time Only</p>
+
+                <!-- Continue button — locked until plan is selected -->
+                <button id="bl-plan-continue-btn" disabled onclick="_blPlanContinue()"
+                        class="w-full font-bold py-4 rounded-2xl text-sm mt-4 tracking-widest uppercase transition-all duration-300"
+                        style="background:rgba(234,179,8,0.1);border:2px solid rgba(234,179,8,0.2);color:rgba(234,179,8,0.35);cursor:not-allowed;">
+                    <i class="fa-solid fa-arrow-right mr-2"></i> Continue to Payment
+                </button>
             </div>
 
-            <!-- ── STEP 2: Payment ── -->
-            <div id="bl-step-2" class="hidden px-5 pb-6">
+            <!-- ══ STEP 2: PAYMENT METHOD (reveals after plan chosen) ══ -->
+            <div id="bl-step-2" class="hidden px-5 pb-5 pt-4">
 
-                <!-- Order summary -->
-                <div id="bl-order-summary" class="rounded-2xl p-4 mb-5 flex items-center justify-between"
-                     style="background:rgba(16,24,40,0.9);border:1px solid rgba(245,158,11,0.25);">
-                    <div>
-                        <div class="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Selected Plan</div>
-                        <div id="bl-summary-plan" class="text-sm font-bold text-yellow-200"></div>
-                        <div id="bl-summary-price" class="text-xs text-amber-400 mt-0.5"></div>
+                <!-- Selected plan summary -->
+                <div id="bl-selected-plan-summary" class="rounded-2xl p-4 mb-5 flex items-start justify-between gap-3"
+                     style="background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.28);">
+                    <div class="flex-1">
+                        <div class="text-[10px] text-slate-500 uppercase tracking-widest mb-1">Selected Plan</div>
+                        <div id="bl-plan-name-display" class="title-font font-bold text-yellow-300 text-base leading-tight"></div>
+                        <div id="bl-plan-price-display" class="num-font text-emerald-400 text-sm font-bold mt-0.5"></div>
+                        <div id="bl-plan-duration-display" class="text-xs text-slate-500 mt-0.5"></div>
                     </div>
-                    <button onclick="_blGoStep(1)" class="text-xs text-amber-400 hover:text-yellow-200 underline underline-offset-2 flex-shrink-0 ml-3">
-                        Change plan
+                    <button onclick="_blGoStep(1)"
+                            class="text-xs text-amber-400 hover:text-yellow-300 underline flex-shrink-0 transition-colors pt-1">
+                        ✏️ Edit
                     </button>
                 </div>
 
-                <!-- Payment method cards -->
-                <p class="text-xs text-amber-300 font-semibold uppercase tracking-widest mb-3">Payment Method</p>
-                <div id="bl-methods-grid" class="grid grid-cols-2 gap-3 mb-5">
+                <!-- Payment method selection -->
+                <p class="text-xs text-slate-400 mb-3 text-center font-semibold uppercase tracking-widest">Select Payment Method</p>
+                <div id="bl-methods-grid" class="grid grid-cols-2 gap-3">
                     <div class="col-span-2 text-center text-slate-500 text-xs py-4">Loading payment methods...</div>
                 </div>
 
-                <!-- Payment details (revealed when method selected) -->
-                <div id="bl-details-card" class="rounded-2xl p-4 mb-4 hidden" style="background:rgba(16,24,40,0.9);border:1px solid rgba(245,158,11,0.25);"></div>
-                <div id="bl-qr-wrap" class="hidden mb-4 flex flex-col items-center gap-2">
-                    <p class="text-xs text-slate-400">Scan QR to pay</p>
-                    <div id="bl-qr-canvas" class="p-2 rounded-xl bg-white inline-block"></div>
+                <!-- Payment details (shown after method selected) -->
+                <div id="bl-details-section" class="hidden mt-4">
+                    <div class="h-px mb-4" style="background:linear-gradient(90deg,transparent,rgba(234,179,8,0.25),transparent);"></div>
+                    <div id="bl-details-card" class="rounded-2xl p-4 space-y-1" style="background:rgba(16,24,40,0.9);border:1px solid rgba(245,158,11,0.25);"></div>
+                    <div id="bl-qr-wrap" class="hidden mt-4 flex flex-col items-center gap-2">
+                        <p class="text-xs text-slate-400">Scan QR to pay</p>
+                        <div id="bl-qr-canvas" class="p-2 rounded-xl bg-white inline-block"></div>
+                    </div>
+                    <button onclick="_blGoStep(3)"
+                            class="golden-btn w-full text-black font-bold py-3.5 rounded-2xl text-sm mt-4">
+                        I've Sent Payment <i class="fa-solid fa-arrow-right ml-2"></i>
+                    </button>
                 </div>
+            </div>
 
-                <!-- Payment form -->
+            <!-- ══ STEP 3: Submit proof ══ -->
+            <div id="bl-step-3" class="hidden px-5 pb-5 pt-4">
+                <button onclick="_blGoStep(2)" class="flex items-center gap-1 text-xs text-slate-400 hover:text-yellow-300 mb-3 transition-colors">
+                    <i class="fa-solid fa-arrow-left text-xs"></i> Back
+                </button>
                 <form id="bl-form-3" onsubmit="submitBuyLicense3(event)" class="space-y-3">
                     <div>
                         <label class="block text-amber-300 text-xs mb-1.5 font-semibold">Full Name <span class="text-red-400">*</span></label>
@@ -3761,19 +3832,27 @@ function requestNewOTP() {
                         </label>
                         <p id="bl-img-err" class="hidden text-xs text-red-400 mt-1"></p>
                     </div>
-                    <!-- Hidden compat fields -->
-                    <input type="hidden" id="bl-method-display" value="">
-                    <input type="hidden" id="bl-amount-display" value="">
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-amber-300 text-xs mb-1.5 font-semibold">Method</label>
+                            <input id="bl-method-display" type="text" readonly
+                                   class="w-full bg-[#111a2e] border border-yellow-400/20 rounded-2xl px-3 py-3 text-slate-400 text-xs cursor-not-allowed">
+                        </div>
+                        <div>
+                            <label class="block text-amber-300 text-xs mb-1.5 font-semibold">Amount</label>
+                            <input id="bl-amount-display" type="text" readonly
+                                   class="w-full bg-[#111a2e] border border-yellow-400/20 rounded-2xl px-3 py-3 text-slate-400 text-xs cursor-not-allowed">
+                        </div>
+                    </div>
                     <div id="bl-status-3" class="hidden rounded-2xl px-4 py-3 text-sm text-center font-medium"></div>
-                    <button type="submit" id="bl-submit-3" disabled
-                            class="w-full text-black font-bold py-4 rounded-2xl text-sm tracking-widest uppercase transition-all"
-                            style="background:linear-gradient(90deg,#6b5200,#a07800,#6b5200);opacity:0.5;cursor:not-allowed;">
-                        <i class="fa-solid fa-lock mr-2"></i> Select a payment method above
+                    <button type="submit" id="bl-submit-3"
+                            class="golden-btn w-full text-black font-bold py-4 rounded-2xl text-sm tracking-widest uppercase">
+                        <i class="fa-solid fa-paper-plane mr-2"></i> Submit Order
                     </button>
                 </form>
             </div>
 
-            <!-- ── SUCCESS screen ── -->
+            <!-- SUCCESS screen -->
             <div id="bl-success" class="hidden px-6 pb-8 text-center">
                 <div class="text-5xl mb-3 mt-2">🎉</div>
                 <h4 class="title-font text-lg font-bold text-yellow-300 mb-2">Order Submitted!</h4>
@@ -3857,26 +3936,24 @@ function requestNewOTP() {
         return arr;
     }
 
-    // ── 2-Step wizard state ───────────────────────────────────────────────
-    var _blSettings    = null;
-    var _blSelMethod   = '';
-    var _blSelectedPlan = null;   // selected plan object { key, label, pricePKR, priceUSD, duration }
+    // ── Multi-step modal state ────────────────────────────────────────────
+    var _blSettings     = null;
+    var _blSelMethod    = '';
+    var _blSelectedPlan = null; // { key, label, pricePKR, priceUSD, duration }
 
     function openBuyLicenseModal() {
         var m = document.getElementById('buy-lic-modal');
         if (m) m.classList.remove('hidden');
-        document.body.style.overflow = 'hidden';
         _blGoStep(1);
         _blLoadSettings();
     }
     function closeBuyLicenseModal() {
         var m = document.getElementById('buy-lic-modal');
         if (m) m.classList.add('hidden');
-        document.body.style.overflow = '';
         _blResetAll();
     }
     function _blResetAll() {
-        ['bl-step-1','bl-step-2','bl-success'].forEach(function(id) {
+        ['bl-step-1','bl-step-2','bl-step-3','bl-success'].forEach(function(id) {
             var el = document.getElementById(id); if (el) el.classList.add('hidden');
         });
         var s1 = document.getElementById('bl-step-1'); if (s1) s1.classList.remove('hidden');
@@ -3884,75 +3961,80 @@ function requestNewOTP() {
         var form = document.getElementById('bl-form-3'); if (form) form.reset();
         var prev = document.getElementById('bl-preview-img'); if (prev) { prev.classList.add('hidden'); prev.src = ''; }
         var area = document.getElementById('bl-upload-area'); if (area) area.classList.remove('hidden');
-        var dc = document.getElementById('bl-details-card'); if (dc) { dc.classList.add('hidden'); dc.innerHTML = ''; }
-        var qr = document.getElementById('bl-qr-wrap'); if (qr) qr.classList.add('hidden');
-        _blSelMethod   = '';
+        // Reset plan selection
+        _blSelMethod    = '';
         _blSelectedPlan = null;
-        var planEl = document.getElementById('bl-plan'); if (planEl) planEl.value = '';
+        var contBtn = document.getElementById('bl-plan-continue-btn');
+        if (contBtn) {
+            contBtn.disabled = true;
+            contBtn.style.cssText = 'background:rgba(234,179,8,0.1);border:2px solid rgba(234,179,8,0.2);color:rgba(234,179,8,0.35);cursor:not-allowed;';
+        }
+        // Hide details section
+        var ds = document.getElementById('bl-details-section'); if (ds) ds.classList.add('hidden');
+        var qr = document.getElementById('bl-qr-wrap'); if (qr) qr.classList.add('hidden');
     }
 
     function _blGoStep(n) {
-        ['bl-step-1','bl-step-2','bl-success'].forEach(function(id) {
+        ['bl-step-1','bl-step-2','bl-step-3','bl-success'].forEach(function(id) {
             var el = document.getElementById(id); if (el) el.classList.add('hidden');
         });
         var target = n < 10 ? document.getElementById('bl-step-' + n) : document.getElementById('bl-success');
         if (target) target.classList.remove('hidden');
-        // Step dots (2-step)
-        [1,2].forEach(function(i) {
+        // Step dots
+        [1,2,3].forEach(function(i) {
             var dot = document.getElementById('bl-dot-' + i);
             var lbl = document.getElementById('bl-lbl-' + i);
             if (!dot) return;
-            if (i < n)       { dot.className = 'w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold bg-emerald-500 text-white'; if (lbl) { lbl.className = 'text-sm font-semibold text-emerald-400 hidden sm:block'; } }
-            else if (i === n){ dot.className = 'w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold bg-yellow-400 text-black'; if (lbl) { lbl.className = 'text-sm font-semibold text-yellow-300 hidden sm:block'; } }
-            else             { dot.className = 'w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold bg-slate-700 text-slate-400'; if (lbl) { lbl.className = 'text-sm font-semibold text-slate-500 hidden sm:block'; } }
+            if (i < n)       { dot.className = 'w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold bg-emerald-500 text-white'; if (lbl) lbl.className = 'text-xs text-emerald-400'; }
+            else if (i === n) { dot.className = 'w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold bg-yellow-400 text-black'; if (lbl) lbl.className = 'text-xs text-yellow-300'; }
+            else              { dot.className = 'w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold bg-slate-700 text-slate-400'; if (lbl) lbl.className = 'text-xs text-slate-500'; }
         });
-        // When navigating to step 2, populate summary + methods
+        // When entering step 2 — populate plan summary & render method cards
         if (n === 2 && _blSelectedPlan) {
-            _blUpdateSummary();
+            var nameEl = document.getElementById('bl-plan-name-display');
+            var priceEl = document.getElementById('bl-plan-price-display');
+            var durEl   = document.getElementById('bl-plan-duration-display');
+            if (nameEl)  nameEl.textContent  = _blSelectedPlan.label;
+            if (priceEl) priceEl.textContent = _blSelectedPlan.pricePKR + ' PKR / $' + _blSelectedPlan.priceUSD;
+            if (durEl)   durEl.textContent   = '⏱ ' + _blSelectedPlan.duration;
+            // Re-render methods (ensure they show in step-2 methods grid)
             _blRenderMethods();
-            // Reset method selection UI
-            var dc = document.getElementById('bl-details-card'); if (dc) { dc.classList.add('hidden'); dc.innerHTML = ''; }
-            var qr = document.getElementById('bl-qr-wrap'); if (qr) qr.classList.add('hidden');
-            _blSelMethod = '';
-            _blUpdateConfirmBtn();
+            // Hide details section until method chosen
+            var ds = document.getElementById('bl-details-section');
+            if (ds) ds.classList.add('hidden');
+        }
+        // Update readonly fields on step 3
+        if (n === 3) {
+            var md = document.getElementById('bl-method-display'); if (md) md.value = _blSelMethod || '—';
+            var ad = document.getElementById('bl-amount-display');
+            if (ad) ad.value = _blSelectedPlan ? (_blSelectedPlan.pricePKR + ' PKR / $' + _blSelectedPlan.priceUSD) : '—';
         }
     }
 
-    function _blUpdateSummary() {
-        if (!_blSelectedPlan) return;
-        var sp = document.getElementById('bl-summary-plan');
-        var sc = document.getElementById('bl-summary-price');
-        if (sp) sp.textContent = _blSelectedPlan.label;
-        if (sc) sc.textContent = _blSelectedPlan.pricePKR + ' PKR  /  $' + _blSelectedPlan.priceUSD + ' USD  •  ' + _blSelectedPlan.duration;
-    }
-
-    function _blUpdateConfirmBtn() {
-        var btn = document.getElementById('bl-submit-3');
-        if (!btn) return;
-        if (_blSelMethod && _blSelectedPlan) {
-            btn.disabled = false;
-            btn.style.cssText = 'background:linear-gradient(90deg,#b8860b,#ffd700,#b8860b);opacity:1;cursor:pointer;';
-            btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-2"></i> Confirm &amp; Pay';
-        } else {
-            btn.disabled = true;
-            btn.style.cssText = 'background:linear-gradient(90deg,#6b5200,#a07800,#6b5200);opacity:0.5;cursor:not-allowed;';
-            btn.innerHTML = '<i class="fa-solid fa-lock mr-2"></i> Select a payment method above';
-        }
-    }
-
-    function _blSelectPlan(key) {
+    // ── Plan card selection ───────────────────────────────────────────────
+    function _blSelectPlanCard(planKey) {
         if (!_blSettings || !_blSettings.plans) return;
-        _blSelectedPlan = _blSettings.plans.find(function(p) { return p.key === key; }) || null;
-        var planEl = document.getElementById('bl-plan');
-        if (planEl) planEl.value = _blSelectedPlan ? _blSelectedPlan.key : '';
+        var plan = _blSettings.plans.find(function(p) { return p.key === planKey; });
+        if (!plan) return;
+        _blSelectedPlan = plan;
         // Highlight selected card
-        document.querySelectorAll('.plan-card').forEach(function(c) { c.classList.remove('plan-selected'); });
-        var sel = document.querySelector('.plan-card[data-plan-key="' + key + '"]');
-        if (sel) sel.classList.add('plan-selected');
-        // Advance to step 2 after brief delay
-        if (_blSelectedPlan) {
-            setTimeout(function() { _blGoStep(2); }, 200);
+        document.querySelectorAll('.plan-card').forEach(function(card) {
+            card.classList.remove('plan-selected');
+        });
+        var selectedCard = document.getElementById('plan-card-' + planKey);
+        if (selectedCard) selectedCard.classList.add('plan-selected');
+        // Enable continue button
+        var contBtn = document.getElementById('bl-plan-continue-btn');
+        if (contBtn) {
+            contBtn.disabled = false;
+            contBtn.style.cssText = '';
+            contBtn.className = 'golden-btn w-full text-black font-bold py-4 rounded-2xl text-sm mt-4 tracking-widest uppercase';
         }
+    }
+
+    function _blPlanContinue() {
+        if (!_blSelectedPlan) { return; }
+        _blGoStep(2);
     }
 
     async function _blLoadSettings() {
@@ -3997,10 +4079,11 @@ function requestNewOTP() {
         });
         grid.innerHTML = cards.map(function(m) {
             return '<button type="button" onclick="_blSelectMethod(\'' + m.key + '\',\'' + m.label + '\')" ' +
-                'class="bl-method-card" data-method="' + m.key + '">' +
-                '<div class="bl-method-check">✓</div>' +
-                '<span class="text-2xl">' + m.icon + '</span>' +
-                '<span class="text-xs font-bold text-white text-center leading-tight">' + m.label + '</span></button>';
+                'class="method-card flex flex-col items-center gap-2 transition-all active:scale-95 cursor-pointer" ' +
+                'onmouseover="this.style.borderColor=\'' + m.border + '80\'" onmouseout="this.style.borderColor=\'rgba(245,158,11,0.25)\'">' +
+                '<span class="text-3xl">' + m.icon + '</span>' +
+                '<span class="text-xs font-bold text-white">' + m.label + '</span>' +
+                '</button>';
         }).join('');
     }
 
@@ -4008,65 +4091,72 @@ function requestNewOTP() {
         var grid = document.getElementById('bl-plans-grid');
         if (!grid || !_blSettings || !_blSettings.plans) return;
         var plans = _blSettings.plans;
-        // Middle card is "popular"
-        var midIdx = Math.floor((plans.length - 1) / 2);
-        grid.innerHTML = plans.map(function(p, i) {
-            var isPopular = (i === midIdx && plans.length > 1);
-            var feats = [];
-            if (p.duration) feats.push('<span class="flex items-center gap-1 text-[11px] text-slate-300"><span class="text-yellow-400">✔</span>' + p.duration + '</span>');
-            feats.push('<span class="flex items-center gap-1 text-[11px] text-slate-300"><span class="text-yellow-400">✔</span>All Signals</span>');
-            feats.push('<span class="flex items-center gap-1 text-[11px] text-slate-300"><span class="text-yellow-400">✔</span>AI Auto Trading</span>');
-            if (isPopular) feats.push('<span class="flex items-center gap-1 text-[11px] text-emerald-400"><span>✔</span>Priority Support</span>');
-            return '<div class="plan-card ' + (isPopular ? 'plan-popular' : '') + '" data-plan-key="' + p.key + '" onclick="_blSelectPlan(\'' + p.key + '\')">' +
-                (isPopular ? '<div class="popular-ribbon">⭐ MOST POPULAR</div>' : '') +
-                '<div class="plan-check-badge">✓</div>' +
-                '<p class="text-xs font-bold text-amber-400/80 uppercase tracking-widest mb-2">' + p.label + '</p>' +
-                '<p class="text-2xl font-black mb-0.5" style="background:linear-gradient(90deg,#FFD700,#FFF8DC,#FFD700);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-family:\'Orbitron\',sans-serif;">' + p.pricePKR + '<span class="text-sm"> PKR</span></p>' +
-                '<p class="text-[10px] text-slate-500 mb-4">≈ $' + p.priceUSD + ' USD</p>' +
-                '<div class="space-y-1.5 mb-5">' + feats.join('') + '</div>' +
-                '<button type="button" class="w-full py-2.5 rounded-xl text-xs font-bold transition-all ' + (isPopular ? 'golden-btn text-black' : 'border border-yellow-400/50 text-yellow-300 hover:bg-yellow-400/10') + '">' +
-                'Select Plan <span class="ml-1">→</span></button></div>';
+        // Detect which plan to mark as "most popular" (middle plan, or key === 'month')
+        var popularKey = plans.length >= 2 ? plans[Math.floor(plans.length / 2)].key : '';
+        // Features per plan
+        var planFeatures = {
+            week:     ['7 Days Access', 'All AI Signals', 'Manual & Auto Mode', 'Email Support'],
+            month:    ['30 Days Access', 'All AI Signals', 'Manual & Auto Mode', 'Priority Support', 'Signal Alerts'],
+            lifetime: ['Lifetime Access', 'All AI Signals', 'All Trading Modes', 'VIP Support', 'Signal Alerts', 'Future Updates']
+        };
+        var defaultFeatures = ['Full Bot Access', 'AI Signal Engine', 'Real-Time Signals'];
+        grid.innerHTML = plans.map(function(p) {
+            var isPopular   = p.key === popularKey;
+            var feats       = planFeatures[p.key] || defaultFeatures;
+            var featureHtml = feats.map(function(f) {
+                return '<div class="plan-feature"><i class="fa-solid fa-check-circle"></i><span>' + f + '</span></div>';
+            }).join('');
+            return '<div id="plan-card-' + p.key + '" class="plan-card' + (isPopular ? ' plan-popular' : '') + '" onclick="_blSelectPlanCard(\'' + p.key + '\')">' +
+                (isPopular ? '<div class="popular-ribbon">MOST POPULAR</div>' : '') +
+                '<div class="flex items-start justify-between mb-3">' +
+                    '<div>' +
+                        '<div class="title-font font-bold text-yellow-200 text-base leading-tight">' + p.label + '</div>' +
+                        '<div class="text-slate-500 text-xs mt-0.5">⏱ ' + p.duration + '</div>' +
+                    '</div>' +
+                    '<div class="text-right">' +
+                        '<div class="num-font font-black text-2xl text-yellow-300 leading-tight">$' + p.priceUSD + '</div>' +
+                        '<div class="text-slate-500 text-xs">' + p.pricePKR + ' PKR</div>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="mb-4">' + featureHtml + '</div>' +
+                '<div class="w-full py-2.5 rounded-xl text-center text-xs font-bold tracking-wide transition-all" ' +
+                    'style="background:rgba(234,179,8,0.1);border:1.5px solid rgba(234,179,8,0.35);color:#FFD700;">' +
+                    '<i class="fa-solid fa-circle-dot mr-1.5"></i> Select This Plan' +
+                '</div>' +
+            '</div>';
         }).join('');
     }
 
     function _blSelectMethod(key, label) {
         if (key === 'usdt') { _blShowUsdtChoice(); return; }
         _blSelMethod = label || key;
-        var md = document.getElementById('bl-method-display'); if (md) md.value = _blSelMethod;
-        // Highlight selected card
-        document.querySelectorAll('.bl-method-card').forEach(function(c) {
-            c.classList.remove('method-selected');
-        });
-        var sel = document.querySelector('.bl-method-card[data-method="' + key + '"]');
-        if (sel) sel.classList.add('method-selected');
-        // Show payment details
-        var dc = document.getElementById('bl-details-card'); if (dc) dc.classList.remove('hidden');
+        // Highlight selected method card
+        document.querySelectorAll('#bl-methods-grid button').forEach(function(b) { b.classList.remove('method-selected'); });
+        // Show details inline in step 2 (do NOT advance step)
         _blRenderDetails(key);
-        _blUpdateConfirmBtn();
+        var ds = document.getElementById('bl-details-section');
+        if (ds) { ds.classList.remove('hidden'); ds.style.animation = 'fadeIn 0.35s ease both'; }
     }
 
     function _blShowUsdtChoice() {
         var grid = document.getElementById('bl-methods-grid');
         if (!grid) return;
         var s = _blSettings || {};
-        var html = '<div class="col-span-2 text-center text-slate-400 text-xs mb-2 font-semibold">Select USDT Network:</div>';
+        var html = '<div class="col-span-2 text-center text-slate-400 text-xs mb-2 font-semibold uppercase tracking-wider">Select USDT Network:</div>';
         if (!s.usdtTrc20 || s.usdtTrc20.enabled !== false)
-            html += '<button type="button" onclick="_blSelectCrypto(\'usdtTrc20\',\'USDT TRC20\')" class="bl-method-card" data-method="usdtTrc20"><div class="bl-method-check">✓</div><span class="text-2xl">🔵</span><span class="text-xs font-bold text-cyan-300 text-center leading-tight">USDT TRC20<br><span class="text-[10px] text-slate-500 font-normal">Tron</span></span></button>';
+            html += '<button type="button" onclick="_blSelectCrypto(\'usdtTrc20\',\'USDT TRC20\')" class="method-card rounded-2xl p-4 flex flex-col items-center gap-1 transition-all hover:scale-[1.03] cursor-pointer" style="border-color:rgba(6,182,212,0.4);"><span class="text-2xl">🔵</span><span class="text-xs font-bold text-cyan-300">USDT TRC20</span><span class="text-[10px] text-slate-500">Tron Network</span></button>';
         if (!s.usdtBep20 || s.usdtBep20.enabled !== false)
-            html += '<button type="button" onclick="_blSelectCrypto(\'usdtBep20\',\'USDT BEP20\')" class="bl-method-card" data-method="usdtBep20"><div class="bl-method-check">✓</div><span class="text-2xl">🟡</span><span class="text-xs font-bold text-yellow-300 text-center leading-tight">USDT BEP20<br><span class="text-[10px] text-slate-500 font-normal">BSC</span></span></button>';
-        html += '<button type="button" onclick="_blRenderMethods()" class="col-span-2 text-xs text-slate-400 hover:text-yellow-300 py-1">← Back to methods</button>';
+            html += '<button type="button" onclick="_blSelectCrypto(\'usdtBep20\',\'USDT BEP20\')" class="method-card rounded-2xl p-4 flex flex-col items-center gap-1 transition-all hover:scale-[1.03] cursor-pointer" style="border-color:rgba(234,179,8,0.4);"><span class="text-2xl">🟡</span><span class="text-xs font-bold text-yellow-300">USDT BEP20</span><span class="text-[10px] text-slate-500">BNB Smart Chain</span></button>';
+        html += '<button type="button" onclick="_blRenderMethods()" class="col-span-2 text-xs text-slate-400 hover:text-yellow-300 py-1 transition-colors">← Back to Methods</button>';
         grid.innerHTML = html;
     }
 
     function _blSelectCrypto(netKey, netLabel) {
         _blSelMethod = netLabel;
-        var md = document.getElementById('bl-method-display'); if (md) md.value = _blSelMethod;
-        document.querySelectorAll('.bl-method-card').forEach(function(c) { c.classList.remove('method-selected'); });
-        var sel = document.querySelector('.bl-method-card[data-method="' + netKey + '"]');
-        if (sel) sel.classList.add('method-selected');
-        var dc = document.getElementById('bl-details-card'); if (dc) dc.classList.remove('hidden');
+        // Show details inline in step 2
         _blRenderDetails(netKey);
-        _blUpdateConfirmBtn();
+        var ds = document.getElementById('bl-details-section');
+        if (ds) { ds.classList.remove('hidden'); ds.style.animation = 'fadeIn 0.35s ease both'; }
     }
 
     function _blRenderDetails(methodKey) {
@@ -4231,67 +4321,9 @@ function requestNewOTP() {
             _stErr('❌ ' + (e.message || 'Failed to send. Please try again.'));
         } finally {
             btn.disabled = false;
-            btn.style.cssText = 'background:linear-gradient(90deg,#b8860b,#ffd700,#b8860b);opacity:1;cursor:pointer;';
-            btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-2"></i> Confirm &amp; Pay';
+            btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-2"></i> Submit Order';
         }
     }
-
-    // ── Entry Popup ─────────────────────────────────────────────────────────
-    (function() {
-        if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('csai_entry_popup_seen')) {
-            var popup = document.getElementById('csai-entry-popup');
-            if (popup) popup.remove();
-            return;
-        }
-
-        function doCloseEntryPopup() {
-            var popup = document.getElementById('csai-entry-popup');
-            if (!popup) return;
-            popup.style.transition = 'opacity 0.3s ease';
-            popup.style.opacity = '0';
-            document.body.style.overflow = '';
-            setTimeout(function() { if (popup.parentNode) popup.remove(); }, 320);
-            try { sessionStorage.setItem('csai_entry_popup_seen', '1'); } catch(e) {}
-        }
-
-        window.closeEntryPopupNow = doCloseEntryPopup;
-        window.closeEntryPopupAndBuy = function() {
-            doCloseEntryPopup();
-            setTimeout(function() {
-                if (typeof openBuyLicenseModal === 'function') openBuyLicenseModal();
-            }, 380);
-        };
-
-        function trapFocus(el) {
-            var focusables = el.querySelectorAll('button, a, input, [tabindex]:not([tabindex="-1"])');
-            var first = focusables[0];
-            var last  = focusables[focusables.length - 1];
-            el.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape') { doCloseEntryPopup(); return; }
-                if (e.key !== 'Tab') return;
-                if (e.shiftKey) {
-                    if (document.activeElement === first) { e.preventDefault(); if (last) last.focus(); }
-                } else {
-                    if (document.activeElement === last)  { e.preventDefault(); if (first) first.focus(); }
-                }
-            });
-        }
-
-        function initPopup() {
-            var popup = document.getElementById('csai-entry-popup');
-            if (!popup) return;
-            document.body.style.overflow = 'hidden';
-            trapFocus(popup);
-            var firstBtn = popup.querySelector('button, a');
-            if (firstBtn) setTimeout(function() { firstBtn.focus(); }, 100);
-        }
-
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initPopup);
-        } else {
-            initPopup();
-        }
-    })();
     </script>
 
 </body>
