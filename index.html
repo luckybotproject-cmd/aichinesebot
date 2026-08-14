@@ -1,18 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-JBV2KX89YG"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-JBV2KX89YG');
-</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chinese Signal Bot • AI Auto Trading</title>
+    <!-- Additive connection hints: keep existing assets and functionality, start remote connections sooner. -->
+    <link rel="preconnect" href="https://cdn.tailwindcss.com">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="dns-prefetch" href="//cdn.rawgit.com">
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#FFD700">
     <link rel="apple-touch-icon" href="/icon-192.png">
@@ -572,7 +569,7 @@
                 <div class="mt-5 flex flex-col gap-3">
                     <button onclick="openBuyLicenseModal()"
                             class="golden-btn w-full text-black font-bold py-5 rounded-2xl text-base tracking-widest uppercase">
-                        🛒 Order License Key Here
+                        🛒 Buy License Key — Order Here
                     </button>
                     <div class="flex gap-2">
                         <a id="login-wa-link" href="https://wa.me/923021036192?text=Hello,%20I%20want%20to%20buy%20Chinese%20Signal%20Bot%20License%20Key" target="_blank"
@@ -4295,6 +4292,561 @@ function requestNewOTP() {
             var overlay = document.getElementById('license-gate-overlay');
             if (overlay) overlay.classList.add('hidden');
         }
+    </script>
+
+    <!-- ═══════════════════════════════════════════════════
+         EMBEDDED LEGAL PAGES + SMALL DIRECT-LINK FOOTER
+         Everything below is contained in this single HTML file.
+    ═══════════════════════════════════════════════════ -->
+    <style>
+        #cb-legal-layer[hidden] { display: none !important; }
+        #cb-legal-layer {
+            position: fixed;
+            inset: 0;
+            z-index: 10001;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            background:
+                radial-gradient(circle at 86% 0%, rgba(34, 211, 238, 0.14), transparent 30rem),
+                #030712;
+            color: #e5e7eb;
+        }
+        body.cb-legal-active { overflow: hidden; }
+        .cb-legal-wrap {
+            width: min(1060px, calc(100% - 2rem));
+            margin: 0 auto;
+        }
+        .cb-legal-topbar {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            border-bottom: 1px solid rgba(71, 85, 105, 0.55);
+            background: rgba(3, 7, 18, 0.88);
+            backdrop-filter: blur(18px);
+        }
+        .cb-legal-topbar-inner {
+            min-height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+        .cb-legal-brand {
+            color: #f8fafc;
+            font-size: 0.9rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+        .cb-legal-brand-mark { color: #22d3ee; margin-right: 0.35rem; }
+        .cb-page-menu-main {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 9998;
+        }
+        .cb-page-menu-legal {
+            position: relative;
+            z-index: 3;
+            margin-left: auto;
+        }
+        .cb-page-menu summary {
+            width: 2.9rem;
+            height: 2.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            list-style: none;
+            border: 1px solid rgba(34, 211, 238, 0.32);
+            border-radius: 0.85rem;
+            background: rgba(8, 15, 30, 0.86);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(14px);
+            transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+        }
+        .cb-page-menu summary::-webkit-details-marker { display: none; }
+        .cb-page-menu summary:hover,
+        .cb-page-menu[open] summary {
+            border-color: rgba(103, 232, 249, 0.8);
+            background: rgba(14, 38, 58, 0.94);
+            transform: translateY(-1px);
+        }
+        .cb-menu-lines {
+            width: 1.15rem;
+            display: grid;
+            gap: 0.24rem;
+        }
+        .cb-menu-lines span {
+            display: block;
+            height: 2px;
+            border-radius: 999px;
+            background: #67e8f9;
+            transition: transform 160ms ease, opacity 160ms ease;
+        }
+        .cb-page-menu[open] .cb-menu-lines span:nth-child(1) {
+            transform: translateY(0.26rem) rotate(45deg);
+        }
+        .cb-page-menu[open] .cb-menu-lines span:nth-child(2) { opacity: 0; }
+        .cb-page-menu[open] .cb-menu-lines span:nth-child(3) {
+            transform: translateY(-0.26rem) rotate(-45deg);
+        }
+        .cb-page-menu-panel {
+            position: absolute;
+            top: calc(100% + 0.6rem);
+            right: 0;
+            width: min(220px, calc(100vw - 2rem));
+            padding: 0.4rem;
+            border: 1px solid rgba(71, 85, 105, 0.75);
+            border-radius: 0.9rem;
+            background: rgba(8, 15, 30, 0.98);
+            box-shadow: 0 20px 52px rgba(0, 0, 0, 0.48);
+        }
+        .cb-page-menu-panel a {
+            display: block;
+            padding: 0.65rem 0.8rem;
+            border-radius: 0.6rem;
+            color: #cbd5e1;
+            font-size: 0.76rem;
+            text-decoration: none;
+            transition: background 160ms ease, color 160ms ease;
+        }
+        .cb-page-menu-panel a:hover {
+            background: rgba(34, 211, 238, 0.1);
+            color: #67e8f9;
+        }
+        .cb-legal-nav {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 0.35rem 1rem;
+            font-size: 0.72rem;
+        }
+        .cb-legal-nav a,
+        .cb-legal-footer a {
+            color: #94a3b8;
+            text-decoration: none;
+            transition: color 160ms ease;
+        }
+        .cb-legal-nav a:hover,
+        .cb-legal-nav a[aria-current="page"],
+        .cb-legal-footer a:hover {
+            color: #67e8f9;
+        }
+        .cb-legal-content {
+            flex: 1 0 auto;
+            padding: 4.5rem 0 5rem;
+        }
+        .cb-legal-page {
+            display: none;
+            animation: cbLegalIn 220ms ease both;
+        }
+        .cb-legal-page.cb-legal-page-active { display: block; }
+        .cb-legal-eyebrow {
+            margin: 0 0 0.8rem;
+            color: #22d3ee;
+            font-size: 0.68rem;
+            font-weight: 800;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+        }
+        .cb-legal-page h1 {
+            margin: 0;
+            color: #f8fafc;
+            font-size: clamp(2rem, 5vw, 4rem);
+            line-height: 1.08;
+            letter-spacing: -0.045em;
+        }
+        .cb-legal-lede {
+            max-width: 740px;
+            margin: 1.2rem 0 0;
+            color: #94a3b8;
+            font-size: 1rem;
+            line-height: 1.7;
+        }
+        .cb-legal-updated {
+            margin: 0.85rem 0 0;
+            color: #64748b;
+            font-size: 0.72rem;
+        }
+        .cb-legal-card {
+            margin-top: 2.5rem;
+            padding: clamp(1.35rem, 4vw, 3.25rem);
+            border: 1px solid rgba(71, 85, 105, 0.5);
+            border-radius: 1.25rem;
+            background: linear-gradient(145deg, rgba(15, 23, 42, 0.94), rgba(8, 15, 30, 0.9));
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.32);
+        }
+        .cb-legal-card h2 {
+            margin: 2.1rem 0 0.7rem;
+            color: #f8fafc;
+            font-size: 1.2rem;
+            line-height: 1.25;
+        }
+        .cb-legal-card h2:first-child { margin-top: 0; }
+        .cb-legal-card p,
+        .cb-legal-card li {
+            color: #a8b5c7;
+            font-size: 0.9rem;
+            line-height: 1.75;
+        }
+        .cb-legal-card p { margin: 0 0 0.9rem; }
+        .cb-legal-card ul {
+            margin: 0.5rem 0 1rem;
+            padding-left: 1.25rem;
+        }
+        .cb-legal-card li + li { margin-top: 0.4rem; }
+        .cb-legal-card a { color: #67e8f9; text-underline-offset: 0.18em; }
+        .cb-legal-callout {
+            margin: 1.35rem 0;
+            padding: 1rem 1.1rem;
+            border-left: 3px solid #22d3ee;
+            border-radius: 0 0.75rem 0.75rem 0;
+            background: rgba(34, 211, 238, 0.08);
+        }
+        .cb-legal-callout p { margin: 0; color: #e0f2fe; }
+        .cb-contact-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.8rem;
+            margin-bottom: 2rem;
+        }
+        .cb-contact-item {
+            padding: 1rem;
+            border: 1px solid rgba(71, 85, 105, 0.5);
+            border-radius: 0.85rem;
+            background: rgba(34, 211, 238, 0.045);
+        }
+        .cb-contact-item strong {
+            display: block;
+            margin-bottom: 0.35rem;
+            color: #e2e8f0;
+            font-size: 0.68rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+        .cb-contact-item span,
+        .cb-contact-item a {
+            color: #a8b5c7;
+            font-size: 0.88rem;
+            overflow-wrap: anywhere;
+        }
+        .cb-legal-footer {
+            border-top: 1px solid rgba(71, 85, 105, 0.5);
+            padding: 1.4rem 0 2rem;
+            color: #64748b;
+            font-size: 0.68rem;
+            text-align: center;
+        }
+        .cb-legal-footer-links {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.4rem 1.1rem;
+            margin-top: 0.55rem;
+        }
+        .cb-main-footer {
+            width: 100%;
+            margin-top: 4rem;
+            padding: 1.25rem 1rem;
+            border-top: 1px solid rgba(71, 85, 105, 0.55);
+            background: rgba(3, 7, 18, 0.7);
+            text-align: center;
+        }
+        .cb-main-footer p {
+            margin: 0 0 0.55rem;
+            color: #64748b;
+            font-size: 0.66rem;
+            letter-spacing: 0.04em;
+        }
+        .cb-footer-dropdown {
+            position: relative;
+            display: inline-block;
+            text-align: left;
+            font-size: 0.68rem;
+        }
+        .cb-footer-dropdown summary {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            cursor: pointer;
+            list-style: none;
+            color: #94a3b8;
+            user-select: none;
+            transition: color 160ms ease;
+        }
+        .cb-footer-dropdown summary::-webkit-details-marker { display: none; }
+        .cb-footer-dropdown summary::after {
+            content: "⌄";
+            color: #22d3ee;
+            font-size: 0.8rem;
+            transition: transform 160ms ease;
+        }
+        .cb-footer-dropdown[open] summary,
+        .cb-footer-dropdown summary:hover { color: #67e8f9; }
+        .cb-footer-dropdown[open] summary::after { transform: rotate(180deg); }
+        .cb-footer-menu {
+            position: absolute;
+            bottom: calc(100% + 0.55rem);
+            left: 50%;
+            z-index: 5;
+            min-width: 190px;
+            padding: 0.35rem;
+            transform: translateX(-50%);
+            border: 1px solid rgba(71, 85, 105, 0.7);
+            border-radius: 0.75rem;
+            background: rgba(8, 15, 30, 0.98);
+            box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+        }
+        .cb-footer-menu a {
+            display: block;
+            padding: 0.55rem 0.7rem;
+            border-radius: 0.5rem;
+            color: #cbd5e1;
+            text-decoration: none;
+            white-space: nowrap;
+            transition: background 160ms ease, color 160ms ease;
+        }
+        .cb-footer-menu a:hover {
+            background: rgba(34, 211, 238, 0.1);
+            color: #67e8f9;
+        }
+        .cb-legal-footer .cb-footer-dropdown { margin-top: 0.65rem; }
+        @keyframes cbLegalIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @media (max-width: 700px) {
+            .cb-legal-topbar-inner {
+                align-items: center;
+                flex-direction: row;
+                padding: 0.9rem 0;
+            }
+            .cb-legal-content { padding-top: 3rem; }
+            .cb-contact-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+
+    <details class="cb-page-menu cb-page-menu-main" data-cb-page-menu>
+        <summary aria-label="Open page menu" title="Open page menu">
+            <span class="cb-menu-lines" aria-hidden="true">
+                <span></span><span></span><span></span>
+            </span>
+        </summary>
+        <nav class="cb-page-menu-panel" aria-label="Page menu">
+            <a href="#" data-cb-legal-route="home">Home</a>
+            <a href="#privacy-policy" data-cb-legal-route="privacy-policy">Privacy Policy</a>
+            <a href="#terms" data-cb-legal-route="terms">Terms &amp; Conditions</a>
+            <a href="#refund-policy" data-cb-legal-route="refund-policy">Refund Policy</a>
+            <a href="#contact" data-cb-legal-route="contact">Contact Us</a>
+        </nav>
+    </details>
+
+    <footer class="cb-main-footer" aria-label="Legal and support links">
+        <p>© 2026 Chinese Trading Platform · chinesebot.me</p>
+    </footer>
+
+    <div id="cb-legal-layer" hidden aria-hidden="true">
+        <header class="cb-legal-topbar">
+            <div class="cb-legal-wrap cb-legal-topbar-inner">
+                <a class="cb-legal-brand" href="#" data-cb-legal-route="home">
+                    <span class="cb-legal-brand-mark">◆</span> Chinese Trading Platform
+                </a>
+                <details class="cb-page-menu cb-page-menu-legal" data-cb-page-menu>
+                    <summary aria-label="Open page menu" title="Open page menu">
+                        <span class="cb-menu-lines" aria-hidden="true">
+                            <span></span><span></span><span></span>
+                        </span>
+                    </summary>
+                    <nav class="cb-page-menu-panel" aria-label="Page menu">
+                        <a href="#" data-cb-legal-route="home">Home</a>
+                        <a href="#privacy-policy" data-cb-legal-route="privacy-policy">Privacy Policy</a>
+                        <a href="#terms" data-cb-legal-route="terms">Terms &amp; Conditions</a>
+                        <a href="#refund-policy" data-cb-legal-route="refund-policy">Refund Policy</a>
+                        <a href="#contact" data-cb-legal-route="contact">Contact Us</a>
+                    </nav>
+                </details>
+            </div>
+        </header>
+
+        <main class="cb-legal-wrap cb-legal-content">
+            <section class="cb-legal-page" data-cb-legal-page="privacy-policy">
+                <p class="cb-legal-eyebrow">Your data, clearly explained</p>
+                <h1>Privacy Policy</h1>
+                <p class="cb-legal-lede">This policy explains how Chinese Trading Platform handles information when you visit or use chinesebot.me and its related software services.</p>
+                <p class="cb-legal-updated">Effective date: August 13, 2026</p>
+                <article class="cb-legal-card">
+                    <h2>1. Information we may collect</h2>
+                    <p>Depending on how you use the website, we may receive information that you choose to provide, such as your name, WhatsApp number, email address, payment reference, license details, support messages, and information needed to provide software access.</p>
+                    <p>We may also receive limited technical information automatically, including IP address, browser and device type, pages viewed, approximate location derived from IP address, referring pages, and timestamps. We use this information to operate, secure, troubleshoot, and improve the service.</p>
+                    <h2>2. Meta Pixel and similar technologies</h2>
+                    <p>We may use Meta Pixel and similar analytics or advertising technologies to understand website visits, measure campaigns, and improve the relevance of our communications. These tools may collect browser events such as page views, button interactions, and conversion events. Their use is subject to the relevant provider's policies.</p>
+                    <p>Where required by applicable law, we will request consent before placing non-essential analytics or advertising technologies. You can also manage available cookie or advertising controls through your browser and, where offered, our cookie preferences.</p>
+                    <h2>3. Cookies and local storage</h2>
+                    <p>Cookies are small files stored on your device. We may use essential cookies or similar storage to keep the service working, remember preferences, protect forms, measure performance, and understand how visitors use the site.</p>
+                    <p>You can block or delete cookies through your browser settings. Disabling essential cookies may affect sign-in, license validation, or other service functions.</p>
+                    <h2>4. How we use information</h2>
+                    <ul>
+                        <li>To provide, activate, maintain, and support software subscriptions and licenses.</li>
+                        <li>To process support requests, billing questions, and service communications.</li>
+                        <li>To prevent fraud, abuse, unauthorized access, and security incidents.</li>
+                        <li>To measure website performance and improve our products and documentation.</li>
+                        <li>To comply with legal obligations and enforce our terms.</li>
+                    </ul>
+                    <h2>5. Sharing and disclosure</h2>
+                    <p>We may share information with service providers that help us host, secure, analyze, communicate, or process payments for the service. These providers may only use information as needed to perform services for us or as otherwise permitted by law.</p>
+                    <div class="cb-legal-callout"><p><strong>We never sell your personal data to third parties.</strong></p></div>
+                    <p>We may disclose information if required by law, to protect users or the service, to investigate abuse, or in connection with a business transfer. We do not control the privacy practices of third-party websites or platforms linked from our service.</p>
+                    <h2>6. Data protection and retention</h2>
+                    <p>We use reasonable administrative, technical, and organizational safeguards designed to protect information from unauthorized access, alteration, disclosure, or destruction. No internet transmission or storage system can be guaranteed to be completely secure.</p>
+                    <p>We retain information only for as long as reasonably necessary for the purposes described here, including providing the service, resolving disputes, maintaining records, preventing abuse, and meeting legal requirements.</p>
+                    <h2>7. Your choices and rights</h2>
+                    <p>Depending on your location, you may have rights to request access, correction, deletion, restriction, or a copy of personal information, or to object to certain processing. To make a privacy request, contact us using the <a href="#contact" data-cb-legal-route="contact">Contact Us page</a>.</p>
+                    <h2>8. Children and policy changes</h2>
+                    <p>The service is not directed to children who are unable to enter into a service agreement. We may update this policy from time to time by posting a revised version on this page.</p>
+                    <h2>9. Contact</h2>
+                    <p>Questions about privacy can be sent through our <a href="#contact" data-cb-legal-route="contact">official contact details</a>.</p>
+                </article>
+            </section>
+
+            <section class="cb-legal-page" data-cb-legal-page="terms">
+                <p class="cb-legal-eyebrow">Please read before using the platform</p>
+                <h1>Terms &amp; Conditions</h1>
+                <p class="cb-legal-lede">These terms govern access to Chinese Trading Platform and related software services available at chinesebot.me.</p>
+                <p class="cb-legal-updated">Effective date: August 13, 2026</p>
+                <article class="cb-legal-card">
+                    <h2>1. Agreement and eligibility</h2>
+                    <p>By visiting chinesebot.me, purchasing a subscription, or using the Chinese Trading Platform, you agree to these Terms &amp; Conditions and our <a href="#privacy-policy" data-cb-legal-route="privacy-policy">Privacy Policy</a>. If you do not agree, do not use the service.</p>
+                    <p>You must provide accurate information and be legally capable of entering into this agreement in your location. You are responsible for keeping your account, license key, and access details confidential.</p>
+                    <h2>2. Service access</h2>
+                    <p>Chinese Trading Platform provides software tools, signals, dashboards, and related information for analytical and informational use. Access may depend on an active subscription, a valid license, technical compatibility, and compliance with these terms.</p>
+                    <p>Access is personal to the purchaser unless we expressly authorize otherwise. You may not resell, share, sublicense, copy, reverse engineer, scrape, interfere with, or attempt to bypass security or license controls.</p>
+                    <h2>3. Subscriptions and payments</h2>
+                    <p>Available subscription terms may include 1 Week, 1 Month, and Lifetime access. Prices, activation requirements, and payment instructions are shown at the time of purchase or provided by official support.</p>
+                    <h2>4. Financial Risk Disclaimer</h2>
+                    <div class="cb-legal-callout"><p><strong>Trading in financial markets carries inherent risk. The tools provided are for analytical and informational purposes only. Past performance does not guarantee future results.</strong></p></div>
+                    <p>Nothing on the platform is financial, investment, legal, tax, or other professional advice, and no content is a recommendation to buy, sell, or hold any asset. You make your own decisions and accept responsibility for your losses, risks, and compliance obligations.</p>
+                    <h2>5. Availability and third-party services</h2>
+                    <p>We may change, suspend, or discontinue features, data sources, or access when reasonably necessary for maintenance, security, legal compliance, or business reasons. We do not promise that the service will be uninterrupted, error-free, or available in every location.</p>
+                    <p>The platform may rely on exchanges, brokers, messaging providers, hosting providers, payment processors, or other third parties. We are not responsible for outages, delays, inaccuracies, or changes caused by third-party services.</p>
+                    <h2>6. Intellectual property</h2>
+                    <p>The software, branding, design, content, documentation, and underlying materials of Chinese Trading Platform are owned by or licensed to us and are protected by applicable law. These terms grant a limited, revocable, non-exclusive right to use the service for its intended purpose; they do not transfer ownership.</p>
+                    <h2>7. Suspension and termination</h2>
+                    <p>We may suspend or terminate access if you breach these terms, misuse the service, create a security risk, engage in fraud, or fail to complete a required payment. You may stop using the service at any time.</p>
+                    <h2>8. Disclaimers and limitation of liability</h2>
+                    <p>To the fullest extent permitted by law, the service is provided on an “as available” and “as is” basis without warranties of any kind. To the fullest extent permitted by law, Chinese Trading Platform and its operators will not be liable for indirect, incidental, special, consequential, or trading losses arising from use of or inability to use the service.</p>
+                    <h2>9. Changes and contact</h2>
+                    <p>We may update these terms by posting a revised version on this page. Continued use after an update means you accept the revised terms. Questions should be sent using our <a href="#contact" data-cb-legal-route="contact">official contact details</a>.</p>
+                </article>
+            </section>
+
+            <section class="cb-legal-page" data-cb-legal-page="refund-policy">
+                <p class="cb-legal-eyebrow">Billing and access</p>
+                <h1>Refund &amp; Cancellation Policy</h1>
+                <p class="cb-legal-lede">This policy applies to digital software subscriptions and license access purchased from Chinese Trading Platform at chinesebot.me.</p>
+                <p class="cb-legal-updated">Effective date: August 13, 2026</p>
+                <article class="cb-legal-card">
+                    <h2>Digital subscription policy</h2>
+                    <div class="cb-legal-callout"><p><strong>Due to the nature of digital software access, subscriptions (1 Week, 1 Month, Lifetime) are non-refundable once activated. For billing issues, contact support.</strong></p></div>
+                    <p>Activation means that the subscription, license key, account access, or software functionality has been made available for use. Once activated, we cannot revoke access and return the subscription price as a refund.</p>
+                    <h2>Cancellation</h2>
+                    <p>You may stop using the service at any time. Stopping use does not create a refund entitlement for an activated subscription. If a recurring payment option is offered for your purchase, request cancellation before the next billing date through the payment method or official support channel provided to you.</p>
+                    <h2>Billing issues</h2>
+                    <p>Contact support as soon as possible if you were charged incorrectly, paid but did not receive access, received a duplicate charge, or believe a payment was made without authorization. Include your name, payment reference, subscription type, and a description of the issue. Do not send passwords or sensitive banking credentials.</p>
+                    <h2>Service access problems</h2>
+                    <p>We will make reasonable efforts to investigate verified activation or access errors. Support may ask for information needed to locate the transaction and may restore access where the issue is caused by an error in activation. Temporary downtime, third-party outages, device limitations, or market-data interruptions do not automatically qualify for a refund.</p>
+                    <h2>Contact support</h2>
+                    <p>For billing and cancellation questions, use the <a href="#contact" data-cb-legal-route="contact">official Contact Us page</a>.</p>
+                </article>
+            </section>
+
+            <section class="cb-legal-page" data-cb-legal-page="contact">
+                <p class="cb-legal-eyebrow">We are here to help</p>
+                <h1>Contact Us</h1>
+                <p class="cb-legal-lede">Use the official details below for questions about Chinese Trading Platform, access, payments, privacy, or billing.</p>
+                <article class="cb-legal-card">
+                    <div class="cb-contact-grid">
+                        <div class="cb-contact-item"><strong>Business name</strong><span>Chinese Trading Platform</span></div>
+                        <div class="cb-contact-item"><strong>Website</strong><a href="https://chinesebot.me" target="_blank" rel="noopener noreferrer">https://chinesebot.me</a></div>
+                        <div class="cb-contact-item"><strong>Official WhatsApp support</strong><a href="https://wa.me/923712359456" target="_blank" rel="noopener noreferrer">03712359456 (Asif Ali)</a></div>
+                        <div class="cb-contact-item"><strong>Manual payment account title</strong><span>MASHOOQ</span></div>
+                    </div>
+                    <h2>What to include in a support request</h2>
+                    <p>For faster help, include the name used at purchase, your subscription type, payment reference, license key status, and a short description of the issue. Never share your password, one-time code, or full payment credentials.</p>
+                    <h2>Policy questions</h2>
+                    <p>Read the <a href="#privacy-policy" data-cb-legal-route="privacy-policy">Privacy Policy</a>, <a href="#terms" data-cb-legal-route="terms">Terms &amp; Conditions</a>, and <a href="#refund-policy" data-cb-legal-route="refund-policy">Refund &amp; Cancellation Policy</a> for more information.</p>
+                </article>
+            </section>
+        </main>
+
+        <footer class="cb-legal-footer">
+            <div class="cb-legal-wrap">
+                <span>© 2026 Chinese Trading Platform · chinesebot.me</span>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        (function () {
+            var layer = document.getElementById('cb-legal-layer');
+            if (!layer) return;
+            var pages = Array.prototype.slice.call(document.querySelectorAll('[data-cb-legal-page]'));
+            var links = Array.prototype.slice.call(document.querySelectorAll('[data-cb-legal-route]'));
+            var dropdowns = Array.prototype.slice.call(document.querySelectorAll('[data-cb-page-menu]'));
+            var validRoutes = ['privacy-policy', 'terms', 'refund-policy', 'contact'];
+
+            function closeDropdowns() {
+                dropdowns.forEach(function (dropdown) {
+                    dropdown.removeAttribute('open');
+                });
+            }
+
+            function routeFromHash() {
+                var route = window.location.hash.replace(/^#/, '').toLowerCase();
+                return validRoutes.indexOf(route) >= 0 ? route : 'home';
+            }
+
+            function showRoute(route) {
+                var isHome = route === 'home';
+                layer.hidden = isHome;
+                layer.setAttribute('aria-hidden', isHome ? 'true' : 'false');
+                document.body.classList.toggle('cb-legal-active', !isHome);
+                pages.forEach(function (page) {
+                    page.classList.toggle('cb-legal-page-active', page.getAttribute('data-cb-legal-page') === route);
+                });
+                links.forEach(function (link) {
+                    var linkRoute = link.getAttribute('data-cb-legal-route');
+                    if (link.closest('.cb-legal-nav')) {
+                        if (linkRoute === route) link.setAttribute('aria-current', 'page');
+                        else link.removeAttribute('aria-current');
+                    }
+                });
+                closeDropdowns();
+                if (!isHome) layer.scrollTop = 0;
+            }
+
+            links.forEach(function (link) {
+                link.addEventListener('click', function (event) {
+                    var route = link.getAttribute('data-cb-legal-route');
+                    if (route === 'home') {
+                        event.preventDefault();
+                        if (window.location.hash) history.pushState({}, '', window.location.pathname + window.location.search);
+                        showRoute('home');
+                        window.scrollTo(0, 0);
+                    } else closeDropdowns();
+                });
+            });
+
+            window.addEventListener('hashchange', function () {
+                showRoute(routeFromHash());
+            });
+            window.addEventListener('popstate', function () {
+                showRoute(routeFromHash());
+            });
+            showRoute(routeFromHash());
+        }());
     </script>
 </body>
 </html>
