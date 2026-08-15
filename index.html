@@ -4533,6 +4533,114 @@ function requestNewOTP() {
             font-size: 0.88rem;
             overflow-wrap: anywhere;
         }
+        .cb-certificate-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.15fr) minmax(240px, 0.85fr);
+            gap: 1.5rem;
+            align-items: start;
+        }
+        .cb-certificate-frame {
+            overflow: hidden;
+            border: 1px solid rgba(103, 232, 249, 0.25);
+            border-radius: 1rem;
+            background: #e8eef3;
+            box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+        }
+        .cb-certificate-image {
+            display: block;
+            width: 100%;
+            height: auto;
+            cursor: zoom-in;
+        }
+        .cb-certificate-caption {
+            padding: 0.7rem 0.9rem;
+            color: #64748b;
+            background: #f8fafc;
+            font-size: 0.7rem;
+            line-height: 1.45;
+        }
+        .cb-certificate-side {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .cb-certificate-badge {
+            display: inline-flex;
+            align-items: center;
+            align-self: flex-start;
+            gap: 0.45rem;
+            padding: 0.45rem 0.7rem;
+            border: 1px solid rgba(52, 211, 153, 0.35);
+            border-radius: 999px;
+            color: #6ee7b7;
+            background: rgba(16, 185, 129, 0.1);
+            font-size: 0.68rem;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+        .cb-certificate-facts {
+            display: grid;
+            gap: 0.7rem;
+            margin: 0;
+            padding: 1rem 0;
+            border-top: 1px solid rgba(71, 85, 105, 0.55);
+            border-bottom: 1px solid rgba(71, 85, 105, 0.55);
+        }
+        .cb-certificate-fact {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+            gap: 0.8rem;
+            margin: 0;
+            font-size: 0.78rem;
+        }
+        .cb-certificate-fact dt { color: #64748b; }
+        .cb-certificate-fact dd {
+            margin: 0;
+            color: #e2e8f0;
+            font-weight: 700;
+            text-align: right;
+        }
+        .cb-certificate-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+        }
+        .cb-certificate-button {
+            display: inline-flex;
+            min-height: 2.5rem;
+            align-items: center;
+            justify-content: center;
+            gap: 0.45rem;
+            padding: 0.6rem 0.85rem;
+            border: 1px solid rgba(34, 211, 238, 0.35);
+            border-radius: 0.65rem;
+            color: #082f49;
+            background: #67e8f9;
+            font-size: 0.76rem;
+            font-weight: 800;
+            text-decoration: none;
+            cursor: pointer;
+            transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+        }
+        .cb-certificate-button:hover {
+            background: #a5f3fc;
+            box-shadow: 0 8px 18px rgba(34, 211, 238, 0.18);
+            transform: translateY(-1px);
+        }
+        .cb-certificate-button.secondary {
+            color: #cbd5e1;
+            background: rgba(15, 23, 42, 0.7);
+        }
+        .cb-certificate-button.secondary:hover {
+            color: #67e8f9;
+            background: rgba(34, 211, 238, 0.1);
+        }
+        .cb-certificate-note {
+            margin: 0 !important;
+            color: #64748b !important;
+            font-size: 0.72rem !important;
+        }
         .cb-legal-footer {
             border-top: 1px solid rgba(71, 85, 105, 0.5);
             padding: 1.4rem 0 2rem;
@@ -4626,6 +4734,45 @@ function requestNewOTP() {
             }
             .cb-legal-content { padding-top: 3rem; }
             .cb-contact-grid { grid-template-columns: 1fr; }
+            .cb-certificate-grid { grid-template-columns: 1fr; }
+        }
+        @media print {
+            body.cb-legal-active { overflow: visible; }
+            #cb-legal-layer {
+                position: static;
+                overflow: visible;
+                background: #fff;
+                color: #111827;
+            }
+            #cb-legal-layer .cb-legal-topbar,
+            #cb-legal-layer .cb-legal-footer,
+            #cb-legal-layer .cb-certificate-side,
+            #cb-legal-layer .cb-legal-nav { display: none; }
+            #cb-legal-layer .cb-legal-content { padding: 0; }
+            #cb-legal-layer .cb-legal-page[data-cb-legal-page="business-registration"] {
+                display: block;
+            }
+            #cb-legal-layer .cb-legal-page:not([data-cb-legal-page="business-registration"]) {
+                display: none;
+            }
+            #cb-legal-layer .cb-legal-page h1,
+            #cb-legal-layer .cb-legal-eyebrow,
+            #cb-legal-layer .cb-legal-lede,
+            #cb-legal-layer .cb-legal-updated {
+                color: #111827;
+            }
+            #cb-legal-layer .cb-legal-card {
+                margin-top: 1rem;
+                padding: 0;
+                border: 0;
+                box-shadow: none;
+                background: #fff;
+            }
+            #cb-legal-layer .cb-certificate-frame {
+                border: 0;
+                box-shadow: none;
+            }
+            #cb-legal-layer .cb-certificate-caption { display: none; }
         }
     </style>
 
@@ -4641,6 +4788,7 @@ function requestNewOTP() {
             <a href="#terms" data-cb-legal-route="terms">Terms &amp; Conditions</a>
             <a href="#refund-policy" data-cb-legal-route="refund-policy">Refund Policy</a>
             <a href="#contact" data-cb-legal-route="contact">Contact Us</a>
+            <a href="#business-registration" data-cb-legal-route="business-registration">Business Registration</a>
         </nav>
     </details>
 
@@ -4666,6 +4814,7 @@ function requestNewOTP() {
                         <a href="#terms" data-cb-legal-route="terms">Terms &amp; Conditions</a>
                         <a href="#refund-policy" data-cb-legal-route="refund-policy">Refund Policy</a>
                         <a href="#contact" data-cb-legal-route="contact">Contact Us</a>
+                        <a href="#business-registration" data-cb-legal-route="business-registration">Business Registration</a>
                     </nav>
                 </details>
             </div>
@@ -4779,6 +4928,48 @@ function requestNewOTP() {
                     <p>Read the <a href="#privacy-policy" data-cb-legal-route="privacy-policy">Privacy Policy</a>, <a href="#terms" data-cb-legal-route="terms">Terms &amp; Conditions</a>, and <a href="#refund-policy" data-cb-legal-route="refund-policy">Refund &amp; Cancellation Policy</a> for more information.</p>
                 </article>
             </section>
+
+            <section class="cb-legal-page" data-cb-legal-page="business-registration">
+                <p class="cb-legal-eyebrow">Official business documentation</p>
+                <h1>Business Registration Certificate</h1>
+                <p class="cb-legal-lede">For transparency and reference, the original taxpayer registration certificate associated with the business is displayed below.</p>
+                <p class="cb-legal-updated">Document presented as provided · Registration date: 30 July 2018</p>
+                <article class="cb-legal-card">
+                    <div class="cb-certificate-grid">
+                        <div class="cb-certificate-frame">
+                            <img
+                                class="cb-certificate-image"
+                                src="./attached_assets/tax_certificate_1786803864016.jpeg"
+                                alt="Taxpayer Registration Certificate issued by the Federal Board of Revenue of Pakistan for Quotex Signal Bot"
+                            >
+                            <div class="cb-certificate-caption">FBR Taxpayer Registration Certificate · Click or open the original image for a larger view.</div>
+                        </div>
+                        <div class="cb-certificate-side">
+                            <span class="cb-certificate-badge"><i class="fa-solid fa-shield-halved"></i> Document on file</span>
+                            <div>
+                                <h2 style="margin-top:0;">Registration details</h2>
+                                <p>The certificate image is displayed in its original form. It has not been recreated or digitally altered.</p>
+                            </div>
+                            <dl class="cb-certificate-facts">
+                                <div class="cb-certificate-fact"><dt>Business name</dt><dd>Quotex Signal Bot</dd></div>
+                                <div class="cb-certificate-fact"><dt>Registration no.</dt><dd>3630282385753</dd></div>
+                                <div class="cb-certificate-fact"><dt>Tax office</dt><dd>RTO Bahawalpur</dd></div>
+                                <div class="cb-certificate-fact"><dt>Activity type</dt><dd>Business</dd></div>
+                            </dl>
+                            <div class="cb-certificate-actions">
+                                <a
+                                    class="cb-certificate-button"
+                                    href="./attached_assets/tax_certificate_1786803864016.jpeg"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                ><i class="fa-solid fa-up-right-from-square"></i> Open original</a>
+                                <button class="cb-certificate-button secondary" type="button" data-cb-print-certificate><i class="fa-solid fa-print"></i> Print page</button>
+                            </div>
+                            <p class="cb-certificate-note">For formal verification, rely on the issuing authority and the original certificate image.</p>
+                        </div>
+                    </div>
+                </article>
+            </section>
         </main>
 
         <footer class="cb-legal-footer">
@@ -4795,7 +4986,7 @@ function requestNewOTP() {
             var pages = Array.prototype.slice.call(document.querySelectorAll('[data-cb-legal-page]'));
             var links = Array.prototype.slice.call(document.querySelectorAll('[data-cb-legal-route]'));
             var dropdowns = Array.prototype.slice.call(document.querySelectorAll('[data-cb-page-menu]'));
-            var validRoutes = ['privacy-policy', 'terms', 'refund-policy', 'contact'];
+             var validRoutes = ['privacy-policy', 'terms', 'refund-policy', 'contact', 'business-registration'];
 
             function closeDropdowns() {
                 dropdowns.forEach(function (dropdown) {
@@ -4845,6 +5036,12 @@ function requestNewOTP() {
             window.addEventListener('popstate', function () {
                 showRoute(routeFromHash());
             });
+            var printCertificateButton = document.querySelector('[data-cb-print-certificate]');
+            if (printCertificateButton) {
+                printCertificateButton.addEventListener('click', function () {
+                    window.print();
+                });
+            }
             showRoute(routeFromHash());
         }());
     </script>
