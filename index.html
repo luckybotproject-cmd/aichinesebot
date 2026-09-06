@@ -1,7 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- Google tag (gtag.js) -->
+  <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-JBV2KX89YG"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-JBV2KX89YG');
+</script>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4916676877809398"
+    <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-JBV2KX89YG"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -3887,12 +3897,123 @@ function requestNewOTP() {
         return arr;
     }
 
+    // ══ COUNTRY DETECTION (silent, IP based) ══════════════════════════════
+    var _CSB_LOCAL_COUNTRIES = ['PK'];
+    var _CSB_POPULAR = [
+        { c: 'PK', n: 'Pakistan',   f: '🇵🇰' }, { c: 'IN', n: 'India',      f: '🇮🇳' },
+        { c: 'BD', n: 'Bangladesh', f: '🇧🇩' }, { c: 'NP', n: 'Nepal',      f: '🇳🇵' },
+        { c: 'CN', n: 'China',      f: '🇨🇳' }, { c: 'NG', n: 'Nigeria',    f: '🇳🇬' }
+    ];
+    var _CSB_ALL = [['AF','Afghanistan'],['AL','Albania'],['DZ','Algeria'],['AR','Argentina'],['AM','Armenia'],['AU','Australia'],['AT','Austria'],['AZ','Azerbaijan'],['BH','Bahrain'],['BD','Bangladesh'],['BY','Belarus'],['BE','Belgium'],['BJ','Benin'],['BO','Bolivia'],['BA','Bosnia and Herzegovina'],['BR','Brazil'],['BG','Bulgaria'],['BF','Burkina Faso'],['KH','Cambodia'],['CM','Cameroon'],['CA','Canada'],['TD','Chad'],['CL','Chile'],['CN','China'],['CO','Colombia'],['CD','Congo (DRC)'],['CR','Costa Rica'],['HR','Croatia'],['CY','Cyprus'],['CZ','Czechia'],['DK','Denmark'],['DO','Dominican Republic'],['EC','Ecuador'],['EG','Egypt'],['SV','El Salvador'],['EE','Estonia'],['ET','Ethiopia'],['FI','Finland'],['FR','France'],['GE','Georgia'],['DE','Germany'],['GH','Ghana'],['GR','Greece'],['GT','Guatemala'],['GN','Guinea'],['HN','Honduras'],['HK','Hong Kong'],['HU','Hungary'],['IS','Iceland'],['IN','India'],['ID','Indonesia'],['IR','Iran'],['IQ','Iraq'],['IE','Ireland'],['IL','Israel'],['IT','Italy'],['CI','Ivory Coast'],['JM','Jamaica'],['JP','Japan'],['JO','Jordan'],['KZ','Kazakhstan'],['KE','Kenya'],['KW','Kuwait'],['KG','Kyrgyzstan'],['LA','Laos'],['LV','Latvia'],['LB','Lebanon'],['LY','Libya'],['LT','Lithuania'],['LU','Luxembourg'],['MK','North Macedonia'],['MG','Madagascar'],['MW','Malawi'],['MY','Malaysia'],['MV','Maldives'],['ML','Mali'],['MT','Malta'],['MR','Mauritania'],['MU','Mauritius'],['MX','Mexico'],['MD','Moldova'],['MN','Mongolia'],['ME','Montenegro'],['MA','Morocco'],['MZ','Mozambique'],['MM','Myanmar'],['NA','Namibia'],['NP','Nepal'],['NL','Netherlands'],['NZ','New Zealand'],['NI','Nicaragua'],['NE','Niger'],['NG','Nigeria'],['NO','Norway'],['OM','Oman'],['PK','Pakistan'],['PS','Palestine'],['PA','Panama'],['PY','Paraguay'],['PE','Peru'],['PH','Philippines'],['PL','Poland'],['PT','Portugal'],['QA','Qatar'],['RO','Romania'],['RU','Russia'],['RW','Rwanda'],['SA','Saudi Arabia'],['SN','Senegal'],['RS','Serbia'],['SG','Singapore'],['SK','Slovakia'],['SI','Slovenia'],['SO','Somalia'],['ZA','South Africa'],['KR','South Korea'],['ES','Spain'],['LK','Sri Lanka'],['SD','Sudan'],['SE','Sweden'],['CH','Switzerland'],['SY','Syria'],['TW','Taiwan'],['TJ','Tajikistan'],['TZ','Tanzania'],['TH','Thailand'],['TG','Togo'],['TT','Trinidad and Tobago'],['TN','Tunisia'],['TR','Turkey'],['TM','Turkmenistan'],['UG','Uganda'],['UA','Ukraine'],['AE','United Arab Emirates'],['GB','United Kingdom'],['US','United States'],['UY','Uruguay'],['UZ','Uzbekistan'],['VE','Venezuela'],['VN','Vietnam'],['YE','Yemen'],['ZM','Zambia'],['ZW','Zimbabwe']];
+
+    var _csbCountry = '';
+    try { _csbCountry = (localStorage.getItem('csb_country') || '').toUpperCase(); } catch(e) {}
+
+    function _csbGetCountry() { return /^[A-Z]{2}$/.test(_csbCountry) ? _csbCountry : ''; }
+    function _csbSetCountry(code, remember) {
+        _csbCountry = (code || '').toUpperCase();
+        if (remember !== false) { try { localStorage.setItem('csb_country', _csbCountry); } catch(e) {} }
+        try { _blRenderMethods(); _blRenderPlans(); } catch(e) {}
+    }
+    function _csbShowPKR() { return _CSB_LOCAL_COUNTRIES.indexOf(_csbGetCountry()) !== -1; }
+    function _csbAllowedMethods() {
+        return _csbShowPKR() ? ['easypaisa','jazzcash','binance','usdt'] : ['binance','usdt'];
+    }
+
+    // Silent detection: server edge header → server IP lookup → browser locale/timezone.
+    async function _csbEnsureCountry() {
+        if (_csbGetCountry()) return _csbGetCountry();
+        try {
+            var base = (typeof API_BASE !== 'undefined' ? API_BASE : '');
+            var r = await fetch(base + '/api/geo', { cache: 'no-store' });
+            var d = await r.json();
+            if (d && d.country) { _csbSetCountry(d.country); return _csbGetCountry(); }
+        } catch(e) {}
+        // Quiet browser-side fallback — still no question asked.
+        try {
+            var loc = (navigator.language || '').split('-')[1];
+            if (loc && /^[A-Za-z]{2}$/.test(loc)) { _csbSetCountry(loc.toUpperCase()); return _csbGetCountry(); }
+        } catch(e) {}
+        try {
+            var tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+            var tzMap = { 'Asia/Karachi':'PK','Asia/Kolkata':'IN','Asia/Calcutta':'IN','Asia/Dhaka':'BD','Asia/Kathmandu':'NP','Asia/Shanghai':'CN','Africa/Lagos':'NG' };
+            if (tzMap[tz]) { _csbSetCountry(tzMap[tz]); return _csbGetCountry(); }
+        } catch(e) {}
+        return '';
+    }
+
+    // Popup — only used when every silent method failed.
+    function _csbShowCountryPicker(onDone) {
+        var old = document.getElementById('csb-country-modal');
+        if (old) old.remove();
+        var wrap = document.createElement('div');
+        wrap.id = 'csb-country-modal';
+        wrap.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(3,7,18,0.88);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:16px;';
+        var popularHtml = _CSB_POPULAR.map(function(p) {
+            return '<button type="button" data-code="' + p.c + '" class="csb-cbtn" style="background:rgba(20,30,50,0.95);border:2px solid rgba(255,215,0,0.35);border-radius:16px;padding:12px 8px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;">' +
+                '<span style="font-size:22px;">' + p.f + '</span>' + p.n + '</button>';
+        }).join('');
+        var optsHtml = _CSB_ALL.map(function(a) { return '<option value="' + a[0] + '">' + a[1] + '</option>'; }).join('');
+        wrap.innerHTML =
+            '<div style="width:100%;max-width:420px;background:rgba(8,16,32,0.98);border:1px solid rgba(234,179,8,0.35);border-radius:24px;padding:22px;max-height:90vh;overflow:auto;">' +
+            '<div style="text-align:center;margin-bottom:14px;">' +
+            '<div style="font-size:28px;">🌍</div>' +
+            '<div style="font-family:\'Orbitron\',sans-serif;font-size:15px;font-weight:800;color:#FFD700;margin-top:6px;">Select Your Country</div>' +
+            '<div style="font-size:11px;color:#94a3b8;margin-top:4px;">So we can show you the correct plans and payment options.</div></div>' +
+            '<div style="font-size:10px;font-weight:800;color:#FFD700;letter-spacing:0.08em;margin-bottom:8px;">MOST POPULAR</div>' +
+            '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;">' + popularHtml + '</div>' +
+            '<div style="font-size:10px;font-weight:800;color:#94a3b8;letter-spacing:0.08em;margin-bottom:8px;">OTHER COUNTRIES</div>' +
+            '<select id="csb-country-select" style="width:100%;background:#1c2537;border:1px solid rgba(255,215,0,0.35);border-radius:14px;padding:12px;color:#fff;font-size:13px;">' +
+            '<option value="">— Choose your country —</option>' + optsHtml + '</select>' +
+            '<button id="csb-country-continue" style="width:100%;margin-top:14px;background:linear-gradient(90deg,#ffd700,#f59e0b);border:none;border-radius:14px;padding:12px;font-weight:800;color:#111;font-size:13px;cursor:pointer;">Continue</button>' +
+            '</div>';
+        document.body.appendChild(wrap);
+        function finish(code) {
+            if (!code) return;
+            _csbSetCountry(code);
+            wrap.remove();
+            if (typeof onDone === 'function') onDone();
+        }
+        wrap.querySelectorAll('.csb-cbtn').forEach(function(btn) {
+            btn.addEventListener('click', function() { finish(btn.getAttribute('data-code')); });
+        });
+        wrap.querySelector('#csb-country-continue').addEventListener('click', function() {
+            finish(document.getElementById('csb-country-select').value);
+        });
+    }
+
+    // Warm the detection up as soon as the page loads and log the visit.
+    setTimeout(function() {
+        _csbEnsureCountry().then(function(code) {
+            try {
+                var base = (typeof API_BASE !== 'undefined' ? API_BASE : '');
+                fetch(base + '/api/geo/visit', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ country: code || '' })
+                }).catch(function(){});
+            } catch(e) {}
+        });
+    }, 1200);
+
     // ── Multi-step modal state ────────────────────────────────────────────
     var _blSettings  = null;
     var _blSelMethod = '';
     var _blSelPlan   = '';
 
     function openBuyLicenseModal() {
+        // Country decides which payment methods and currency are shown.
+        // Detection is silent; the picker only appears if detection failed.
+        if (!_csbGetCountry()) {
+            _csbEnsureCountry().then(function(code) {
+                if (code) { _csbOpenBuyLicenseModal(); }
+                else { _csbShowCountryPicker(function() { _csbOpenBuyLicenseModal(); }); }
+            });
+            return;
+        }
+        _csbOpenBuyLicenseModal();
+    }
+
+    function _csbOpenBuyLicenseModal() {
         var m = document.getElementById('buy-lic-modal');
         if (m) m.classList.remove('hidden');
         _blGoStep(1);
@@ -3935,7 +4056,7 @@ function requestNewOTP() {
         if (n === 3) {
             var planObj = (_blSettings && _blSelPlan) ? (_blSettings.plans || []).find(function(p) { return p.key === _blSelPlan; }) : null;
             var md = document.getElementById('bl-method-display'); if (md) md.value = _blSelMethod || '—';
-            var ad = document.getElementById('bl-amount-display'); if (ad) ad.value = planObj ? (planObj.pricePKR + ' PKR / $' + planObj.priceUSD) : '—';
+            var ad = document.getElementById('bl-amount-display'); if (ad) ad.value = planObj ? (_csbShowPKR() ? (planObj.pricePKR + ' PKR / $' + planObj.priceUSD) : ('$' + planObj.priceUSD)) : '—';
         }
     }
 
@@ -3972,7 +4093,9 @@ function requestNewOTP() {
         var grid = document.getElementById('bl-methods-grid');
         if (!grid || !_blSettings) return;
         var s = _blSettings;
+        var allowed = _csbAllowedMethods();
         var cards = _METHODS.filter(function(m) {
+            if (allowed.indexOf(m.key) === -1) return false;
             if (m.key === 'easypaisa') return s.easypaisa && s.easypaisa.enabled !== false;
             if (m.key === 'jazzcash')  return s.jazzcash  && s.jazzcash.enabled  !== false;
             if (m.key === 'binance')   return s.binance   && s.binance.enabled   !== false;
@@ -4001,8 +4124,8 @@ function requestNewOTP() {
                 (isPopular ? '<div class="popular-ribbon">POPULAR</div>' : '') +
                 '<div style="font-size:26px;margin-bottom:6px;">' + icon + '</div>' +
                 '<div style="font-size:12px;font-weight:800;color:#FFD700;letter-spacing:0.04em;margin-bottom:4px;">' + p.label + '</div>' +
-                '<div style="font-size:18px;font-weight:900;color:#fff;font-family:\'Orbitron\',sans-serif;margin-bottom:2px;">$' + p.priceUSD + '</div>' +
-                '<div style="font-size:9px;color:#94a3b8;margin-bottom:8px;">' + p.pricePKR + ' PKR</div>' +
+                '<div style="font-size:18px;font-weight:900;color:#fff;font-family:\'Orbitron\',sans-serif;margin-bottom:2px;">' + (_csbShowPKR() ? (p.pricePKR + ' PKR') : ('$' + p.priceUSD)) + '</div>' +
+                '<div style="font-size:9px;color:#94a3b8;margin-bottom:8px;">' + (_csbShowPKR() ? ('$' + p.priceUSD) : '&nbsp;') + '</div>' +
                 '<div style="font-size:9px;background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.25);border-radius:20px;padding:2px 8px;color:rgba(255,215,0,0.8);display:inline-block;">' + p.duration + '</div>' +
                 '<div class="plan-check" style="margin-top:10px;"><i class="fa-solid fa-check" style="font-size:8px;display:none;"></i></div>' +
             '</div>';
@@ -4202,6 +4325,7 @@ function requestNewOTP() {
             fd.append('paymentMethod', _blSelMethod);
             fd.append('whatsapp',      fullWa);
             fd.append('country',       country);
+            fd.append('countryCode',   _csbGetCountry() || '');
             fd.append('txId',          txid);
             fd.append('screenshot',    scFile);
 
