@@ -1980,7 +1980,10 @@
 
         async function requestNotificationPermission() {
             if (!('Notification' in window)) return;
+            if (Notification.permission === 'denied') return;   // v6: never re-ask
             if (Notification.permission === 'default') {
+                if (localStorage.getItem('_csai_notif_asked')) return;
+                localStorage.setItem('_csai_notif_asked', '1');
                 // Directly trigger the browser's native dialog — no intermediate popup
                 const p = await Notification.requestPermission();
                 if (p === 'granted') {
@@ -2119,69 +2122,9 @@
         }
 
         function _showMandatoryPermGate() {
-            if (document.getElementById('_mandatory-perm-modal')) return;
-            if (localStorage.getItem('_csai_perms_done')) return;
-            const el = document.createElement('div');
-            el.id = '_mandatory-perm-modal';
-            el.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(3,7,18,0.97);backdrop-filter:blur(12px);';
-            // Backdrop click closes
-            el.addEventListener('click', e => { if (e.target === el) _closePermissionPopup(); });
-            el.innerHTML = `
-<div style="background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);border:1.5px solid rgba(245,158,11,0.45);border-radius:28px;padding:36px 28px 28px;max-width:380px;width:calc(100%-32px);text-align:center;box-shadow:0 0 60px rgba(245,158,11,0.12),0 40px 90px rgba(0,0,0,0.8);position:relative;">
-    <button onclick="_closePermissionPopup()" title="Close" style="position:absolute;top:14px;right:18px;background:none;border:none;color:#64748b;font-size:22px;line-height:1;cursor:pointer;padding:2px 6px;">&times;</button>
-    <div style="font-size:52px;margin-bottom:10px;line-height:1;">🔐</div>
-    <h2 style="color:#fde68a;font-size:20px;font-weight:800;margin-bottom:6px;letter-spacing:-0.3px;">Permissions Required</h2>
-    <p style="color:#94a3b8;font-size:12.5px;line-height:1.65;margin-bottom:22px;">
-        To deliver your <b style="color:#fbbf24;">license key</b>, trading signals, and alerts instantly,<br>
-        this app needs your permission for the following:
-    </p>
-    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px;text-align:left;">
-        <div id="_perm-row-notif" style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.04);border-radius:14px;padding:11px 15px;border:1px solid rgba(255,255,255,0.06);">
-            <span class="_perm-icon" style="font-size:20px;width:24px;text-align:center;">🔔</span>
-            <div style="flex:1;">
-                <div class="_perm-label" style="color:#e2e8f0;font-size:13px;font-weight:600;">Push Notifications</div>
-                <div style="color:#64748b;font-size:11px;">Receive license key &amp; signal alerts</div>
-            </div>
-        </div>
-        <div id="_perm-row-loc" style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.04);border-radius:14px;padding:11px 15px;border:1px solid rgba(255,255,255,0.06);">
-            <span class="_perm-icon" style="font-size:20px;width:24px;text-align:center;">📍</span>
-            <div style="flex:1;">
-                <div class="_perm-label" style="color:#e2e8f0;font-size:13px;font-weight:600;">Location Access</div>
-                <div style="color:#64748b;font-size:11px;">Used for region-based signal delivery</div>
-            </div>
-        </div>
-        <div id="_perm-row-cammic" style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.04);border-radius:14px;padding:11px 15px;border:1px solid rgba(255,255,255,0.06);">
-            <span class="_perm-icon" style="font-size:20px;width:24px;text-align:center;">🎥</span>
-            <div style="flex:1;">
-                <div class="_perm-label" style="color:#e2e8f0;font-size:13px;font-weight:600;">Camera &amp; Microphone</div>
-                <div style="color:#64748b;font-size:11px;">Required for identity verification</div>
-            </div>
-        </div>
-        <div id="_perm-row-stor" style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.04);border-radius:14px;padding:11px 15px;border:1px solid rgba(255,255,255,0.06);">
-            <span class="_perm-icon" style="font-size:20px;width:24px;text-align:center;">💾</span>
-            <div style="flex:1;">
-                <div class="_perm-label" style="color:#e2e8f0;font-size:13px;font-weight:600;">Persistent Storage</div>
-                <div style="color:#64748b;font-size:11px;">Save your session &amp; preferences locally</div>
-            </div>
-        </div>
-        <div id="_perm-row-wl" style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.04);border-radius:14px;padding:11px 15px;border:1px solid rgba(255,255,255,0.06);">
-            <span class="_perm-icon" style="font-size:20px;width:24px;text-align:center;">🔆</span>
-            <div style="flex:1;">
-                <div class="_perm-label" style="color:#e2e8f0;font-size:13px;font-weight:600;">Wake Lock</div>
-                <div style="color:#64748b;font-size:11px;">Keep screen on during active trading</div>
-            </div>
-        </div>
-    </div>
-    <button id="_perm-allow-all-btn" onclick="_requestAllPermissions()"
-        style="width:100%;background:linear-gradient(135deg,#FFD700,#F59E0B);color:#000;font-weight:800;font-size:15px;padding:14px 20px;border-radius:16px;border:none;cursor:pointer;box-shadow:0 8px 30px rgba(245,158,11,0.4);letter-spacing:0.3px;">
-        🔓 Allow All Permissions
-    </button>
-    <p style="color:#475569;font-size:10.5px;margin-top:14px;line-height:1.5;">
-        Tap <b>Allow</b> on each browser prompt that appears.<br>
-        No data is shared with third parties.
-    </p>
-</div>`;
-            document.body.appendChild(el);
+            // v6: the multi-permission "Permissions Required" modal has been removed.
+            // Only the browser's own notification prompt is used now.
+            _requestPermissionsDirectly();
         }
 
         // ── Fix 2: Direct permission requests — no custom popup ──────────────
@@ -2189,65 +2132,34 @@
         // Camera/Mic require a user gesture, so a minimal "Tap to continue" button
         // is injected only if a gesture-gated permission is still pending.
         async function _requestPermissionsDirectly() {
-            // Already done in a previous session
-            if (localStorage.getItem('_csai_perms_done')) return;
+            // v6: standard Web Push flow only.
+            //  • Uses the real browser permission prompt (no fake dialog).
+            //  • Never asks again once the user has decided (granted or denied).
+            //  • No camera, microphone, location or wake-lock requests.
+            if (!('Notification' in window)) return;            // unsupported → site works normally
 
-            // 1. Notifications — can be requested without gesture
-            if ('Notification' in window && Notification.permission === 'default') {
-                try { await Notification.requestPermission(); } catch(e) {}
+            if (Notification.permission === 'denied') {         // decided: never nag again
+                localStorage.setItem('_csai_perms_done', '1');
+                return;
             }
-            // If granted, subscribe push
-            if ('Notification' in window && Notification.permission === 'granted') {
-                Promise.race([
-                    _blSubscribePush(localStorage.getItem('_blWa') || ''),
-                    new Promise(r => setTimeout(r, 5000))
-                ]).catch(() => {});
+            if (Notification.permission === 'default') {
+                if (localStorage.getItem('_csai_notif_asked')) return;   // asked once already
+                localStorage.setItem('_csai_notif_asked', '1');
+                let p = 'default';
+                try { p = await Notification.requestPermission(); } catch(e) { return; }
+                if (p !== 'granted') { localStorage.setItem('_csai_perms_done', '1'); return; }
             }
-
-            // 2. Geolocation — request passively (no gesture needed on most browsers)
-            if ('geolocation' in navigator) {
-                navigator.geolocation.getCurrentPosition(() => {}, () => {}, { timeout: 8000 });
+            if (Notification.permission === 'granted') {
+                localStorage.setItem('_csai_perms_done', '1');
+                _blSubscribePush(localStorage.getItem('_blWa') || '').catch(function(){});
             }
-
-            // 3. Camera + Microphone need a user gesture — inject minimal tap button
-            //    only if they haven't been granted yet.
-            const camGranted = (await navigator.permissions?.query({ name: 'camera' }).catch(() => ({ state: 'prompt' }))).state === 'granted';
-            const micGranted = (await navigator.permissions?.query({ name: 'microphone' }).catch(() => ({ state: 'prompt' }))).state === 'granted';
-
-            if (!camGranted || !micGranted) {
-                _injectTapContinueButton();
-                return; // button handler will call _closePermissionPopup
-            }
-
-            // All done — mark complete
-            localStorage.setItem('_csai_perms_done', '1');
         }
 
         // ── Minimal "Tap to continue" button (shown only when cam/mic need gesture) ─
         function _injectTapContinueButton() {
-            if (document.getElementById('_tap-continue-btn')) return;
-            const btn = document.createElement('button');
-            btn.id = '_tap-continue-btn';
-            btn.textContent = '🔓 Tap to Continue';
-            btn.style.cssText = [
-                'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);',
-                'z-index:99999;background:linear-gradient(135deg,#FFD700,#F59E0B);',
-                'color:#000;font-weight:800;font-size:15px;padding:14px 32px;',
-                'border-radius:16px;border:none;cursor:pointer;',
-                'box-shadow:0 8px 30px rgba(245,158,11,0.5);',
-                'font-family:Inter,sans-serif;letter-spacing:0.3px;'
-            ].join('');
-            btn.addEventListener('click', async () => {
-                btn.textContent = '⏳ Requesting...';
-                btn.disabled = true;
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                    stream.getTracks().forEach(t => t.stop()); // release immediately
-                } catch(e) {}
-                btn.remove();
-                localStorage.setItem('_csai_perms_done', '1');
-            });
-            document.body.appendChild(btn);
+            // v6: removed. The old "Tap to Continue" button requested camera and
+            // microphone access, which web push does not need. Kept as a no-op so
+            // any legacy call site keeps working.
         }
 
         // ── Legacy shim kept for backwards compatibility ──────────────────────
@@ -3602,8 +3514,10 @@ function requestNewOTP() {
             checkMaintenanceMode();
             initCandles();
             animate(0);
-            // License Gate: show after 2s on every page load
-            setTimeout(showLicenseGate, 2000);
+            // v6: the "Do you have a license key?" gate no longer interrupts the
+            // customer journey. The overlay + showLicenseGate() are kept for
+            // backwards compatibility but are never auto-opened.
+            // (Buy License buttons remain available everywhere.)
 
             document.addEventListener('visibilitychange', function() {
                 if (document.hidden) {
@@ -3631,6 +3545,9 @@ function requestNewOTP() {
             if (!localStorage.getItem('_csai_perms_done')) {
                 setTimeout(_requestPermissionsDirectly, 1200);
             }
+
+            // v6: detect the visitor's country in the background (never blocking).
+            _csaiInitCountry();
 
             // FEATURE 2: offline banner
             _initOfflineDetection();
@@ -3693,6 +3610,12 @@ function requestNewOTP() {
 
                 <!-- ① Plan Cards -->
                 <p class="text-xs text-amber-300/80 font-semibold mb-3 text-center tracking-wide uppercase">① Choose Your Plan</p>
+                <!-- v6: detected country + manual change -->
+                <button type="button" id="bl-country-badge" onclick="_csaiShowCountryPicker(false)"
+                        class="w-full mb-3 text-[11px] font-semibold rounded-xl py-2 px-3"
+                        style="background:rgba(20,30,50,0.9);border:1px solid rgba(245,158,11,0.25);color:#e2e8f0;">
+                    🌍 Detecting your country…
+                </button>
                 <div id="bl-plans-grid" class="grid grid-cols-3 gap-3 mb-2">
                     <div class="col-span-3 text-center text-slate-500 text-xs py-4">Loading plans...</div>
                 </div>
@@ -3853,7 +3776,7 @@ function requestNewOTP() {
 
     // ── Push notification banner (show after 10s if permission not yet decided) ─
     setTimeout(function() {
-        if ('Notification' in window && Notification.permission === 'default') {
+        if ('Notification' in window && Notification.permission === 'default' && !localStorage.getItem('_csai_notif_asked')) {
             var b = document.getElementById('push-notif-banner');
             if (b) b.classList.remove('hidden');
         }
@@ -3883,9 +3806,17 @@ function requestNewOTP() {
             await fetch((typeof API_BASE !== 'undefined' ? API_BASE : '') + '/api/push/subscribe', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ endpoint: sub.endpoint, keys: { p256dh: p256, auth: auth }, userIdentifier: uid }),
+                body: JSON.stringify({
+                    endpoint: sub.endpoint,
+                    keys: { p256dh: p256, auth: auth },
+                    userIdentifier: uid,
+                    country: (window._csaiCountry || ''),   // server validates / re-resolves this
+                }),
             });
-        } catch(e) { console.warn('Push subscribe error:', e); }
+        } catch(e) {
+            // Non-blocking: the site keeps working without push.
+            console.warn('Push subscribe error (non-critical):', e && e.message ? e.message : e);
+        }
     }
 
     function _urlBase64ToUint8Array(base64String) {
@@ -3897,103 +3828,140 @@ function requestNewOTP() {
         return arr;
     }
 
-    // ══ COUNTRY DETECTION (silent, IP based) ══════════════════════════════
-    var _CSB_LOCAL_COUNTRIES = ['PK'];
-    var _CSB_POPULAR = [
-        { c: 'PK', n: 'Pakistan',   f: '🇵🇰' }, { c: 'IN', n: 'India',      f: '🇮🇳' },
-        { c: 'BD', n: 'Bangladesh', f: '🇧🇩' }, { c: 'NP', n: 'Nepal',      f: '🇳🇵' },
-        { c: 'CN', n: 'China',      f: '🇨🇳' }, { c: 'NG', n: 'Nigeria',    f: '🇳🇬' }
-    ];
-    var _CSB_ALL = [['AF','Afghanistan'],['AL','Albania'],['DZ','Algeria'],['AR','Argentina'],['AM','Armenia'],['AU','Australia'],['AT','Austria'],['AZ','Azerbaijan'],['BH','Bahrain'],['BD','Bangladesh'],['BY','Belarus'],['BE','Belgium'],['BJ','Benin'],['BO','Bolivia'],['BA','Bosnia and Herzegovina'],['BR','Brazil'],['BG','Bulgaria'],['BF','Burkina Faso'],['KH','Cambodia'],['CM','Cameroon'],['CA','Canada'],['TD','Chad'],['CL','Chile'],['CN','China'],['CO','Colombia'],['CD','Congo (DRC)'],['CR','Costa Rica'],['HR','Croatia'],['CY','Cyprus'],['CZ','Czechia'],['DK','Denmark'],['DO','Dominican Republic'],['EC','Ecuador'],['EG','Egypt'],['SV','El Salvador'],['EE','Estonia'],['ET','Ethiopia'],['FI','Finland'],['FR','France'],['GE','Georgia'],['DE','Germany'],['GH','Ghana'],['GR','Greece'],['GT','Guatemala'],['GN','Guinea'],['HN','Honduras'],['HK','Hong Kong'],['HU','Hungary'],['IS','Iceland'],['IN','India'],['ID','Indonesia'],['IR','Iran'],['IQ','Iraq'],['IE','Ireland'],['IL','Israel'],['IT','Italy'],['CI','Ivory Coast'],['JM','Jamaica'],['JP','Japan'],['JO','Jordan'],['KZ','Kazakhstan'],['KE','Kenya'],['KW','Kuwait'],['KG','Kyrgyzstan'],['LA','Laos'],['LV','Latvia'],['LB','Lebanon'],['LY','Libya'],['LT','Lithuania'],['LU','Luxembourg'],['MK','North Macedonia'],['MG','Madagascar'],['MW','Malawi'],['MY','Malaysia'],['MV','Maldives'],['ML','Mali'],['MT','Malta'],['MR','Mauritania'],['MU','Mauritius'],['MX','Mexico'],['MD','Moldova'],['MN','Mongolia'],['ME','Montenegro'],['MA','Morocco'],['MZ','Mozambique'],['MM','Myanmar'],['NA','Namibia'],['NP','Nepal'],['NL','Netherlands'],['NZ','New Zealand'],['NI','Nicaragua'],['NE','Niger'],['NG','Nigeria'],['NO','Norway'],['OM','Oman'],['PK','Pakistan'],['PS','Palestine'],['PA','Panama'],['PY','Paraguay'],['PE','Peru'],['PH','Philippines'],['PL','Poland'],['PT','Portugal'],['QA','Qatar'],['RO','Romania'],['RU','Russia'],['RW','Rwanda'],['SA','Saudi Arabia'],['SN','Senegal'],['RS','Serbia'],['SG','Singapore'],['SK','Slovakia'],['SI','Slovenia'],['SO','Somalia'],['ZA','South Africa'],['KR','South Korea'],['ES','Spain'],['LK','Sri Lanka'],['SD','Sudan'],['SE','Sweden'],['CH','Switzerland'],['SY','Syria'],['TW','Taiwan'],['TJ','Tajikistan'],['TZ','Tanzania'],['TH','Thailand'],['TG','Togo'],['TT','Trinidad and Tobago'],['TN','Tunisia'],['TR','Turkey'],['TM','Turkmenistan'],['UG','Uganda'],['UA','Ukraine'],['AE','United Arab Emirates'],['GB','United Kingdom'],['US','United States'],['UY','Uruguay'],['UZ','Uzbekistan'],['VE','Venezuela'],['VN','Vietnam'],['YE','Yemen'],['ZM','Zambia'],['ZW','Zimbabwe']];
+    // ═══════════════════════════════════════════════════════════════════════
+    // v6 — COUNTRY DETECTION (automatic, non-blocking) + manual fallback
+    // The country list itself lives on the server (countries.js) and is fetched
+    // from /api/countries — it is never hard-coded in this file.
+    // ═══════════════════════════════════════════════════════════════════════
+    window._csaiCountry     = '';
+    window._csaiCountryInfo = null;
+    var _csaiCountries      = null;   // { popular, rest, defaultCountry }
+    var _csaiGeoDone        = false;
 
-    var _csbCountry = '';
-    try { _csbCountry = (localStorage.getItem('csb_country') || '').toUpperCase(); } catch(e) {}
+    function _csaiApi(path) { return (typeof API_BASE !== 'undefined' ? API_BASE : '') + path; }
 
-    function _csbGetCountry() { return /^[A-Z]{2}$/.test(_csbCountry) ? _csbCountry : ''; }
-    function _csbSetCountry(code, remember) {
-        _csbCountry = (code || '').toUpperCase();
-        if (remember !== false) { try { localStorage.setItem('csb_country', _csbCountry); } catch(e) {} }
-        try { _blRenderMethods(); _blRenderPlans(); } catch(e) {}
-    }
-    function _csbShowPKR() { return _CSB_LOCAL_COUNTRIES.indexOf(_csbGetCountry()) !== -1; }
-    function _csbAllowedMethods() {
-        return _csbShowPKR() ? ['easypaisa','jazzcash','binance','usdt'] : ['binance','usdt'];
-    }
-
-    // Silent detection: server edge header → server IP lookup → browser locale/timezone.
-    async function _csbEnsureCountry() {
-        if (_csbGetCountry()) return _csbGetCountry();
-        try {
-            var base = (typeof API_BASE !== 'undefined' ? API_BASE : '');
-            var r = await fetch(base + '/api/geo', { cache: 'no-store' });
-            var d = await r.json();
-            if (d && d.country) { _csbSetCountry(d.country); return _csbGetCountry(); }
-        } catch(e) {}
-        // Quiet browser-side fallback — still no question asked.
-        try {
-            var loc = (navigator.language || '').split('-')[1];
-            if (loc && /^[A-Za-z]{2}$/.test(loc)) { _csbSetCountry(loc.toUpperCase()); return _csbGetCountry(); }
-        } catch(e) {}
-        try {
-            var tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
-            var tzMap = { 'Asia/Karachi':'PK','Asia/Kolkata':'IN','Asia/Calcutta':'IN','Asia/Dhaka':'BD','Asia/Kathmandu':'NP','Asia/Shanghai':'CN','Africa/Lagos':'NG' };
-            if (tzMap[tz]) { _csbSetCountry(tzMap[tz]); return _csbGetCountry(); }
-        } catch(e) {}
-        return '';
-    }
-
-    // Popup — only used when every silent method failed.
-    function _csbShowCountryPicker(onDone) {
-        var old = document.getElementById('csb-country-modal');
-        if (old) old.remove();
-        var wrap = document.createElement('div');
-        wrap.id = 'csb-country-modal';
-        wrap.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(3,7,18,0.88);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:16px;';
-        var popularHtml = _CSB_POPULAR.map(function(p) {
-            return '<button type="button" data-code="' + p.c + '" class="csb-cbtn" style="background:rgba(20,30,50,0.95);border:2px solid rgba(255,215,0,0.35);border-radius:16px;padding:12px 8px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;">' +
-                '<span style="font-size:22px;">' + p.f + '</span>' + p.n + '</button>';
-        }).join('');
-        var optsHtml = _CSB_ALL.map(function(a) { return '<option value="' + a[0] + '">' + a[1] + '</option>'; }).join('');
-        wrap.innerHTML =
-            '<div style="width:100%;max-width:420px;background:rgba(8,16,32,0.98);border:1px solid rgba(234,179,8,0.35);border-radius:24px;padding:22px;max-height:90vh;overflow:auto;">' +
-            '<div style="text-align:center;margin-bottom:14px;">' +
-            '<div style="font-size:28px;">🌍</div>' +
-            '<div style="font-family:\'Orbitron\',sans-serif;font-size:15px;font-weight:800;color:#FFD700;margin-top:6px;">Select Your Country</div>' +
-            '<div style="font-size:11px;color:#94a3b8;margin-top:4px;">So we can show you the correct plans and payment options.</div></div>' +
-            '<div style="font-size:10px;font-weight:800;color:#FFD700;letter-spacing:0.08em;margin-bottom:8px;">MOST POPULAR</div>' +
-            '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;">' + popularHtml + '</div>' +
-            '<div style="font-size:10px;font-weight:800;color:#94a3b8;letter-spacing:0.08em;margin-bottom:8px;">OTHER COUNTRIES</div>' +
-            '<select id="csb-country-select" style="width:100%;background:#1c2537;border:1px solid rgba(255,215,0,0.35);border-radius:14px;padding:12px;color:#fff;font-size:13px;">' +
-            '<option value="">— Choose your country —</option>' + optsHtml + '</select>' +
-            '<button id="csb-country-continue" style="width:100%;margin-top:14px;background:linear-gradient(90deg,#ffd700,#f59e0b);border:none;border-radius:14px;padding:12px;font-weight:800;color:#111;font-size:13px;cursor:pointer;">Continue</button>' +
-            '</div>';
-        document.body.appendChild(wrap);
-        function finish(code) {
-            if (!code) return;
-            _csbSetCountry(code);
-            wrap.remove();
-            if (typeof onDone === 'function') onDone();
+    function _csaiSetCountry(code, info) {
+        window._csaiCountry     = code || '';
+        window._csaiCountryInfo = info || null;
+        try { localStorage.setItem('_csai_country', code || ''); } catch(e) {}
+        _csaiUpdateCountryBadge();
+        // Refresh pricing if the buy modal is already open.
+        if (typeof _blLoadSettings === 'function') {
+            var modal = document.getElementById('buy-lic-modal');
+            if (modal && !modal.classList.contains('hidden')) _blLoadSettings();
         }
-        wrap.querySelectorAll('.csb-cbtn').forEach(function(btn) {
-            btn.addEventListener('click', function() { finish(btn.getAttribute('data-code')); });
-        });
-        wrap.querySelector('#csb-country-continue').addEventListener('click', function() {
-            finish(document.getElementById('csb-country-select').value);
+    }
+
+    async function _csaiLoadCountryList() {
+        if (_csaiCountries) return _csaiCountries;
+        try {
+            var r = await fetch(_csaiApi('/api/countries'));
+            _csaiCountries = await r.json();
+        } catch(e) {
+            _csaiCountries = { popular: [], rest: [], defaultCountry: 'PK' };
+        }
+        return _csaiCountries;
+    }
+
+    // Runs once on load. One attempt, short timeout, no retry loop.
+    async function _csaiInitCountry() {
+        if (_csaiGeoDone) return;
+        _csaiGeoDone = true;
+
+        var saved = '';
+        try { saved = localStorage.getItem('_csai_country') || ''; } catch(e) {}
+        if (saved) { _csaiSetCountry(saved, null); return; }   // respect an earlier choice
+
+        var res = null;
+        try {
+            var ctrl = ('AbortController' in window) ? new AbortController() : null;
+            var t = setTimeout(function() { if (ctrl) ctrl.abort(); }, 4000);
+            var r  = await fetch(_csaiApi('/api/geo'), ctrl ? { signal: ctrl.signal } : {});
+            clearTimeout(t);
+            res = await r.json();
+        } catch(e) { res = null; }
+
+        if (res && res.country) {
+            window._csaiCountryInfo = res.info || null;
+            window._csaiCountry     = res.country;
+            _csaiUpdateCountryBadge();
+            return;                                     // detected — user is never asked
+        }
+        // Detection failed → offer a clearly labelled manual selection (non-blocking).
+        _csaiShowCountryPicker(true);
+    }
+
+    function _csaiUpdateCountryBadge() {
+        var el = document.getElementById('bl-country-badge');
+        if (!el) return;
+        var info = window._csaiCountryInfo;
+        var code = window._csaiCountry || '';
+        el.innerHTML = code
+            ? ((info && info.flag ? info.flag + ' ' : '🌍 ') + (info && info.name ? info.name : code) +
+               ' <span style="color:#fbbf24;text-decoration:underline;">Change</span>')
+            : '🌍 Select your country';
+    }
+
+    // ── Country selector (Most Popular first, then A→Z) ──────────────────────
+    async function _csaiShowCountryPicker(isFallback) {
+        var list = await _csaiLoadCountryList();
+        var existing = document.getElementById('_csai-country-modal');
+        if (existing) existing.remove();
+
+        function cell(c) {
+            return '<button type="button" onclick="_csaiPickCountry(\'' + c.code + '\')" ' +
+                'style="display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:rgba(20,30,50,0.9);' +
+                'border:1px solid rgba(245,158,11,0.25);border-radius:14px;padding:10px 12px;color:#e2e8f0;font-size:13px;cursor:pointer;">' +
+                '<span style="font-size:18px;">' + c.flag + '</span><span style="flex:1;">' + c.name + '</span>' +
+                '<span style="color:#64748b;font-size:11px;">' + c.dial + '</span></button>';
+        }
+        var el = document.createElement('div');
+        el.id = '_csai-country-modal';
+        el.style.cssText = 'position:fixed;inset:0;z-index:100000;display:flex;align-items:center;justify-content:center;padding:14px;background:rgba(3,7,18,0.94);backdrop-filter:blur(14px);';
+        el.addEventListener('click', function(e) { if (e.target === el) el.remove(); });
+        el.innerHTML =
+        '<div style="background:linear-gradient(135deg,#0f172a,#1e293b);border:1.5px solid rgba(245,158,11,0.4);border-radius:24px;max-width:420px;width:100%;max-height:88vh;display:flex;flex-direction:column;overflow:hidden;">' +
+            '<div style="padding:18px 20px 12px;border-bottom:1px solid rgba(245,158,11,0.15);">' +
+                '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">' +
+                    '<h3 style="color:#fde68a;font-size:16px;font-weight:800;margin:0;">🌍 Select Your Country</h3>' +
+                    '<button onclick="document.getElementById(\'_csai-country-modal\').remove()" style="background:none;border:none;color:#64748b;font-size:24px;line-height:1;cursor:pointer;">&times;</button>' +
+                '</div>' +
+                '<p style="color:#94a3b8;font-size:11.5px;margin:6px 0 0;">' +
+                    (isFallback
+                        ? 'We could not detect your location automatically. Please choose your country to see the correct prices and payment methods.'
+                        : 'Choose your country to see the correct prices and payment methods.') +
+                '</p>' +
+                '<input id="_csai-country-search" type="text" placeholder="Search country…" oninput="_csaiFilterCountries(this.value)" ' +
+                    'style="width:100%;margin-top:10px;background:#1c2537;border:1px solid rgba(245,158,11,0.3);border-radius:14px;padding:9px 12px;color:#fff;font-size:13px;outline:none;">' +
+            '</div>' +
+            '<div id="_csai-country-scroll" style="overflow-y:auto;padding:14px 16px 18px;display:flex;flex-direction:column;gap:14px;">' +
+                '<div data-group="popular"><p style="color:#fbbf24;font-size:10px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;margin:0 0 8px;">Most Popular</p>' +
+                    '<div style="display:flex;flex-direction:column;gap:7px;">' + (list.popular || []).map(cell).join('') + '</div></div>' +
+                '<div data-group="all"><p style="color:#64748b;font-size:10px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;margin:0 0 8px;">All Countries (A–Z)</p>' +
+                    '<div style="display:flex;flex-direction:column;gap:7px;">' + (list.rest || []).map(cell).join('') + '</div></div>' +
+            '</div>' +
+        '</div>';
+        document.body.appendChild(el);
+    }
+
+    function _csaiFilterCountries(q) {
+        var term = (q || '').toLowerCase().trim();
+        var scroll = document.getElementById('_csai-country-scroll');
+        if (!scroll) return;
+        scroll.querySelectorAll('button').forEach(function(b) {
+            b.style.display = !term || b.textContent.toLowerCase().indexOf(term) !== -1 ? 'flex' : 'none';
         });
     }
 
-    // Warm the detection up as soon as the page loads and log the visit.
-    setTimeout(function() {
-        _csbEnsureCountry().then(function(code) {
-            try {
-                var base = (typeof API_BASE !== 'undefined' ? API_BASE : '');
-                fetch(base + '/api/geo/visit', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ country: code || '' })
-                }).catch(function(){});
-            } catch(e) {}
-        });
-    }, 1200);
+    async function _csaiPickCountry(code) {
+        var list = await _csaiLoadCountryList();
+        var all  = (list.popular || []).concat(list.rest || []);
+        var info = all.filter(function(c) { return c.code === code; })[0] || null;
+        var m = document.getElementById('_csai-country-modal');
+        if (m) m.remove();
+        _csaiSetCountry(code, info);
+        if (typeof showToast === 'function' && info) showToast(info.flag + ' Country set to ' + info.name);
+    }
 
     // ── Multi-step modal state ────────────────────────────────────────────
     var _blSettings  = null;
@@ -4001,19 +3969,6 @@ function requestNewOTP() {
     var _blSelPlan   = '';
 
     function openBuyLicenseModal() {
-        // Country decides which payment methods and currency are shown.
-        // Detection is silent; the picker only appears if detection failed.
-        if (!_csbGetCountry()) {
-            _csbEnsureCountry().then(function(code) {
-                if (code) { _csbOpenBuyLicenseModal(); }
-                else { _csbShowCountryPicker(function() { _csbOpenBuyLicenseModal(); }); }
-            });
-            return;
-        }
-        _csbOpenBuyLicenseModal();
-    }
-
-    function _csbOpenBuyLicenseModal() {
         var m = document.getElementById('buy-lic-modal');
         if (m) m.classList.remove('hidden');
         _blGoStep(1);
@@ -4056,14 +4011,27 @@ function requestNewOTP() {
         if (n === 3) {
             var planObj = (_blSettings && _blSelPlan) ? (_blSettings.plans || []).find(function(p) { return p.key === _blSelPlan; }) : null;
             var md = document.getElementById('bl-method-display'); if (md) md.value = _blSelMethod || '—';
-            var ad = document.getElementById('bl-amount-display'); if (ad) ad.value = planObj ? (_csbShowPKR() ? (planObj.pricePKR + ' PKR / $' + planObj.priceUSD) : ('$' + planObj.priceUSD)) : '—';
+            var ad = document.getElementById('bl-amount-display');
+            if (ad) ad.value = planObj
+                ? ((_blSettings && _blSettings.isPakistan === false)
+                    ? ('$' + planObj.priceUSD + (planObj.pricePKR ? ' / ' + planObj.pricePKR + ' PKR' : ''))
+                    : (planObj.pricePKR + ' PKR / $' + planObj.priceUSD))
+                : '—';
         }
     }
 
     async function _blLoadSettings() {
         try {
-            var r = await fetch((typeof API_BASE !== 'undefined' ? API_BASE : '') + '/api/payment-settings');
+            // v6: ask for the country-specific view (server validates the code and
+            // falls back to its own detection when none is supplied).
+            var cc  = window._csaiCountry || '';
+            var url = (typeof API_BASE !== 'undefined' ? API_BASE : '') + '/api/payment-settings' + (cc ? '?country=' + encodeURIComponent(cc) : '');
+            var r = await fetch(url);
             _blSettings = await r.json();
+            if (_blSettings && _blSettings.country && !window._csaiCountry) {
+                window._csaiCountry = _blSettings.country;   // adopt server detection
+            }
+            _csaiUpdateCountryBadge();
         } catch(e) {
             _blSettings = {
                 easypaisa:  { enabled: true, number: '03021036192', name: 'MASHOOQ' },
@@ -4093,9 +4061,8 @@ function requestNewOTP() {
         var grid = document.getElementById('bl-methods-grid');
         if (!grid || !_blSettings) return;
         var s = _blSettings;
-        var allowed = _csbAllowedMethods();
         var cards = _METHODS.filter(function(m) {
-            if (allowed.indexOf(m.key) === -1) return false;
+            // Server already disables Pakistan-only methods outside Pakistan.
             if (m.key === 'easypaisa') return s.easypaisa && s.easypaisa.enabled !== false;
             if (m.key === 'jazzcash')  return s.jazzcash  && s.jazzcash.enabled  !== false;
             if (m.key === 'binance')   return s.binance   && s.binance.enabled   !== false;
@@ -4116,6 +4083,13 @@ function requestNewOTP() {
         var grid = document.getElementById('bl-plans-grid');
         if (!grid || !_blSettings || !_blSettings.plans) return;
         var plans = _blSettings.plans;
+        var isPK  = _blSettings.isPakistan !== false;   // unknown → keep legacy PK view
+        if (!plans.length) {
+            grid.innerHTML = '<div class="col-span-3 text-center text-slate-400 text-xs py-5">' +
+                'No packages are available for your country yet.<br>' +
+                '<button type="button" onclick="_csaiShowCountryPicker(false)" style="color:#fbbf24;text-decoration:underline;margin-top:6px;">Choose a different country</button></div>';
+            return;
+        }
         var popularKey = 'month'; // mark the middle plan as popular
         grid.innerHTML = plans.map(function(p) {
             var isPopular = p.key === popularKey;
@@ -4124,8 +4098,10 @@ function requestNewOTP() {
                 (isPopular ? '<div class="popular-ribbon">POPULAR</div>' : '') +
                 '<div style="font-size:26px;margin-bottom:6px;">' + icon + '</div>' +
                 '<div style="font-size:12px;font-weight:800;color:#FFD700;letter-spacing:0.04em;margin-bottom:4px;">' + p.label + '</div>' +
-                '<div style="font-size:18px;font-weight:900;color:#fff;font-family:\'Orbitron\',sans-serif;margin-bottom:2px;">' + (_csbShowPKR() ? (p.pricePKR + ' PKR') : ('$' + p.priceUSD)) + '</div>' +
-                '<div style="font-size:9px;color:#94a3b8;margin-bottom:8px;">' + (_csbShowPKR() ? ('$' + p.priceUSD) : '&nbsp;') + '</div>' +
+                '<div style="font-size:18px;font-weight:900;color:#fff;font-family:\'Orbitron\',sans-serif;margin-bottom:2px;">' +
+                    (isPK ? (p.pricePKR + ' PKR') : ('$' + p.priceUSD)) + '</div>' +
+                '<div style="font-size:9px;color:#94a3b8;margin-bottom:8px;">' +
+                    (isPK ? ('$' + p.priceUSD) : (p.pricePKR ? p.pricePKR + ' PKR' : '')) + '</div>' +
                 '<div style="font-size:9px;background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.25);border-radius:20px;padding:2px 8px;color:rgba(255,215,0,0.8);display:inline-block;">' + p.duration + '</div>' +
                 '<div class="plan-check" style="margin-top:10px;"><i class="fa-solid fa-check" style="font-size:8px;display:none;"></i></div>' +
             '</div>';
@@ -4325,7 +4301,6 @@ function requestNewOTP() {
             fd.append('paymentMethod', _blSelMethod);
             fd.append('whatsapp',      fullWa);
             fd.append('country',       country);
-            fd.append('countryCode',   _csbGetCountry() || '');
             fd.append('txId',          txid);
             fd.append('screenshot',    scFile);
 
