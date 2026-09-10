@@ -10,7 +10,7 @@
 
   gtag('config', 'G-JBV2KX89YG');
 </script>
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4916676877809398"
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4916676877809398" crossorigin="anonymous"></script>
     <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-JBV2KX89YG"></script>
 <script>
@@ -31,7 +31,10 @@
     <link rel="dns-prefetch" href="//cdn.rawgit.com">
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#FFD700">
-    <link rel="apple-touch-icon" href="/icon-192.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="64x64" href="/favicon.png">
+    <link rel="shortcut icon" href="/favicon.ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -507,6 +510,57 @@
             background: linear-gradient(135deg, rgba(255,215,0,0.28), rgba(245,158,11,0.18));
             box-shadow: 0 0 16px rgba(255,215,0,0.25);
         }
+
+        /* ── Compact install control ── */
+        .app-install-btn {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-height: 38px;
+            padding: 9px 14px;
+            border: 1px solid rgba(52,211,153,0.38);
+            border-radius: 999px;
+            background: linear-gradient(135deg,rgba(16,185,129,0.16),rgba(245,158,11,0.10));
+            color: #d1fae5;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.06);
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+        }
+        .app-install-btn.is-ready { display: inline-flex; }
+        .app-install-btn:hover {
+            transform: translateY(-1px);
+            border-color: rgba(251,191,36,0.72);
+            box-shadow: 0 10px 28px rgba(16,185,129,0.13), 0 0 18px rgba(245,158,11,0.10);
+        }
+        .app-install-btn:active { transform: scale(.98); }
+        .app-install-btn i { color: #fbbf24; }
+        .install-guide {
+            position: fixed;
+            inset: 0;
+            z-index: 10020;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: rgba(3,7,18,.88);
+            backdrop-filter: blur(18px);
+        }
+        .install-guide-card {
+            width: min(360px,100%);
+            padding: 24px;
+            border: 1px solid rgba(245,158,11,.34);
+            border-radius: 22px;
+            background: linear-gradient(155deg,#101b2d,#080f1d);
+            box-shadow: 0 28px 80px rgba(0,0,0,.68);
+            text-align: center;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .app-install-btn { transition: none; }
+        }
     </style>
 </head>
 <body class="bg-[#030712] text-white min-h-screen relative">
@@ -601,6 +655,12 @@
                            style="background:linear-gradient(135deg,#0284c7,#0369a1);box-shadow:0 4px 20px rgba(2,132,199,0.3);">
                             <i class="fa-brands fa-telegram text-lg"></i> Telegram
                         </a>
+                    </div>
+                    <div class="flex justify-center pt-1">
+                        <button type="button" class="app-install-btn" onclick="installSignalApp()" aria-label="Install Chinese Signal Bot on this device">
+                            <i class="fa-solid fa-arrow-down-to-line"></i>
+                            <span>Install App</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -1109,6 +1169,9 @@
                 </h1>
                 <button onclick="openBuyLicenseModal()" class="order-lic-badge">
                     <i class="fa-solid fa-key text-[10px]"></i> Order License Key <span style="font-size:9px;">★</span>
+                </button>
+                <button type="button" class="app-install-btn" onclick="installSignalApp()" aria-label="Install Chinese Signal Bot on this device">
+                    <i class="fa-solid fa-arrow-down-to-line"></i><span>Install App</span>
                 </button>
                 </div>
                 <p class="text-amber-400/70 text-xs tracking-widest uppercase mt-0.5">AI-Powered Trading Intelligence System</p>
@@ -3752,6 +3815,63 @@ function requestNewOTP() {
     </div>
 
     <script>
+    // ── Add to Home Screen / app installation ───────────────────────────
+    var _csaiInstallPrompt = null;
+
+    function _csaiIsStandalone() {
+        return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    }
+
+    function _csaiRefreshInstallButtons() {
+        var ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+        var canInstall = !_csaiIsStandalone() && (!!_csaiInstallPrompt || ios);
+        document.querySelectorAll('.app-install-btn').forEach(function(btn) {
+            btn.classList.toggle('is-ready', canInstall);
+        });
+    }
+
+    window.addEventListener('beforeinstallprompt', function(event) {
+        event.preventDefault();
+        _csaiInstallPrompt = event;
+        _csaiRefreshInstallButtons();
+    });
+
+    window.addEventListener('appinstalled', function() {
+        _csaiInstallPrompt = null;
+        _csaiRefreshInstallButtons();
+        if (typeof showToast === 'function') showToast('✓ Chinese Signal Bot installed');
+    });
+
+    function _csaiShowInstallGuide() {
+        var guide = document.createElement('div');
+        guide.className = 'install-guide';
+        guide.setAttribute('role', 'dialog');
+        guide.setAttribute('aria-modal', 'true');
+        guide.setAttribute('aria-label', 'Install app instructions');
+        guide.innerHTML = '<div class="install-guide-card">' +
+            '<div class="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center" style="background:rgba(16,185,129,.12);border:1px solid rgba(52,211,153,.30)"><i class="fa-solid fa-mobile-screen-button text-2xl text-emerald-300"></i></div>' +
+            '<h3 class="title-font text-lg font-bold text-yellow-200 mb-2">Install Chinese Signal Bot</h3>' +
+            '<p class="text-sm text-slate-300 leading-relaxed mb-5">Tap the <strong class="text-white">Share</strong> icon in Safari, then choose <strong class="text-white">Add to Home Screen</strong>.</p>' +
+            '<button type="button" class="golden-btn w-full rounded-2xl py-3 text-sm font-bold" onclick="this.closest(\'.install-guide\').remove()">Got It</button>' +
+            '</div>';
+        guide.addEventListener('click', function(event) { if (event.target === guide) guide.remove(); });
+        document.body.appendChild(guide);
+    }
+
+    async function installSignalApp() {
+        if (_csaiIsStandalone()) return;
+        if (_csaiInstallPrompt) {
+            _csaiInstallPrompt.prompt();
+            try { await _csaiInstallPrompt.userChoice; } catch(e) {}
+            _csaiInstallPrompt = null;
+            _csaiRefreshInstallButtons();
+            return;
+        }
+        _csaiShowInstallGuide();
+    }
+
+    document.addEventListener('DOMContentLoaded', _csaiRefreshInstallButtons);
+
     // ── Service Worker registration ──────────────────────────────────────
     if ('serviceWorker' in navigator) {
         // Try registering the SW; if the server serves it, great — otherwise catch silently
