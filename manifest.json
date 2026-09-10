@@ -1,7 +1,7 @@
 {
-  "name": "Chinese Signal Bot",
-  "short_name": "CSBot",
-  "description": "AI Auto Chinese Signal Bot — Automated Quotex Trading Signals",
+  "name": "Chinese Bot",
+  "short_name": "Chinese Bot",
+  "description": "Chinese Bot — AI-powered automated trading signals",
   "id": "/",
   "start_url": "/",
   "scope": "/",
