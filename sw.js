@@ -90,3 +90,12 @@ self.addEventListener('sync', event => {
         event.waitUntil(Promise.resolve());
     }
 });
+
+// ── Push subscription rotated by the browser (common on mobile) ──────────────
+self.addEventListener('pushsubscriptionchange', event => {
+    event.waitUntil(
+        self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(cs => {
+            cs.forEach(c => c.postMessage({ type: 'csai-resubscribe' }));
+        })
+    );
+});
