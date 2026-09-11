@@ -1,15 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-JBV2KX89YG"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-JBV2KX89YG');
-</script>
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4916676877809398" crossorigin="anonymous"></script>
     <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-JBV2KX89YG"></script>
@@ -3906,8 +3897,11 @@ function requestNewOTP() {
                 console.warn('SW register failed (non-critical):', e.message || e);
             });
 
-        // Listen for SW controller change (new SW activated) and reload to use it
+        // Listen for SW controller change (new SW activated) and reload ONCE to use it.
+        // (Unguarded this can loop forever on mobile browsers.)
         navigator.serviceWorker.addEventListener('controllerchange', function() {
+            if (window._csaiSwReloaded) return;
+            window._csaiSwReloaded = true;
             window.location.reload();
         });
     }
@@ -3921,41 +3915,115 @@ function requestNewOTP() {
     }, 1500);
 
 
+    // ── Mobile helpers ───────────────────────────────────────────────────
+    function _csaiIsIOS() {
+        return /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+               (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    }
+
+    function _csaiDeviceId() {
+        var id = '';
+        try { id = localStorage.getItem('_csai_device_id') || ''; } catch(e) {}
+        if (!id) {
+            id = 'dev_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+            try { localStorage.setItem('_csai_device_id', id); } catch(e) {}
+        }
+        return id;
+    }
+
     async function requestPushPermission() {
         var banner = document.getElementById('push-notif-banner');
         if (banner) banner.classList.add('hidden');
-        if (!('Notification' in window)) return;
+
+        // iOS/iPadOS only allows web push when the site is installed on the Home Screen.
+        if (_csaiIsIOS() && !_csaiIsStandalone()) {
+            if (typeof _csaiShowInstallGuide === 'function') _csaiShowInstallGuide();
+            else if (typeof showToast === 'function') showToast('📲 Install Chinese Bot to your Home Screen to enable notifications');
+            return;
+        }
+        if (!('Notification' in window)) {
+            if (typeof showToast === 'function') showToast('ℹ️ This browser does not support notifications');
+            return;
+        }
         var perm = await Notification.requestPermission();
         if (perm !== 'granted') { if (typeof showToast === 'function') showToast('🔕 Notifications declined'); return; }
-        await _blSubscribePush(localStorage.getItem('_blWa') || '');
-        if (typeof showToast === 'function') showToast('🔔 Notifications enabled!');
+        var ok = await _blSubscribePush(localStorage.getItem('_blWa') || '');
+        if (typeof showToast === 'function') showToast(ok ? '🔔 Notifications enabled!' : '⚠️ Notifications on, but push registration failed — please retry');
     }
 
     async function _blSubscribePush(whatsappNum) {
         try {
-            if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+            if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
+            if (!('Notification' in window) || Notification.permission !== 'granted') return false;
+            if (_csaiIsIOS() && !_csaiIsStandalone()) return false;   // iOS: home-screen app only
+
             var r = await fetch((typeof API_BASE !== 'undefined' ? API_BASE : '') + '/api/push/vapid-public');
             var d = await r.json();
-            if (!d.publicKey) return;
-            var reg = window._swReg || await navigator.serviceWorker.ready;
-            var sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: _urlBase64ToUint8Array(d.publicKey) });
+            if (!d.publicKey) return false;
+
+            // Wait for an ACTIVE worker — on mobile the registration is often still
+            // "installing" when this runs, which makes subscribe() fail silently.
+            var reg = await navigator.serviceWorker.ready;
+            window._swReg = reg;
+
+            var appKey = _urlBase64ToUint8Array(d.publicKey);
+            var sub = await reg.pushManager.getSubscription();
+            if (sub) {
+                // Re-subscribe if the stored subscription was made with a different VAPID key.
+                var same = sub.options && sub.options.applicationServerKey &&
+                    new Uint8Array(sub.options.applicationServerKey).toString() === appKey.toString();
+                if (!same) { try { await sub.unsubscribe(); } catch(e) {} sub = null; }
+            }
+            if (!sub) {
+                sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: appKey });
+            }
+
             var uid = (whatsappNum || localStorage.getItem('_blWa') || 'anonymous').trim();
             var p256 = btoa(String.fromCharCode.apply(null, new Uint8Array(sub.getKey('p256dh'))));
             var auth = btoa(String.fromCharCode.apply(null, new Uint8Array(sub.getKey('auth'))));
-            await fetch((typeof API_BASE !== 'undefined' ? API_BASE : '') + '/api/push/subscribe', {
+            var res = await fetch((typeof API_BASE !== 'undefined' ? API_BASE : '') + '/api/push/subscribe', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     endpoint: sub.endpoint,
                     keys: { p256dh: p256, auth: auth },
                     userIdentifier: uid,
+                    deviceId: _csaiDeviceId(),
+                    platform: /android/i.test(navigator.userAgent) ? 'android'
+                            : _csaiIsIOS() ? 'ios'
+                            : 'desktop',
+                    userAgent: navigator.userAgent,
                     country: (window._csaiCountry || ''),   // server validates / re-resolves this
                 }),
             });
+            if (!res.ok) {
+                console.warn('Push subscribe rejected by server [' + res.status + ']:', await res.text());
+                return false;
+            }
+            try { localStorage.setItem('_csai_push_endpoint', sub.endpoint); } catch(e) {}
+            return true;
         } catch(e) {
             // Non-blocking: the site keeps working without push.
             console.warn('Push subscribe error (non-critical):', e && e.message ? e.message : e);
+            return false;
         }
+    }
+
+    // Re-check the subscription whenever the app comes back to the foreground —
+    // mobile browsers rotate/drop push subscriptions much more often than desktop.
+    document.addEventListener('visibilitychange', function() {
+        if (document.visibilityState !== 'visible') return;
+        if (!('Notification' in window) || Notification.permission !== 'granted') return;
+        _blSubscribePush(localStorage.getItem('_blWa') || '');
+    });
+
+    // The service worker asks the page to re-register after the browser rotates the subscription.
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.addEventListener('message', function(event) {
+            if (event.data && event.data.type === 'csai-resubscribe') {
+                _blSubscribePush(localStorage.getItem('_blWa') || '');
+            }
+        });
     }
 
     function _urlBase64ToUint8Array(base64String) {
