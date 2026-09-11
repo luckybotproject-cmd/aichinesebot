@@ -3,7 +3,7 @@
   "short_name": "Chinese Bot",
   "description": "Chinese Bot — AI-powered automated trading signals",
   "id": "/",
-  "start_url": "/",
+  "start_url": "/app.html",
   "scope": "/",
   "display": "standalone",
   "background_color": "#030712",
