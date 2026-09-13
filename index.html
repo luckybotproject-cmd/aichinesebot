@@ -3691,7 +3691,24 @@ function requestNewOTP() {
                 <div id="bl-plans-grid" class="grid grid-cols-3 gap-3 mb-2">
                     <div class="col-span-3 text-center text-slate-500 text-xs py-4">Loading plans...</div>
                 </div>
-                <p class="text-[10px] text-slate-500 text-center mb-5">✅ Special Offer Pricing — Limited Time</p>
+                <p class="text-[10px] text-slate-500 text-center mb-3">✅ Special Offer Pricing — Limited Time</p>
+
+                <!-- ADDITIVE (v8): Promo / discount code -->
+                <div class="rounded-2xl p-3 mb-5" style="background:rgba(20,30,50,0.9);border:1px dashed rgba(245,158,11,0.35);">
+                    <label class="block text-amber-300 text-[11px] mb-1.5 font-semibold">
+                        <i class="fa-solid fa-tags mr-1"></i> Have a Promo Code?
+                    </label>
+                    <div class="flex gap-2">
+                        <input id="bl-promo" type="text" maxlength="32" placeholder="e.g. OFF500" autocomplete="off"
+                               oninput="this.value=this.value.toUpperCase()"
+                               onkeydown="if(event.key==='Enter'){event.preventDefault();_blApplyPromo();}"
+                               class="flex-1 bg-[#1c2537] border border-yellow-400/40 rounded-xl px-3 py-2.5 text-white text-sm uppercase tracking-widest focus:outline-none focus:border-yellow-400">
+                        <button type="button" id="bl-promo-btn" onclick="_blApplyPromo()"
+                                class="golden-btn text-black font-bold px-4 rounded-xl text-xs whitespace-nowrap">Apply</button>
+                    </div>
+                    <p id="bl-promo-msg" class="hidden text-[11px] mt-2 font-semibold"></p>
+                    <p id="bl-promo-price" class="hidden text-xs mt-1.5 text-slate-300"></p>
+                </div>
 
                 <!-- Divider -->
                 <div class="flex items-center gap-3 mb-4">
@@ -3746,9 +3763,9 @@ function requestNewOTP() {
                                class="w-full bg-[#1c2537] border border-yellow-400/40 rounded-2xl px-4 py-3 text-white text-sm focus:outline-none focus:border-yellow-400">
                     </div>
                     <div>
-                        <label class="block text-amber-300 text-xs mb-1.5 font-semibold">WhatsApp Number <span class="text-red-400">*</span></label>
+                        <label id="bl-contact-label" class="block text-amber-300 text-xs mb-1.5 font-semibold">WhatsApp Number <span class="text-red-400">*</span></label>
                         <div class="flex gap-2">
-                            <select id="bl-country" class="bg-[#1c2537] border border-yellow-400/40 rounded-2xl px-2 py-3 text-white text-xs focus:outline-none focus:border-yellow-400 w-28 flex-shrink-0">
+                            <select id="bl-country" onchange="_blSyncContactField()" class="bg-[#1c2537] border border-yellow-400/40 rounded-2xl px-2 py-3 text-white text-xs focus:outline-none focus:border-yellow-400 w-28 flex-shrink-0">
                                 <option value="+92">🇵🇰 +92</option>
                                 <option value="+1">🇺🇸 +1</option>
                                 <option value="+44">🇬🇧 +44</option>
@@ -3765,8 +3782,11 @@ function requestNewOTP() {
                             </select>
                             <input id="bl-wa" type="tel" required maxlength="15" placeholder="3001234567"
                                    class="flex-1 bg-[#1c2537] border border-yellow-400/40 rounded-2xl px-4 py-3 text-white text-sm focus:outline-none focus:border-yellow-400">
+                            <!-- ADDITIVE (v8): shown instead of the number for non-Pakistan countries -->
+                            <input id="bl-tg" type="text" maxlength="64" placeholder="@username" autocomplete="off"
+                                   class="hidden flex-1 bg-[#1c2537] border border-yellow-400/40 rounded-2xl px-4 py-3 text-white text-sm focus:outline-none focus:border-yellow-400">
                         </div>
-                        <p class="text-[10px] text-slate-500 mt-1">License key will be sent to this WhatsApp</p>
+                        <p id="bl-contact-hint" class="text-[10px] text-slate-500 mt-1">License key will be sent to this WhatsApp</p>
                     </div>
                     <div>
                         <label class="block text-amber-300 text-xs mb-1.5 font-semibold">Transaction ID / TRX Hash <span class="text-red-400">*</span></label>
@@ -3816,8 +3836,22 @@ function requestNewOTP() {
                 <p class="text-sm text-emerald-400 leading-relaxed mt-1 mb-4">
                     You'll receive your license key on <strong>WhatsApp</strong> &amp; <strong>Push Notification</strong> within 10 minutes.
                 </p>
-                <div id="bl-order-id-display" class="text-xs text-slate-500 mb-5 font-mono bg-[#1c2537] rounded-xl px-3 py-2 inline-block"></div>
-                <br>
+                <div id="bl-order-id-display" class="text-xs text-slate-500 mb-4 font-mono bg-[#1c2537] rounded-xl px-3 py-2 inline-block"></div>
+
+                <!-- ADDITIVE (v8): 1-tap support contacts, pre-filled with the order details -->
+                <p class="text-[11px] text-amber-300/90 font-semibold mb-2">Need an instant status update? Message us 👇</p>
+                <div class="grid grid-cols-2 gap-2 mb-5">
+                    <a id="bl-sup-wa" href="#" target="_blank" rel="noopener"
+                       class="flex items-center justify-center gap-2 py-3 rounded-2xl text-xs font-bold text-white"
+                       style="background:linear-gradient(135deg,#25d366,#128c7e);">
+                        <i class="fa-brands fa-whatsapp text-base"></i> WhatsApp
+                    </a>
+                    <a id="bl-sup-tg" href="#" target="_blank" rel="noopener"
+                       class="flex items-center justify-center gap-2 py-3 rounded-2xl text-xs font-bold text-white"
+                       style="background:linear-gradient(135deg,#2AABEE,#229ED9);">
+                        <i class="fa-brands fa-telegram text-base"></i> Telegram
+                    </a>
+                </div>
                 <button onclick="closeBuyLicenseModal()" class="golden-btn text-black font-bold px-8 py-3 rounded-2xl text-sm">Close</button>
             </div>
         </div>
@@ -4283,6 +4317,10 @@ function requestNewOTP() {
         var area = document.getElementById('bl-upload-area'); if (area) area.classList.remove('hidden');
         _blSelMethod = '';
         _blSelPlan   = '';
+        // ADDITIVE (v8): clear promo state + restore the default contact field
+        var pi = document.getElementById('bl-promo'); if (pi) pi.value = '';
+        if (typeof _blClearPromo === 'function') _blClearPromo('');
+        if (typeof _blSyncContactField === 'function') _blSyncContactField();
     }
 
     function _blGoStep(n) {
@@ -4310,6 +4348,9 @@ function requestNewOTP() {
                     ? ('$' + planObj.priceUSD + (planObj.pricePKR ? ' / ' + planObj.pricePKR + ' PKR' : ''))
                     : (planObj.pricePKR + ' PKR / $' + planObj.priceUSD))
                 : '—';
+            // ADDITIVE (v8): promo discount + Pakistan/other contact field
+            if (typeof _blRefreshAmountDisplay === 'function') _blRefreshAmountDisplay();
+            if (typeof _blSyncContactField === 'function') _blSyncContactField();
         }
     }
 
@@ -4426,6 +4467,9 @@ function requestNewOTP() {
         // Sync hidden select value for compatibility
         var sel = document.getElementById('bl-plan');
         if (sel) sel.value = key;
+        // ADDITIVE (v8): a promo code is plan-sensitive — re-check it
+        var promoInput = document.getElementById('bl-promo');
+        if (promoInput && promoInput.value.trim() && typeof _blApplyPromo === 'function') _blApplyPromo();
         // Unlock payment section
         var pay = document.getElementById('bl-payment-section');
         var notice = document.getElementById('bl-payment-lock-notice');
@@ -4560,6 +4604,8 @@ function requestNewOTP() {
         var name    = (document.getElementById('bl-name')?.value || '').trim();
         var country = document.getElementById('bl-country')?.value || '';
         var wa      = (document.getElementById('bl-wa')?.value || '').trim();
+        var tg      = (document.getElementById('bl-tg')?.value || '').trim();
+        var isPKc   = (typeof _blIsPakistanContact === 'function') ? _blIsPakistanContact() : true;
         var txid    = (document.getElementById('bl-txid')?.value || '').trim();
         var planVal = _blSelPlan || (document.getElementById('bl-plan') ? document.getElementById('bl-plan').value : '');
         var scFile  = document.getElementById('bl-screenshot')?.files?.[0];
@@ -4571,14 +4617,16 @@ function requestNewOTP() {
         }
 
         if (!name)    return _stErr('❌ Please enter your full name');
-        if (!wa)      return _stErr('❌ Please enter your WhatsApp number');
+        if (isPKc && !wa)  return _stErr('❌ Please enter your WhatsApp number');
+        if (!isPKc && !tg) return _stErr('❌ Please enter your Telegram username (e.g. @username)');
         if (!txid)    return _stErr('❌ Please enter your transaction ID');
         if (!planVal) return _stErr('❌ Please select a plan (go back to Step 1 and choose a plan)');
         if (!scFile)  return _stErr('❌ Please upload payment screenshot');
         if (!_blSelMethod) return _stErr('❌ Please select a payment method (go back to Step 1)');
 
         var planObj  = (_blSettings?.plans || []).find(function(p) { return p.key === planVal; }) || {};
-        var fullWa   = (country + wa).replace(/[^+\d]/g, '');
+        var fullWa   = wa ? (country + wa).replace(/[^+\d]/g, '') : '';
+        var tgHandle = tg ? ('@' + tg.replace(/^@+/, '').replace(/\s+/g, '')) : '';
 
         btn.disabled = true;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Sending...';
@@ -4593,21 +4641,24 @@ function requestNewOTP() {
             fd.append('planPriceUSD',  planObj.priceUSD || '');
             fd.append('paymentMethod', _blSelMethod);
             fd.append('whatsapp',      fullWa);
+            fd.append('telegram',      tgHandle);
             fd.append('country',       country);
             fd.append('txId',          txid);
+            if (typeof _blPromo !== 'undefined' && _blPromo && _blPromo.code) fd.append('promoCode', _blPromo.code);
             fd.append('screenshot',    scFile);
 
             var r = await fetch((typeof API_BASE !== 'undefined' ? API_BASE : '') + '/api/orders', { method: 'POST', body: fd });
             var data = await r.json().catch(function() { return {}; });
             if (!r.ok) throw new Error(data.error || 'Submission failed');
 
-            // Try push subscription
-            localStorage.setItem('_blWa', fullWa);
+            // Try push subscription — Telegram-only customers are keyed by handle
+            var pushId = fullWa || tgHandle;
+            localStorage.setItem('_blWa', pushId);
             if ('Notification' in window) {
                 if (Notification.permission === 'granted') {
-                    _blSubscribePush(fullWa).catch(function(){});
+                    _blSubscribePush(pushId).catch(function(){});
                 } else if (Notification.permission === 'default') {
-                    Notification.requestPermission().then(function(p) { if (p === 'granted') _blSubscribePush(fullWa).catch(function(){}); });
+                    Notification.requestPermission().then(function(p) { if (p === 'granted') _blSubscribePush(pushId).catch(function(){}); });
                 }
             }
 
@@ -4617,6 +4668,13 @@ function requestNewOTP() {
             if (success) success.classList.remove('hidden');
             var oidEl = document.getElementById('bl-order-id-display');
             if (oidEl) oidEl.textContent = 'Order ID: ' + (data.order?.id || '—');
+            // ADDITIVE (v8): pre-fill the WhatsApp / Telegram support buttons
+            if (typeof _blFillSupportLinks === 'function') {
+                var isPKv  = _blSettings ? (_blSettings.isPakistan !== false) : true;
+                var amount = _blPromo ? (isPKv ? _blPromo.finalPKR + ' PKR' : '$' + _blPromo.finalUSD)
+                                      : (isPKv ? (planObj.pricePKR || '') + ' PKR' : '$' + (planObj.priceUSD || ''));
+                _blFillSupportLinks(data.order?.id || '', planObj.label || planVal, amount);
+            }
 
         } catch(e) {
             _stErr('❌ ' + (e.message || 'Failed to send. Please try again.'));
@@ -4625,7 +4683,149 @@ function requestNewOTP() {
             btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-2"></i> Submit Order';
         }
     }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // ADDITIVE (v8) — SUPPORT CONTACTS / PROMO CODES / CONTACT FIELD
+    // Nothing above is modified; these are new helpers only.
+    // ═══════════════════════════════════════════════════════════════════
+    var CSAI_SUPPORT_WA = '+923021036192';      // overridable from Admin → Bot Settings
+    var CSAI_SUPPORT_TG = 'webmaster9i';
+
+    // Pull the live support contacts from Bot Settings when available so they
+    // can be changed from the admin panel without editing this file.
+    (function _blLoadSupportContacts() {
+        try {
+            fetch((typeof API_BASE !== 'undefined' ? API_BASE : '') + '/api/bot-settings')
+                .then(function(r) { return r.json(); })
+                .then(function(d) {
+                    if (!d) return;
+                    if (d.whatsappUrl) {
+                        var m = String(d.whatsappUrl).match(/(\+?\d[\d\s\-]{6,})/);
+                        if (m) CSAI_SUPPORT_WA = m[1].replace(/[^\d+]/g, '');
+                    }
+                    if (d.telegramUrl) {
+                        var t = String(d.telegramUrl).replace(/^https?:\/\/(t\.me|telegram\.me)\//i, '').replace(/^@/, '').replace(/\/.*$/, '');
+                        if (t) CSAI_SUPPORT_TG = t;
+                    }
+                }).catch(function() {});
+        } catch(e) {}
+    })();
+
+    // ── Country-aware contact field ────────────────────────────────────
+    // Pakistan (+92) → WhatsApp number (unchanged behaviour).
+    // Any other country → required Telegram @username.
+    function _blIsPakistanContact() {
+        var sel = document.getElementById('bl-country');
+        return !sel || sel.value === '+92';
+    }
+    function _blSyncContactField() {
+        var isPK   = _blIsPakistanContact();
+        var wa     = document.getElementById('bl-wa');
+        var tg     = document.getElementById('bl-tg');
+        var label  = document.getElementById('bl-contact-label');
+        var hint   = document.getElementById('bl-contact-hint');
+        if (!wa || !tg) return;
+        if (isPK) {
+            wa.classList.remove('hidden'); wa.required = true;
+            tg.classList.add('hidden');    tg.required = false; tg.value = '';
+            if (label) label.innerHTML = 'WhatsApp Number <span class="text-red-400">*</span>';
+            if (hint)  hint.textContent = 'License key will be sent to this WhatsApp';
+        } else {
+            wa.classList.add('hidden');    wa.required = false; wa.value = '';
+            tg.classList.remove('hidden'); tg.required = true;
+            if (label) label.innerHTML = 'Telegram Username <span class="text-red-400">*</span>';
+            if (hint)  hint.textContent = 'Example: @username — your license key will be sent on Telegram';
+        }
+    }
+
+    // ── Promo codes ────────────────────────────────────────────────────
+    var _blPromo = null;   // { code, discountPKR, discountUSD, finalPKR, finalUSD, label }
+
+    function _blPromoMsg(text, ok) {
+        var el = document.getElementById('bl-promo-msg');
+        if (!el) return;
+        el.textContent = text || '';
+        el.style.color = ok ? '#6ee7b7' : '#fca5a5';
+        el.classList.toggle('hidden', !text);
+    }
+
+    function _blClearPromo(msg) {
+        _blPromo = null;
+        var pe = document.getElementById('bl-promo-price');
+        if (pe) { pe.classList.add('hidden'); pe.innerHTML = ''; }
+        if (msg) _blPromoMsg(msg, false); else _blPromoMsg('', false);
+        _blRefreshAmountDisplay();
+    }
+
+    async function _blApplyPromo() {
+        var input = document.getElementById('bl-promo');
+        var btn   = document.getElementById('bl-promo-btn');
+        var code  = (input?.value || '').trim().toUpperCase();
+        if (!code) return _blClearPromo('Enter a promo code first');
+        if (!_blSelPlan) return _blPromoMsg('Please choose a plan first, then apply the code', false);
+
+        var planObj = (_blSettings?.plans || []).find(function(p) { return p.key === _blSelPlan; }) || {};
+        if (btn) { btn.disabled = true; btn.textContent = '…'; }
+        try {
+            var r = await fetch((typeof API_BASE !== 'undefined' ? API_BASE : '') + '/api/promo-codes/validate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code: code, planKey: _blSelPlan, pricePKR: planObj.pricePKR || '', priceUSD: planObj.priceUSD || '' })
+            });
+            var d = await r.json().catch(function() { return {}; });
+            if (!d || !d.valid) { _blClearPromo('❌ ' + ((d && d.error) || 'Invalid promo code')); return; }
+
+            _blPromo = d;
+            _blPromoMsg('✅ ' + code + ' applied' + (d.label ? ' — ' + d.label : ''), true);
+
+            var isPK = _blSettings ? (_blSettings.isPakistan !== false) : true;
+            var pe   = document.getElementById('bl-promo-price');
+            if (pe) {
+                var oldTxt = isPK ? (d.originalPKR + ' PKR') : ('$' + d.originalUSD);
+                var newTxt = isPK ? (d.finalPKR    + ' PKR') : ('$' + d.finalUSD);
+                var saved  = isPK ? (d.discountPKR + ' PKR') : ('$' + d.discountUSD);
+                pe.innerHTML = '<span style="text-decoration:line-through;color:#94a3b8;">' + oldTxt + '</span>' +
+                               ' <span style="color:#FFD700;font-weight:900;font-size:15px;">' + newTxt + '</span>' +
+                               ' <span style="color:#6ee7b7;font-weight:700;">(You save ' + saved + ')</span>';
+                pe.classList.remove('hidden');
+            }
+            _blRefreshAmountDisplay();
+        } catch(e) {
+            _blClearPromo('❌ Could not check the code, please try again');
+        } finally {
+            if (btn) { btn.disabled = false; btn.textContent = 'Apply'; }
+        }
+    }
+
+    // Keeps the read-only Amount box on Step 3 in sync with the promo.
+    function _blRefreshAmountDisplay() {
+        var ad = document.getElementById('bl-amount-display');
+        if (!ad || !_blSelPlan) return;
+        var planObj = (_blSettings?.plans || []).find(function(p) { return p.key === _blSelPlan; });
+        if (!planObj) return;
+        var isPK = _blSettings ? (_blSettings.isPakistan !== false) : true;
+        if (_blPromo) {
+            ad.value = (isPK ? (_blPromo.finalPKR + ' PKR') : ('$' + _blPromo.finalUSD)) + '  (' + _blPromo.code + ')';
+        } else {
+            ad.value = isPK ? (planObj.pricePKR + ' PKR / $' + planObj.priceUSD)
+                            : ('$' + planObj.priceUSD + (planObj.pricePKR ? ' / ' + planObj.pricePKR + ' PKR' : ''));
+        }
+    }
+
+    // ── Success-screen support links, pre-filled with the order details ──
+    function _blFillSupportLinks(orderId, planLabel, price) {
+        var text = 'Hello! I just placed an order on Chinese Bot.\n' +
+                   'Order ID: ' + (orderId || '—') + '\n' +
+                   'Plan: ' + (planLabel || '—') +
+                   (price ? ('\nAmount: ' + price) : '') +
+                   '\nPlease share my order status / license key.';
+        var waEl = document.getElementById('bl-sup-wa');
+        var tgEl = document.getElementById('bl-sup-tg');
+        if (waEl) waEl.href = 'https://wa.me/' + String(CSAI_SUPPORT_WA).replace(/\D/g, '') + '?text=' + encodeURIComponent(text);
+        if (tgEl) tgEl.href = 'https://t.me/' + String(CSAI_SUPPORT_TG).replace(/^@/, '') + '?text=' + encodeURIComponent(text);
+    }
     </script>
+
 
 
     <!-- ═══════════════════════════════════════════════════
