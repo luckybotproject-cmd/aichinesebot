@@ -1,7 +1,7 @@
 // ═══ Chinese Signal Bot — Service Worker (Push Notifications) ═══
 // Handles push events, notification clicks, install & activate lifecycle.
 
-const CACHE_VERSION = 'csai-sw-v2';
+const CACHE_VERSION = 'csai-sw-v3';
 // Intentionally EMPTY: the app HTML must never be served from cache, otherwise
 // users would keep running outdated application code after a deploy.
 // (There is no fetch handler in this worker — every request goes to the network.)
@@ -28,20 +28,32 @@ self.addEventListener('activate', event => {
 });
 
 // ── Push received ─────────────────────────────────────────────────────────────
+// v8 (mobile fix): a push event MUST always end in a visible notification —
+// Android Chrome and iOS PWAs revoke push permission for "silent" pushes. Every
+// branch below therefore resolves to showNotification(), even on a parse error.
 self.addEventListener('push', event => {
     let data = {};
-    try { data = event.data ? event.data.json() : {}; } catch(e) { data = { title: 'Chinese Signal Bot', body: event.data?.text() || '' }; }
+    try { data = event.data ? event.data.json() : {}; } catch(e) { data = { title: 'Chinese Signal Bot', body: (event.data && event.data.text && event.data.text()) || '' }; }
+    if (!data || typeof data !== 'object') data = {};
 
     const title   = data.title   || '🤖 Chinese Signal Bot';
     const options = {
         body:    data.body    || 'You have a new update.',
         icon:    data.icon    || '/icon-192.png',
-        badge:   '/icon-192.png',
+        badge:   data.badge   || '/icon-192.png',
+        image:   data.image   || undefined,
+        // A stable tag + renotify makes the phone re-alert (sound + vibration)
+        // instead of silently replacing an older notification.
         tag:     data.tag     || 'csai-push-' + Date.now(),
-        vibrate: [200, 100, 200],
-        requireInteraction: !!data.requireInteraction,
+        renotify: true,
+        silent:  false,
+        vibrate: data.vibrate || [300, 120, 300, 120, 300],
+        timestamp: Date.now(),
+        dir:     'auto',
+        lang:    data.lang || 'en',
+        requireInteraction: data.requireInteraction !== false,
         data:    { url: data.url || '/', orderId: data.orderId || null, key: data.key || null },
-        actions: data.actions || [],
+        actions: Array.isArray(data.actions) ? data.actions.slice(0, 2) : [],
     };
 
     // Append key directly in body if present
@@ -50,7 +62,19 @@ self.addEventListener('push', event => {
         options.requireInteraction = true;
     }
 
-    event.waitUntil(self.registration.showNotification(title, options));
+    event.waitUntil(
+        self.registration.showNotification(title, options)
+            // Last-resort fallback: some Android builds reject `actions`/`image`.
+            // Retry with the bare minimum so the user still sees the message.
+            .catch(() => self.registration.showNotification(title, {
+                body:  options.body,
+                icon:  '/icon-192.png',
+                badge: '/icon-192.png',
+                vibrate: [300, 120, 300],
+                data:  options.data,
+            }))
+            .catch(() => {})
+    );
 });
 
 // ── Notification clicked ──────────────────────────────────────────────────────
