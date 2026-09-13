@@ -3641,6 +3641,134 @@ function requestNewOTP() {
         <i class="fa-solid fa-bolt mr-2"></i> 🔥 Order License Key
     </button>
 
+    <!-- ═══ ADDITIVE (v10): TRACK ORDER MODAL ═══ -->
+    <button id="track-order-fab" type="button" onclick="openTrackModal()"
+            class="fixed bottom-5 left-5 z-[200] px-4 py-3 rounded-2xl font-bold text-xs shadow-lg hover:scale-105 transition-all"
+            style="background:rgba(15,23,42,0.92);border:1px solid rgba(245,158,11,0.45);color:#fcd34d;font-family:'Inter',sans-serif;">
+        <i class="fa-solid fa-magnifying-glass-location mr-2"></i> Track Order
+    </button>
+
+    <div id="track-modal" class="hidden fixed inset-0 z-[320] flex items-center justify-center p-4" style="background:rgba(2,6,23,0.85);backdrop-filter:blur(6px);">
+        <div class="w-full max-w-md rounded-3xl overflow-hidden" style="background:#0f172a;border:1px solid rgba(245,158,11,0.35);box-shadow:0 20px 60px rgba(0,0,0,0.6);">
+            <div class="flex items-center justify-between px-5 py-4" style="border-bottom:1px solid rgba(245,158,11,0.2);">
+                <h4 class="title-font text-base font-bold text-yellow-300"><i class="fa-solid fa-magnifying-glass-location mr-2"></i> Track Your Order</h4>
+                <button onclick="closeTrackModal()" class="text-slate-400 hover:text-yellow-300 text-lg"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="px-5 py-4 space-y-3">
+                <div>
+                    <label class="block text-amber-300 text-xs mb-1.5 font-semibold">Order ID <span class="text-red-400">*</span></label>
+                    <input id="trk-id" type="text" placeholder="e.g. ORD-XXXXXX" autocomplete="off"
+                           class="w-full bg-[#1c2537] border border-yellow-400/40 rounded-2xl px-4 py-3 text-white text-sm font-mono focus:outline-none focus:border-yellow-400">
+                </div>
+                <div>
+                    <label class="block text-amber-300 text-xs mb-1.5 font-semibold">WhatsApp number or Telegram username</label>
+                    <input id="trk-contact" type="text" placeholder="+923001234567 or @username" autocomplete="off"
+                           class="w-full bg-[#1c2537] border border-yellow-400/40 rounded-2xl px-4 py-3 text-white text-sm focus:outline-none focus:border-yellow-400">
+                    <p class="text-[10px] text-slate-500 mt-1">Needed only to show your license key</p>
+                </div>
+                <button id="trk-btn" onclick="trackOrder()" class="golden-btn w-full text-black font-bold py-3 rounded-2xl text-sm">
+                    <i class="fa-solid fa-magnifying-glass mr-2"></i> Check Status
+                </button>
+                <div id="trk-result" class="hidden"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // ── ADDITIVE (v10): customer order tracking ─────────────────────────
+    function openTrackModal(prefillId) {
+        var m = document.getElementById('track-modal');
+        if (!m) return;
+        m.classList.remove('hidden');
+        var idEl = document.getElementById('trk-id');
+        var last = '';
+        try { last = localStorage.getItem('csai_last_order') || ''; } catch(e) {}
+        if (idEl && !idEl.value) idEl.value = prefillId || last || '';
+        var r = document.getElementById('trk-result'); if (r) { r.className = 'hidden'; r.innerHTML = ''; }
+    }
+    function closeTrackModal() {
+        var m = document.getElementById('track-modal');
+        if (m) m.classList.add('hidden');
+    }
+    function _trkHtmlEsc(v) {
+        return String(v == null ? '' : v).replace(/[&<>"']/g, function(c) {
+            return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
+        });
+    }
+    async function trackOrder() {
+        var id      = (document.getElementById('trk-id')?.value || '').trim();
+        var contact = (document.getElementById('trk-contact')?.value || '').trim();
+        var box     = document.getElementById('trk-result');
+        var btn     = document.getElementById('trk-btn');
+        if (!box) return;
+        if (!id) {
+            box.className = 'rounded-2xl px-4 py-3 text-xs text-center';
+            box.style.cssText = 'background:rgba(239,68,68,0.15);color:#fca5a5;';
+            box.textContent = '❌ Please enter your Order ID';
+            return;
+        }
+        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Checking...'; }
+        try {
+            var base = (typeof API_BASE !== 'undefined' ? API_BASE : '');
+            var url  = base + '/api/orders/track/' + encodeURIComponent(id) + (contact ? '?contact=' + encodeURIComponent(contact) : '');
+            var r    = await fetch(url);
+            var d    = await r.json();
+            if (!d || !d.ok) {
+                box.className = 'rounded-2xl px-4 py-3 text-xs text-center';
+                box.style.cssText = 'background:rgba(239,68,68,0.15);color:#fca5a5;';
+                box.textContent = '❌ ' + ((d && d.error) || 'Order not found');
+                return;
+            }
+            try { localStorage.setItem('csai_last_order', d.order.id); } catch(e) {}
+            box.className = '';
+            box.style.cssText = '';
+            box.innerHTML = _trkRender(d.order);
+        } catch(e) {
+            box.className = 'rounded-2xl px-4 py-3 text-xs text-center';
+            box.style.cssText = 'background:rgba(239,68,68,0.15);color:#fca5a5;';
+            box.textContent = '❌ Network error — please try again';
+        } finally {
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-magnifying-glass mr-2"></i> Check Status'; }
+        }
+    }
+    function _trkRender(o) {
+        var html = '<div class="rounded-2xl px-4 py-4" style="background:rgba(20,30,50,0.75);border:1px solid rgba(245,158,11,0.25);">';
+        html += '<p class="text-sm font-bold text-yellow-300 mb-1">Hi ' + _trkHtmlEsc(o.firstName) + ' 👋</p>';
+        html += '<p class="text-[11px] text-slate-400 mb-3 font-mono">' + _trkHtmlEsc(o.id) + (o.planLabel ? ' • ' + _trkHtmlEsc(o.planLabel) : '') + '</p>';
+
+        if (o.rejected) {
+            html += '<div class="rounded-xl px-3 py-3 text-xs" style="background:rgba(239,68,68,0.15);color:#fca5a5;">';
+            html += '❌ This order was not approved.' + (o.reason ? '<br><span class="text-[11px]">Reason: ' + _trkHtmlEsc(o.reason) + '</span>' : '');
+            html += '<br><span class="text-[11px] text-slate-300">Please contact support and we will re-check it for you.</span></div>';
+        } else {
+            var steps = o.steps || [];
+            html += '<div class="space-y-2 mb-3">';
+            for (var i = 0; i < steps.length; i++) {
+                var done = i <= o.stage, now = i === o.stage;
+                var icon = done ? '✅' : '⚪';
+                var cls  = done ? (now ? 'text-yellow-300 font-bold' : 'text-emerald-300') : 'text-slate-500';
+                html += '<p class="text-xs ' + cls + '">' + icon + ' ' + _trkHtmlEsc(steps[i].label) + (now && i < steps.length - 1 ? ' <span class="text-[10px] text-slate-400">(in progress)</span>' : '') + '</p>';
+            }
+            html += '</div>';
+
+            if (o.hasKey && o.verified && o.licenseKey) {
+                html += '<div class="rounded-xl px-3 py-3" style="background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.35);">';
+                html += '<p class="text-[10px] text-emerald-200 mb-1">🔑 Your License Key</p>';
+                html += '<p class="font-mono text-emerald-300 text-sm font-bold break-all">' + _trkHtmlEsc(o.licenseKey) + '</p></div>';
+            } else if (o.hasKey) {
+                html += '<div class="rounded-xl px-3 py-3 text-xs" style="background:rgba(245,158,11,0.12);color:#fcd34d;">🔑 Your license key is ready — enter the WhatsApp number or Telegram username you ordered with to see it.</div>';
+            } else {
+                html += '<div class="rounded-xl px-3 py-3 text-xs" style="background:rgba(56,189,248,0.12);color:#93c5fd;">⏳ We are still processing your order. You will get the key here and on ' + (o.method ? _trkHtmlEsc(o.method) + ' ' : '') + 'WhatsApp / Telegram.</div>';
+            }
+        }
+        html += '<div class="grid grid-cols-2 gap-2 mt-3">';
+        html += '<a href="https://wa.me/' + String(typeof CSAI_SUPPORT_WA !== "undefined" ? CSAI_SUPPORT_WA : "").replace(/[^\d]/g, "") + '?text=' + encodeURIComponent('Hi, about my order ' + o.id) + '" target="_blank" rel="noopener" class="flex items-center justify-center gap-2 py-2.5 rounded-2xl text-[11px] font-bold text-white" style="background:linear-gradient(135deg,#25d366,#128c7e);"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a>';
+        html += '<a href="https://t.me/' + String(typeof CSAI_SUPPORT_TG !== "undefined" ? CSAI_SUPPORT_TG : "").replace(/^@/, "") + '" target="_blank" rel="noopener" class="flex items-center justify-center gap-2 py-2.5 rounded-2xl text-[11px] font-bold text-white" style="background:linear-gradient(135deg,#2AABEE,#229ED9);"><i class="fa-brands fa-telegram"></i> Telegram</a>';
+        html += '</div></div>';
+        return html;
+    }
+    </script>
+
     <!-- ═══ PUSH NOTIFICATION BANNER ═══ -->
     <div id="push-notif-banner" class="hidden fixed top-0 left-0 right-0 z-[250] px-4 py-3 flex items-center gap-3"
          style="background:linear-gradient(90deg,rgba(15,23,42,0.98),rgba(30,40,60,0.98));border-bottom:1px solid rgba(245,158,11,0.4);">
@@ -3765,7 +3893,7 @@ function requestNewOTP() {
                     <div>
                         <label id="bl-contact-label" class="block text-amber-300 text-xs mb-1.5 font-semibold">WhatsApp Number <span class="text-red-400">*</span></label>
                         <div class="flex gap-2">
-                            <select id="bl-country" onchange="_blSyncContactField()" class="bg-[#1c2537] border border-yellow-400/40 rounded-2xl px-2 py-3 text-white text-xs focus:outline-none focus:border-yellow-400 w-28 flex-shrink-0">
+                            <select id="bl-country" onchange="_blCountryChanged()" class="bg-[#1c2537] border border-yellow-400/40 rounded-2xl px-2 py-3 text-white text-xs focus:outline-none focus:border-yellow-400 w-28 flex-shrink-0">
                                 <option value="+92">🇵🇰 +92</option>
                                 <option value="+1">🇺🇸 +1</option>
                                 <option value="+44">🇬🇧 +44</option>
@@ -3780,7 +3908,7 @@ function requestNewOTP() {
                                 <option value="+254">🇰🇪 +254</option>
                                 <option value="+27">🇿🇦 +27</option>
                             </select>
-                            <input id="bl-wa" type="tel" required maxlength="15" placeholder="3001234567"
+                            <input id="bl-wa" type="tel" maxlength="15" placeholder="3001234567"
                                    class="flex-1 bg-[#1c2537] border border-yellow-400/40 rounded-2xl px-4 py-3 text-white text-sm focus:outline-none focus:border-yellow-400">
                             <!-- ADDITIVE (v8): shown instead of the number for non-Pakistan countries -->
                             <input id="bl-tg" type="text" maxlength="64" placeholder="@username" autocomplete="off"
@@ -3852,6 +3980,10 @@ function requestNewOTP() {
                         <i class="fa-brands fa-telegram text-base"></i> Telegram
                     </a>
                 </div>
+                <!-- ADDITIVE (v10) -->
+                <button onclick="openTrackModal()" class="w-full mb-2 px-8 py-3 rounded-2xl text-sm font-bold border border-yellow-400/40 bg-yellow-400/10 text-yellow-300 hover:bg-yellow-400/20">
+                    <i class="fa-solid fa-magnifying-glass-location mr-2"></i> Track My Order
+                </button>
                 <button onclick="closeBuyLicenseModal()" class="golden-btn text-black font-bold px-8 py-3 rounded-2xl text-sm">Close</button>
             </div>
         </div>
@@ -4317,9 +4449,12 @@ function requestNewOTP() {
         var area = document.getElementById('bl-upload-area'); if (area) area.classList.remove('hidden');
         _blSelMethod = '';
         _blSelPlan   = '';
+        window._blSelMethodKey = '';   // ADDITIVE (v9)
         // ADDITIVE (v8): clear promo state + restore the default contact field
         var pi = document.getElementById('bl-promo'); if (pi) pi.value = '';
         if (typeof _blClearPromo === 'function') _blClearPromo('');
+        var csel = document.getElementById('bl-country');
+        if (csel) csel.removeAttribute('data-user-picked');   // ADDITIVE (v9)
         if (typeof _blSyncContactField === 'function') _blSyncContactField();
     }
 
@@ -4350,6 +4485,7 @@ function requestNewOTP() {
                 : '—';
             // ADDITIVE (v8): promo discount + Pakistan/other contact field
             if (typeof _blRefreshAmountDisplay === 'function') _blRefreshAmountDisplay();
+            if (typeof _blSyncCountrySelect === 'function') _blSyncCountrySelect();   // ADDITIVE (v9)
             if (typeof _blSyncContactField === 'function') _blSyncContactField();
         }
     }
@@ -4482,6 +4618,7 @@ function requestNewOTP() {
     function _blSelectMethod(key, label) {
         if (key === 'usdt') { _blShowUsdtChoice(); return; }
         _blSelMethod = label || key;
+        window._blSelMethodKey = key || '';   // ADDITIVE (v9): drives the contact field
         _blGoStep(2);
         _blRenderDetails(key);
     }
@@ -4501,6 +4638,7 @@ function requestNewOTP() {
 
     function _blSelectCrypto(netKey, netLabel) {
         _blSelMethod = netLabel;
+        window._blSelMethodKey = netKey || '';   // ADDITIVE (v9)
         _blGoStep(2);
         _blRenderDetails(netKey);
     }
@@ -4668,6 +4806,9 @@ function requestNewOTP() {
             if (success) success.classList.remove('hidden');
             var oidEl = document.getElementById('bl-order-id-display');
             if (oidEl) oidEl.textContent = 'Order ID: ' + (data.order?.id || '—');
+            // ADDITIVE (v10): remember the ID so "Track Order" prefills it
+            try { if (data.order?.id) localStorage.setItem('csai_last_order', data.order.id); } catch(e) {}
+
             // ADDITIVE (v8): pre-fill the WhatsApp / Telegram support buttons
             if (typeof _blFillSupportLinks === 'function') {
                 var isPKv  = _blSettings ? (_blSettings.isPakistan !== false) : true;
@@ -4715,8 +4856,54 @@ function requestNewOTP() {
     // Pakistan (+92) → WhatsApp number (unchanged behaviour).
     // Any other country → required Telegram @username.
     function _blIsPakistanContact() {
+        // ADDITIVE (v9): Pakistan-only local methods (Easypaisa / JazzCash / bank)
+        // keep the WhatsApp number. Binance Pay / USDT, or any non-Pakistan
+        // country (India, Bangladesh, …) ask for a Telegram username instead.
+        var mk = String(window._blSelMethodKey || '').toLowerCase();
+        var ml = String(_blSelMethod || '').toLowerCase();
+        if (/binance|usdt|crypto|trc20|bep20|tron|bnb/.test(mk + ' ' + ml)) return false;
+
         var sel = document.getElementById('bl-country');
-        return !sel || sel.value === '+92';
+        if (sel && sel.value && sel.value !== '+92') return false;      // user picked another country
+
+        var det = String(window._csaiCountry || '').toUpperCase();
+        if (det && det !== 'PK') return false;                          // detected outside Pakistan
+        if (_blSettings && _blSettings.isPakistan === false) return false;
+
+        return true;
+    }
+
+    // ADDITIVE (v9): preselect the visitor's own dial code so a Bangladeshi /
+    // Indian visitor is never shown the Pakistani "+92 WhatsApp" field.
+    function _blSyncCountrySelect() {
+        var sel = document.getElementById('bl-country');
+        if (!sel || sel.getAttribute('data-user-picked') === '1') return;
+        var info = window._csaiCountryInfo || null;
+        var dial = (info && info.dial) ? String(info.dial) : '';
+        var code = String(window._csaiCountry || '').toUpperCase();
+        if (!dial && code) {
+            var fallback = { PK:'+92', IN:'+91', BD:'+880', NP:'+977', LK:'+94', AE:'+971', SA:'+966',
+                             MY:'+60', ID:'+62', PH:'+63', NG:'+234', KE:'+254', ZA:'+27',
+                             US:'+1', GB:'+44', CA:'+1', AU:'+61', TR:'+90', EG:'+20' };
+            dial = fallback[code] || '';
+        }
+        if (!dial) return;
+        var found = false;
+        for (var i = 0; i < sel.options.length; i++) if (sel.options[i].value === dial) { found = true; break; }
+        if (!found) {
+            var o = document.createElement('option');
+            o.value = dial;
+            o.textContent = ((info && info.flag) ? info.flag + ' ' : '') + dial + (code ? ' (' + code + ')' : '');
+            sel.appendChild(o);
+        }
+        sel.value = dial;
+    }
+
+    // ADDITIVE (v9): remember that the customer picked the country themselves
+    function _blCountryChanged() {
+        var sel = document.getElementById('bl-country');
+        if (sel) sel.setAttribute('data-user-picked', '1');
+        _blSyncContactField();
     }
     function _blSyncContactField() {
         var isPK   = _blIsPakistanContact();
@@ -4727,11 +4914,11 @@ function requestNewOTP() {
         if (!wa || !tg) return;
         if (isPK) {
             wa.classList.remove('hidden'); wa.required = true;
-            tg.classList.add('hidden');    tg.required = false; tg.value = '';
+            tg.classList.add('hidden');    tg.required = false; tg.removeAttribute('required'); tg.value = '';
             if (label) label.innerHTML = 'WhatsApp Number <span class="text-red-400">*</span>';
             if (hint)  hint.textContent = 'License key will be sent to this WhatsApp';
         } else {
-            wa.classList.add('hidden');    wa.required = false; wa.value = '';
+            wa.classList.add('hidden');    wa.required = false; wa.removeAttribute('required'); wa.value = '';
             tg.classList.remove('hidden'); tg.required = true;
             if (label) label.innerHTML = 'Telegram Username <span class="text-red-400">*</span>';
             if (hint)  hint.textContent = 'Example: @username — your license key will be sent on Telegram';
