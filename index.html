@@ -651,7 +651,7 @@
                 <div class="mt-5 flex flex-col gap-3">
                     <button onclick="openBuyLicenseModal()"
                             class="golden-btn w-full text-black font-bold py-5 rounded-2xl text-base tracking-widest uppercase">
-                        🛒 Buy License Key
+                        🛒 Buy License Key — Order Here
                     </button>
                     <div class="flex gap-2">
                         <a id="login-wa-link" href="https://wa.me/923021036192?text=Hello,%20I%20want%20to%20buy%20Chinese%20Signal%20Bot%20License%20Key" target="_blank"
@@ -1176,9 +1176,6 @@
                     style="background:linear-gradient(90deg,#FFD700,#FFF8DC,#FFD700);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">
                     ⚡ CHINESE SIGNAL BOT
                 </h1>
-                <button onclick="openBuyLicenseModal()" class="order-lic-badge">
-                    <i class="fa-solid fa-key text-[10px]"></i> Order License Key <span style="font-size:9px;">★</span>
-                </button>
                 <button type="button" class="app-install-btn" onclick="installSignalApp()" aria-label="Install Chinese Signal Bot on this device">
                     <i class="fa-solid fa-arrow-down-to-line"></i><span>Install Chinese Bot<small>Add to Home Screen</small></span>
                 </button>
@@ -3656,15 +3653,17 @@ function requestNewOTP() {
             </div>
             <div class="px-5 py-4 space-y-3">
                 <div>
-                    <label class="block text-amber-300 text-xs mb-1.5 font-semibold">Order ID <span class="text-red-400">*</span></label>
-                    <input id="trk-id" type="text" placeholder="e.g. ORD-XXXXXX" autocomplete="off"
-                           class="w-full bg-[#1c2537] border border-yellow-400/40 rounded-2xl px-4 py-3 text-white text-sm font-mono focus:outline-none focus:border-yellow-400">
+                    <label class="block text-amber-300 text-xs mb-1.5 font-semibold">How would you like to track your order?</label>
+                    <select id="trk-method" onchange="_trkMethodChanged()" class="w-full bg-[#1c2537] border border-yellow-400/40 rounded-2xl px-4 py-3 text-white text-sm focus:outline-none focus:border-yellow-400">
+                        <option value="id">Order ID</option>
+                        <option value="telegram">Telegram Username</option>
+                        <option value="whatsapp">WhatsApp Number</option>
+                    </select>
                 </div>
                 <div>
-                    <label class="block text-amber-300 text-xs mb-1.5 font-semibold">WhatsApp number or Telegram username</label>
-                    <input id="trk-contact" type="text" placeholder="+923001234567 or @username" autocomplete="off"
-                           class="w-full bg-[#1c2537] border border-yellow-400/40 rounded-2xl px-4 py-3 text-white text-sm focus:outline-none focus:border-yellow-400">
-                    <p class="text-[10px] text-slate-500 mt-1">Needed only to show your license key</p>
+                    <label id="trk-value-label" class="block text-amber-300 text-xs mb-1.5 font-semibold">Order ID <span class="text-red-400">*</span></label>
+                    <input id="trk-id" type="text" maxlength="100" placeholder="e.g. ORD-XXXXXX" autocomplete="off"
+                           class="w-full bg-[#1c2537] border border-yellow-400/40 rounded-2xl px-4 py-3 text-white text-sm font-mono focus:outline-none focus:border-yellow-400">
                 </div>
                 <button id="trk-btn" onclick="trackOrder()" class="golden-btn w-full text-black font-bold py-3 rounded-2xl text-sm">
                     <i class="fa-solid fa-magnifying-glass mr-2"></i> Check Status
@@ -3690,33 +3689,43 @@ function requestNewOTP() {
         var m = document.getElementById('track-modal');
         if (m) m.classList.add('hidden');
     }
+    function _trkMethodChanged() {
+        var method = document.getElementById('trk-method')?.value || 'id';
+        var input = document.getElementById('trk-id');
+        var label = document.getElementById('trk-value-label');
+        var cfg = method === 'telegram'
+            ? ['Telegram Username', '@username']
+            : method === 'whatsapp' ? ['WhatsApp Number', '+923001234567'] : ['Order ID', 'e.g. ORD-XXXXXX'];
+        if (label) label.innerHTML = cfg[0] + ' <span class="text-red-400">*</span>';
+        if (input) { input.value = ''; input.placeholder = cfg[1]; input.classList.toggle('font-mono', method === 'id'); }
+    }
     function _trkHtmlEsc(v) {
         return String(v == null ? '' : v).replace(/[&<>"']/g, function(c) {
             return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
         });
     }
     async function trackOrder() {
-        var id      = (document.getElementById('trk-id')?.value || '').trim();
-        var contact = (document.getElementById('trk-contact')?.value || '').trim();
+        var method  = document.getElementById('trk-method')?.value || 'id';
+        var value   = (document.getElementById('trk-id')?.value || '').trim();
         var box     = document.getElementById('trk-result');
         var btn     = document.getElementById('trk-btn');
         if (!box) return;
-        if (!id) {
+        if (!value || (method === 'telegram' && !/^@?[A-Za-z0-9_]{5,32}$/.test(value)) || (method === 'whatsapp' && value.replace(/\D/g, '').length < 7)) {
             box.className = 'rounded-2xl px-4 py-3 text-xs text-center';
             box.style.cssText = 'background:rgba(239,68,68,0.15);color:#fca5a5;';
-            box.textContent = '❌ Please enter your Order ID';
+            box.textContent = '❌ Please enter a valid ' + (method === 'telegram' ? 'Telegram username' : method === 'whatsapp' ? 'WhatsApp number' : 'Order ID');
             return;
         }
         if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Checking...'; }
         try {
             var base = (typeof API_BASE !== 'undefined' ? API_BASE : '');
-            var url  = base + '/api/orders/track/' + encodeURIComponent(id) + (contact ? '?contact=' + encodeURIComponent(contact) : '');
+            var url  = base + '/api/orders/track/' + encodeURIComponent(value) + '?method=' + encodeURIComponent(method);
             var r    = await fetch(url);
             var d    = await r.json();
             if (!d || !d.ok) {
                 box.className = 'rounded-2xl px-4 py-3 text-xs text-center';
                 box.style.cssText = 'background:rgba(239,68,68,0.15);color:#fca5a5;';
-                box.textContent = '❌ ' + ((d && d.error) || 'Order not found');
+                box.textContent = '❌ ' + ((d && d.error) || 'No order found. Please check your details and try again.');
                 return;
             }
             try { localStorage.setItem('csai_last_order', d.order.id); } catch(e) {}
@@ -3782,15 +3791,15 @@ function requestNewOTP() {
     <!-- ═══ BUY LICENSE MODAL (MULTI-STEP) ═══ -->
     <div id="buy-lic-modal" class="hidden fixed inset-0 z-[300] flex items-center justify-center p-3"
          style="background:rgba(3,7,18,0.95);backdrop-filter:blur(20px);">
-        <div class="glass rounded-3xl w-full max-w-md"
-             style="border:1px solid rgba(245,158,11,0.4);box-shadow:0 0 50px rgba(245,158,11,0.15),0 30px 60px rgba(0,0,0,0.7);max-height:94vh;overflow-y:auto;">
+        <div class="glass rounded-3xl w-full max-w-md relative"
+              style="border:1px solid rgba(245,158,11,0.4);box-shadow:0 0 50px rgba(245,158,11,0.15),0 30px 60px rgba(0,0,0,0.7);max-height:94dvh;overflow-y:auto;isolation:isolate;">
 
             <!-- Header -->
-            <div class="flex items-center justify-between px-6 pt-5 pb-4" style="border-bottom:1px solid rgba(245,158,11,0.15);">
+            <div class="sticky top-0 z-50 flex items-center justify-between px-6 pt-5 pb-4" style="background:#0f172a;border-bottom:1px solid rgba(245,158,11,0.15);">
                 <h3 class="title-font text-base font-bold text-yellow-300 flex items-center gap-2">
                     <i class="fa-solid fa-crown"></i> Buy License Key
                 </h3>
-                <button onclick="closeBuyLicenseModal()" class="text-slate-400 hover:text-white text-2xl leading-none">&times;</button>
+                <button type="button" onclick="closeBuyLicenseModal()" aria-label="Close buy license window" class="relative z-[60] w-10 h-10 flex items-center justify-center rounded-xl text-white text-2xl leading-none" style="background:rgba(30,41,59,0.95);border:1px solid rgba(245,158,11,0.35);">&times;</button>
             </div>
 
             <!-- Step indicator -->
@@ -3888,6 +3897,11 @@ function requestNewOTP() {
                     <div>
                         <label class="block text-amber-300 text-xs mb-1.5 font-semibold">Full Name <span class="text-red-400">*</span></label>
                         <input id="bl-name" type="text" required maxlength="120" placeholder="Your full name"
+                               class="w-full bg-[#1c2537] border border-yellow-400/40 rounded-2xl px-4 py-3 text-white text-sm focus:outline-none focus:border-yellow-400">
+                    </div>
+                    <div>
+                        <label class="block text-amber-300 text-xs mb-1.5 font-semibold">Email Address (Optional)</label>
+                        <input id="bl-email" type="email" maxlength="254" placeholder="Enter your email for instant delivery" autocomplete="email"
                                class="w-full bg-[#1c2537] border border-yellow-400/40 rounded-2xl px-4 py-3 text-white text-sm focus:outline-none focus:border-yellow-400">
                     </div>
                     <div>
@@ -4518,12 +4532,14 @@ function requestNewOTP() {
         }
         _blRenderMethods();
         _blRenderPlans();
+        if (typeof _blSyncCountrySelect === 'function') _blSyncCountrySelect();
+        if (typeof _blSyncContactField === 'function') _blSyncContactField();
     }
 
     var _METHODS = [
-        { key: 'easypaisa', label: 'Easypaisa',     icon: '💚', border: '#22c55e', sKey: 'easypaisa' },
-        { key: 'jazzcash',  label: 'JazzCash',      icon: '🔴', border: '#ef4444', sKey: 'jazzcash'  },
-        { key: 'binance',   label: 'Binance Pay',   icon: '🟡', border: '#fbbf24', sKey: 'binance'   },
+        { key: 'easypaisa', label: 'Easypaisa',     logo: 'assets/easypaisa-logo.png', border: '#22c55e', sKey: 'easypaisa' },
+        { key: 'jazzcash',  label: 'JazzCash',      logo: 'assets/jazzcash-logo.png', border: '#ef4444', sKey: 'jazzcash'  },
+        { key: 'binance',   label: 'Binance Pay',   logo: 'assets/binance-pay-logo.svg', border: '#fbbf24', sKey: 'binance'   },
         { key: 'usdt',      label: 'Crypto (USDT)', icon: '🔷', border: '#06b6d4', sKey: null        },
     ];
 
@@ -4544,7 +4560,7 @@ function requestNewOTP() {
                 'class="rounded-2xl p-4 flex flex-col items-center gap-2 transition-all hover:scale-[1.03] active:scale-95 cursor-pointer" ' +
                 'style="background:rgba(20,30,50,0.9);border:2px solid rgba(245,158,11,0.25);" ' +
                 'onmouseover="this.style.borderColor=\'' + m.border + '80\'" onmouseout="this.style.borderColor=\'rgba(245,158,11,0.25)\'">' +
-                '<span class="text-3xl">' + m.icon + '</span>' +
+                (m.logo ? '<img src="' + m.logo + '" alt="' + m.label + ' logo" style="width:42px;height:32px;object-fit:contain;" loading="lazy">' : '<span class="text-3xl">' + m.icon + '</span>') +
                 '<span class="text-xs font-bold text-white">' + m.label + '</span></button>';
         }).join('');
     }
@@ -4743,6 +4759,7 @@ function requestNewOTP() {
         var country = document.getElementById('bl-country')?.value || '';
         var wa      = (document.getElementById('bl-wa')?.value || '').trim();
         var tg      = (document.getElementById('bl-tg')?.value || '').trim();
+        var email   = (document.getElementById('bl-email')?.value || '').trim().toLowerCase();
         var isPKc   = (typeof _blIsPakistanContact === 'function') ? _blIsPakistanContact() : true;
         var txid    = (document.getElementById('bl-txid')?.value || '').trim();
         var planVal = _blSelPlan || (document.getElementById('bl-plan') ? document.getElementById('bl-plan').value : '');
@@ -4757,6 +4774,9 @@ function requestNewOTP() {
         if (!name)    return _stErr('❌ Please enter your full name');
         if (isPKc && !wa)  return _stErr('❌ Please enter your WhatsApp number');
         if (!isPKc && !tg) return _stErr('❌ Please enter your Telegram username (e.g. @username)');
+        if (isPKc && wa.replace(/\D/g, '').length < 7) return _stErr('❌ Please enter a valid WhatsApp number');
+        if (!isPKc && !/^@?[A-Za-z0-9_]{5,32}$/.test(tg)) return _stErr('❌ Please enter a valid Telegram username');
+        if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return _stErr('❌ Please enter a valid email address');
         if (!txid)    return _stErr('❌ Please enter your transaction ID');
         if (!planVal) return _stErr('❌ Please select a plan (go back to Step 1 and choose a plan)');
         if (!scFile)  return _stErr('❌ Please upload payment screenshot');
@@ -4778,8 +4798,9 @@ function requestNewOTP() {
             fd.append('planPricePKR',  planObj.pricePKR || '');
             fd.append('planPriceUSD',  planObj.priceUSD || '');
             fd.append('paymentMethod', _blSelMethod);
-            fd.append('whatsapp',      fullWa);
-            fd.append('telegram',      tgHandle);
+            fd.append('whatsapp',      isPKc ? fullWa : '');
+            fd.append('telegram',      isPKc ? '' : tgHandle);
+            fd.append('email',         email);
             fd.append('country',       country);
             fd.append('txId',          txid);
             if (typeof _blPromo !== 'undefined' && _blPromo && _blPromo.code) fd.append('promoCode', _blPromo.code);
@@ -4856,15 +4877,10 @@ function requestNewOTP() {
     // Pakistan (+92) → WhatsApp number (unchanged behaviour).
     // Any other country → required Telegram @username.
     function _blIsPakistanContact() {
-        // ADDITIVE (v9): Pakistan-only local methods (Easypaisa / JazzCash / bank)
-        // keep the WhatsApp number. Binance Pay / USDT, or any non-Pakistan
-        // country (India, Bangladesh, …) ask for a Telegram username instead.
-        var mk = String(window._blSelMethodKey || '').toLowerCase();
-        var ml = String(_blSelMethod || '').toLowerCase();
-        if (/binance|usdt|crypto|trc20|bep20|tron|bnb/.test(mk + ' ' + ml)) return false;
-
+        // Contact method depends only on the selected country.
         var sel = document.getElementById('bl-country');
-        if (sel && sel.value && sel.value !== '+92') return false;      // user picked another country
+        if (sel && sel.getAttribute('data-user-picked') === '1') return sel.value === '+92';
+        if (sel && sel.value && sel.value !== '+92') return false;
 
         var det = String(window._csaiCountry || '').toUpperCase();
         if (det && det !== 'PK') return false;                          // detected outside Pakistan
