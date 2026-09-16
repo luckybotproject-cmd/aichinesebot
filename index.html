@@ -1176,6 +1176,9 @@
                     style="background:linear-gradient(90deg,#FFD700,#FFF8DC,#FFD700);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">
                     ⚡ CHINESE SIGNAL BOT
                 </h1>
+                <button onclick="openBuyLicenseModal()" class="order-lic-badge">
+                    <i class="fa-solid fa-key text-[10px]"></i> Order License Key <span style="font-size:9px;">★</span>
+                </button>
                 <button type="button" class="app-install-btn" onclick="installSignalApp()" aria-label="Install Chinese Signal Bot on this device">
                     <i class="fa-solid fa-arrow-down-to-line"></i><span>Install Chinese Bot<small>Add to Home Screen</small></span>
                 </button>
@@ -3631,146 +3634,12 @@ function requestNewOTP() {
         };
     </script>
 
-
-    <!-- ═══ ADDITIVE (v10): TRACK ORDER MODAL ═══ -->
-    <button id="track-order-fab" type="button" onclick="openTrackModal()"
-            class="fixed bottom-5 left-5 z-[200] px-4 py-3 rounded-2xl font-bold text-xs shadow-lg hover:scale-105 transition-all"
-            style="background:rgba(15,23,42,0.92);border:1px solid rgba(245,158,11,0.45);color:#fcd34d;font-family:'Inter',sans-serif;">
-        <i class="fa-solid fa-magnifying-glass-location mr-2"></i> Track Order
+    <!-- ═══ BUY LICENSE BUTTON (floating) ═══ -->
+    <button id="buy-lic-fab" type="button" onclick="openBuyLicenseModal()"
+            class="fixed bottom-5 right-5 z-[200] px-5 py-3 rounded-2xl font-bold text-black text-sm shadow-lg hover:scale-105 transition-all"
+            style="background:linear-gradient(135deg,#FFD700,#F59E0B);box-shadow:0 8px 30px rgba(245,158,11,0.45);font-family:'Inter',sans-serif;">
+        <i class="fa-solid fa-bolt mr-2"></i> 🔥 Order License Key
     </button>
-
-    <div id="track-modal" class="hidden fixed inset-0 z-[320] flex items-center justify-center p-4" style="background:rgba(2,6,23,0.85);backdrop-filter:blur(6px);">
-        <div class="w-full max-w-md rounded-3xl overflow-hidden" style="background:#0f172a;border:1px solid rgba(245,158,11,0.35);box-shadow:0 20px 60px rgba(0,0,0,0.6);">
-            <div class="flex items-center justify-between px-5 py-4" style="border-bottom:1px solid rgba(245,158,11,0.2);">
-                <h4 class="title-font text-base font-bold text-yellow-300"><i class="fa-solid fa-magnifying-glass-location mr-2"></i> Track Your Order</h4>
-                <button onclick="closeTrackModal()" class="text-slate-400 hover:text-yellow-300 text-lg"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <div class="px-5 py-4 space-y-3">
-                <div>
-                    <label class="block text-amber-300 text-xs mb-1.5 font-semibold">How would you like to track your order?</label>
-                    <select id="trk-method" onchange="_trkMethodChanged()" class="w-full bg-[#1c2537] border border-yellow-400/40 rounded-2xl px-4 py-3 text-white text-sm focus:outline-none focus:border-yellow-400">
-                        <option value="id">Order ID</option>
-                        <option value="telegram">Telegram Username</option>
-                        <option value="whatsapp">WhatsApp Number</option>
-                    </select>
-                </div>
-                <div>
-                    <label id="trk-value-label" class="block text-amber-300 text-xs mb-1.5 font-semibold">Order ID <span class="text-red-400">*</span></label>
-                    <input id="trk-id" type="text" maxlength="100" placeholder="e.g. ORD-XXXXXX" autocomplete="off"
-                           class="w-full bg-[#1c2537] border border-yellow-400/40 rounded-2xl px-4 py-3 text-white text-sm font-mono focus:outline-none focus:border-yellow-400">
-                </div>
-                <button id="trk-btn" onclick="trackOrder()" class="golden-btn w-full text-black font-bold py-3 rounded-2xl text-sm">
-                    <i class="fa-solid fa-magnifying-glass mr-2"></i> Check Status
-                </button>
-                <div id="trk-result" class="hidden"></div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-    // ── ADDITIVE (v10): customer order tracking ─────────────────────────
-    function openTrackModal(prefillId) {
-        var m = document.getElementById('track-modal');
-        if (!m) return;
-        m.classList.remove('hidden');
-        var idEl = document.getElementById('trk-id');
-        var last = '';
-        try { last = localStorage.getItem('csai_last_order') || ''; } catch(e) {}
-        if (idEl && !idEl.value) idEl.value = prefillId || last || '';
-        var r = document.getElementById('trk-result'); if (r) { r.className = 'hidden'; r.innerHTML = ''; }
-    }
-    function closeTrackModal() {
-        var m = document.getElementById('track-modal');
-        if (m) m.classList.add('hidden');
-    }
-    function _trkMethodChanged() {
-        var method = document.getElementById('trk-method')?.value || 'id';
-        var input = document.getElementById('trk-id');
-        var label = document.getElementById('trk-value-label');
-        var cfg = method === 'telegram'
-            ? ['Telegram Username', '@username']
-            : method === 'whatsapp' ? ['WhatsApp Number', '+923001234567'] : ['Order ID', 'e.g. ORD-XXXXXX'];
-        if (label) label.innerHTML = cfg[0] + ' <span class="text-red-400">*</span>';
-        if (input) { input.value = ''; input.placeholder = cfg[1]; input.classList.toggle('font-mono', method === 'id'); }
-    }
-    function _trkHtmlEsc(v) {
-        return String(v == null ? '' : v).replace(/[&<>"']/g, function(c) {
-            return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
-        });
-    }
-    async function trackOrder() {
-        var method  = document.getElementById('trk-method')?.value || 'id';
-        var value   = (document.getElementById('trk-id')?.value || '').trim();
-        var box     = document.getElementById('trk-result');
-        var btn     = document.getElementById('trk-btn');
-        if (!box) return;
-        if (!value || (method === 'telegram' && !/^@?[A-Za-z0-9_]{5,32}$/.test(value)) || (method === 'whatsapp' && value.replace(/\D/g, '').length < 7)) {
-            box.className = 'rounded-2xl px-4 py-3 text-xs text-center';
-            box.style.cssText = 'background:rgba(239,68,68,0.15);color:#fca5a5;';
-            box.textContent = '❌ Please enter a valid ' + (method === 'telegram' ? 'Telegram username' : method === 'whatsapp' ? 'WhatsApp number' : 'Order ID');
-            return;
-        }
-        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Checking...'; }
-        try {
-            var base = (typeof API_BASE !== 'undefined' ? API_BASE : '');
-            var url  = base + '/api/orders/track/' + encodeURIComponent(value) + '?method=' + encodeURIComponent(method);
-            var r    = await fetch(url);
-            var d    = await r.json();
-            if (!d || !d.ok) {
-                box.className = 'rounded-2xl px-4 py-3 text-xs text-center';
-                box.style.cssText = 'background:rgba(239,68,68,0.15);color:#fca5a5;';
-                box.textContent = '❌ ' + ((d && d.error) || 'No order found. Please check your details and try again.');
-                return;
-            }
-            try { localStorage.setItem('csai_last_order', d.order.id); } catch(e) {}
-            box.className = '';
-            box.style.cssText = '';
-            box.innerHTML = _trkRender(d.order);
-        } catch(e) {
-            box.className = 'rounded-2xl px-4 py-3 text-xs text-center';
-            box.style.cssText = 'background:rgba(239,68,68,0.15);color:#fca5a5;';
-            box.textContent = '❌ Network error — please try again';
-        } finally {
-            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-magnifying-glass mr-2"></i> Check Status'; }
-        }
-    }
-    function _trkRender(o) {
-        var html = '<div class="rounded-2xl px-4 py-4" style="background:rgba(20,30,50,0.75);border:1px solid rgba(245,158,11,0.25);">';
-        html += '<p class="text-sm font-bold text-yellow-300 mb-1">Hi ' + _trkHtmlEsc(o.firstName) + ' 👋</p>';
-        html += '<p class="text-[11px] text-slate-400 mb-3 font-mono">' + _trkHtmlEsc(o.id) + (o.planLabel ? ' • ' + _trkHtmlEsc(o.planLabel) : '') + '</p>';
-
-        if (o.rejected) {
-            html += '<div class="rounded-xl px-3 py-3 text-xs" style="background:rgba(239,68,68,0.15);color:#fca5a5;">';
-            html += '❌ This order was not approved.' + (o.reason ? '<br><span class="text-[11px]">Reason: ' + _trkHtmlEsc(o.reason) + '</span>' : '');
-            html += '<br><span class="text-[11px] text-slate-300">Please contact support and we will re-check it for you.</span></div>';
-        } else {
-            var steps = o.steps || [];
-            html += '<div class="space-y-2 mb-3">';
-            for (var i = 0; i < steps.length; i++) {
-                var done = i <= o.stage, now = i === o.stage;
-                var icon = done ? '✅' : '⚪';
-                var cls  = done ? (now ? 'text-yellow-300 font-bold' : 'text-emerald-300') : 'text-slate-500';
-                html += '<p class="text-xs ' + cls + '">' + icon + ' ' + _trkHtmlEsc(steps[i].label) + (now && i < steps.length - 1 ? ' <span class="text-[10px] text-slate-400">(in progress)</span>' : '') + '</p>';
-            }
-            html += '</div>';
-
-            if (o.hasKey && o.verified && o.licenseKey) {
-                html += '<div class="rounded-xl px-3 py-3" style="background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.35);">';
-                html += '<p class="text-[10px] text-emerald-200 mb-1">🔑 Your License Key</p>';
-                html += '<p class="font-mono text-emerald-300 text-sm font-bold break-all">' + _trkHtmlEsc(o.licenseKey) + '</p></div>';
-            } else if (o.hasKey) {
-                html += '<div class="rounded-xl px-3 py-3 text-xs" style="background:rgba(245,158,11,0.12);color:#fcd34d;">🔑 Your license key is ready — enter the WhatsApp number or Telegram username you ordered with to see it.</div>';
-            } else {
-                html += '<div class="rounded-xl px-3 py-3 text-xs" style="background:rgba(56,189,248,0.12);color:#93c5fd;">⏳ We are still processing your order. You will get the key here and on ' + (o.method ? _trkHtmlEsc(o.method) + ' ' : '') + 'WhatsApp / Telegram.</div>';
-            }
-        }
-        html += '<div class="grid grid-cols-2 gap-2 mt-3">';
-        html += '<a href="https://wa.me/' + String(typeof CSAI_SUPPORT_WA !== "undefined" ? CSAI_SUPPORT_WA : "").replace(/[^\d]/g, "") + '?text=' + encodeURIComponent('Hi, about my order ' + o.id) + '" target="_blank" rel="noopener" class="flex items-center justify-center gap-2 py-2.5 rounded-2xl text-[11px] font-bold text-white" style="background:linear-gradient(135deg,#25d366,#128c7e);"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a>';
-        html += '<a href="https://t.me/' + String(typeof CSAI_SUPPORT_TG !== "undefined" ? CSAI_SUPPORT_TG : "").replace(/^@/, "") + '" target="_blank" rel="noopener" class="flex items-center justify-center gap-2 py-2.5 rounded-2xl text-[11px] font-bold text-white" style="background:linear-gradient(135deg,#2AABEE,#229ED9);"><i class="fa-brands fa-telegram"></i> Telegram</a>';
-        html += '</div></div>';
-        return html;
-    }
-    </script>
 
     <!-- ═══ PUSH NOTIFICATION BANNER ═══ -->
     <div id="push-notif-banner" class="hidden fixed top-0 left-0 right-0 z-[250] px-4 py-3 flex items-center gap-3"
@@ -3785,15 +3654,15 @@ function requestNewOTP() {
     <!-- ═══ BUY LICENSE MODAL (MULTI-STEP) ═══ -->
     <div id="buy-lic-modal" class="hidden fixed inset-0 z-[300] flex items-center justify-center p-3"
          style="background:rgba(3,7,18,0.95);backdrop-filter:blur(20px);">
-        <div class="glass rounded-3xl w-full max-w-md relative"
-              style="border:1px solid rgba(245,158,11,0.4);box-shadow:0 0 50px rgba(245,158,11,0.15),0 30px 60px rgba(0,0,0,0.7);max-height:94dvh;overflow-y:auto;isolation:isolate;">
+        <div class="glass rounded-3xl w-full max-w-md"
+             style="border:1px solid rgba(245,158,11,0.4);box-shadow:0 0 50px rgba(245,158,11,0.15),0 30px 60px rgba(0,0,0,0.7);max-height:94vh;overflow-y:auto;">
 
             <!-- Header -->
-            <div class="sticky top-0 z-50 flex items-center justify-between px-6 pt-5 pb-4" style="background:#0f172a;border-bottom:1px solid rgba(245,158,11,0.15);">
+            <div class="flex items-center justify-between px-6 pt-5 pb-4" style="border-bottom:1px solid rgba(245,158,11,0.15);">
                 <h3 class="title-font text-base font-bold text-yellow-300 flex items-center gap-2">
                     <i class="fa-solid fa-crown"></i> Buy License Key
                 </h3>
-                <button type="button" onclick="closeBuyLicenseModal()" aria-label="Close buy license window" class="relative z-[60] w-10 h-10 flex items-center justify-center rounded-xl text-white text-2xl leading-none" style="background:rgba(30,41,59,0.95);border:1px solid rgba(245,158,11,0.35);">&times;</button>
+                <button onclick="closeBuyLicenseModal()" class="text-slate-400 hover:text-white text-2xl leading-none">&times;</button>
             </div>
 
             <!-- Step indicator -->
@@ -3822,24 +3691,7 @@ function requestNewOTP() {
                 <div id="bl-plans-grid" class="grid grid-cols-3 gap-3 mb-2">
                     <div class="col-span-3 text-center text-slate-500 text-xs py-4">Loading plans...</div>
                 </div>
-                <p class="text-[10px] text-slate-500 text-center mb-3">✅ Special Offer Pricing — Limited Time</p>
-
-                <!-- ADDITIVE (v8): Promo / discount code -->
-                <div class="rounded-2xl p-3 mb-5" style="background:rgba(20,30,50,0.9);border:1px dashed rgba(245,158,11,0.35);">
-                    <label class="block text-amber-300 text-[11px] mb-1.5 font-semibold">
-                        <i class="fa-solid fa-tags mr-1"></i> Have a Promo Code?
-                    </label>
-                    <div class="flex gap-2">
-                        <input id="bl-promo" type="text" maxlength="32" placeholder="e.g. OFF500" autocomplete="off"
-                               oninput="this.value=this.value.toUpperCase()"
-                               onkeydown="if(event.key==='Enter'){event.preventDefault();_blApplyPromo();}"
-                               class="flex-1 bg-[#1c2537] border border-yellow-400/40 rounded-xl px-3 py-2.5 text-white text-sm uppercase tracking-widest focus:outline-none focus:border-yellow-400">
-                        <button type="button" id="bl-promo-btn" onclick="_blApplyPromo()"
-                                class="golden-btn text-black font-bold px-4 rounded-xl text-xs whitespace-nowrap">Apply</button>
-                    </div>
-                    <p id="bl-promo-msg" class="hidden text-[11px] mt-2 font-semibold"></p>
-                    <p id="bl-promo-price" class="hidden text-xs mt-1.5 text-slate-300"></p>
-                </div>
+                <p class="text-[10px] text-slate-500 text-center mb-5">✅ Special Offer Pricing — Limited Time</p>
 
                 <!-- Divider -->
                 <div class="flex items-center gap-3 mb-4">
@@ -3894,14 +3746,9 @@ function requestNewOTP() {
                                class="w-full bg-[#1c2537] border border-yellow-400/40 rounded-2xl px-4 py-3 text-white text-sm focus:outline-none focus:border-yellow-400">
                     </div>
                     <div>
-                        <label class="block text-amber-300 text-xs mb-1.5 font-semibold">Email Address (Optional)</label>
-                        <input id="bl-email" type="email" maxlength="254" placeholder="Enter your email for instant delivery" autocomplete="email"
-                               class="w-full bg-[#1c2537] border border-yellow-400/40 rounded-2xl px-4 py-3 text-white text-sm focus:outline-none focus:border-yellow-400">
-                    </div>
-                    <div>
-                        <label id="bl-contact-label" class="block text-amber-300 text-xs mb-1.5 font-semibold">WhatsApp Number <span class="text-red-400">*</span></label>
+                        <label class="block text-amber-300 text-xs mb-1.5 font-semibold">WhatsApp Number <span class="text-red-400">*</span></label>
                         <div class="flex gap-2">
-                            <select id="bl-country" onchange="_blCountryChanged()" class="bg-[#1c2537] border border-yellow-400/40 rounded-2xl px-2 py-3 text-white text-xs focus:outline-none focus:border-yellow-400 w-28 flex-shrink-0">
+                            <select id="bl-country" class="bg-[#1c2537] border border-yellow-400/40 rounded-2xl px-2 py-3 text-white text-xs focus:outline-none focus:border-yellow-400 w-28 flex-shrink-0">
                                 <option value="+92">🇵🇰 +92</option>
                                 <option value="+1">🇺🇸 +1</option>
                                 <option value="+44">🇬🇧 +44</option>
@@ -3916,13 +3763,10 @@ function requestNewOTP() {
                                 <option value="+254">🇰🇪 +254</option>
                                 <option value="+27">🇿🇦 +27</option>
                             </select>
-                            <input id="bl-wa" type="tel" maxlength="15" placeholder="3001234567"
+                            <input id="bl-wa" type="tel" required maxlength="15" placeholder="3001234567"
                                    class="flex-1 bg-[#1c2537] border border-yellow-400/40 rounded-2xl px-4 py-3 text-white text-sm focus:outline-none focus:border-yellow-400">
-                            <!-- ADDITIVE (v8): shown instead of the number for non-Pakistan countries -->
-                            <input id="bl-tg" type="text" maxlength="64" placeholder="@username" autocomplete="off"
-                                   class="hidden flex-1 bg-[#1c2537] border border-yellow-400/40 rounded-2xl px-4 py-3 text-white text-sm focus:outline-none focus:border-yellow-400">
                         </div>
-                        <p id="bl-contact-hint" class="text-[10px] text-slate-500 mt-1">License key will be sent to this WhatsApp</p>
+                        <p class="text-[10px] text-slate-500 mt-1">License key will be sent to this WhatsApp</p>
                     </div>
                     <div>
                         <label class="block text-amber-300 text-xs mb-1.5 font-semibold">Transaction ID / TRX Hash <span class="text-red-400">*</span></label>
@@ -3972,26 +3816,8 @@ function requestNewOTP() {
                 <p class="text-sm text-emerald-400 leading-relaxed mt-1 mb-4">
                     You'll receive your license key on <strong>WhatsApp</strong> &amp; <strong>Push Notification</strong> within 10 minutes.
                 </p>
-                <div id="bl-order-id-display" class="text-xs text-slate-500 mb-4 font-mono bg-[#1c2537] rounded-xl px-3 py-2 inline-block"></div>
-
-                <!-- ADDITIVE (v8): 1-tap support contacts, pre-filled with the order details -->
-                <p class="text-[11px] text-amber-300/90 font-semibold mb-2">Need an instant status update? Message us 👇</p>
-                <div class="grid grid-cols-2 gap-2 mb-5">
-                    <a id="bl-sup-wa" href="#" target="_blank" rel="noopener"
-                       class="flex items-center justify-center gap-2 py-3 rounded-2xl text-xs font-bold text-white"
-                       style="background:linear-gradient(135deg,#25d366,#128c7e);">
-                        <i class="fa-brands fa-whatsapp text-base"></i> WhatsApp
-                    </a>
-                    <a id="bl-sup-tg" href="#" target="_blank" rel="noopener"
-                       class="flex items-center justify-center gap-2 py-3 rounded-2xl text-xs font-bold text-white"
-                       style="background:linear-gradient(135deg,#2AABEE,#229ED9);">
-                        <i class="fa-brands fa-telegram text-base"></i> Telegram
-                    </a>
-                </div>
-                <!-- ADDITIVE (v10) -->
-                <button onclick="openTrackModal()" class="w-full mb-2 px-8 py-3 rounded-2xl text-sm font-bold border border-yellow-400/40 bg-yellow-400/10 text-yellow-300 hover:bg-yellow-400/20">
-                    <i class="fa-solid fa-magnifying-glass-location mr-2"></i> Track My Order
-                </button>
+                <div id="bl-order-id-display" class="text-xs text-slate-500 mb-5 font-mono bg-[#1c2537] rounded-xl px-3 py-2 inline-block"></div>
+                <br>
                 <button onclick="closeBuyLicenseModal()" class="golden-btn text-black font-bold px-8 py-3 rounded-2xl text-sm">Close</button>
             </div>
         </div>
@@ -4457,13 +4283,6 @@ function requestNewOTP() {
         var area = document.getElementById('bl-upload-area'); if (area) area.classList.remove('hidden');
         _blSelMethod = '';
         _blSelPlan   = '';
-        window._blSelMethodKey = '';   // ADDITIVE (v9)
-        // ADDITIVE (v8): clear promo state + restore the default contact field
-        var pi = document.getElementById('bl-promo'); if (pi) pi.value = '';
-        if (typeof _blClearPromo === 'function') _blClearPromo('');
-        var csel = document.getElementById('bl-country');
-        if (csel) csel.removeAttribute('data-user-picked');   // ADDITIVE (v9)
-        if (typeof _blSyncContactField === 'function') _blSyncContactField();
     }
 
     function _blGoStep(n) {
@@ -4491,10 +4310,6 @@ function requestNewOTP() {
                     ? ('$' + planObj.priceUSD + (planObj.pricePKR ? ' / ' + planObj.pricePKR + ' PKR' : ''))
                     : (planObj.pricePKR + ' PKR / $' + planObj.priceUSD))
                 : '—';
-            // ADDITIVE (v8): promo discount + Pakistan/other contact field
-            if (typeof _blRefreshAmountDisplay === 'function') _blRefreshAmountDisplay();
-            if (typeof _blSyncCountrySelect === 'function') _blSyncCountrySelect();   // ADDITIVE (v9)
-            if (typeof _blSyncContactField === 'function') _blSyncContactField();
         }
     }
 
@@ -4526,14 +4341,12 @@ function requestNewOTP() {
         }
         _blRenderMethods();
         _blRenderPlans();
-        if (typeof _blSyncCountrySelect === 'function') _blSyncCountrySelect();
-        if (typeof _blSyncContactField === 'function') _blSyncContactField();
     }
 
     var _METHODS = [
-        { key: 'easypaisa', label: 'Easypaisa',     logo: 'assets/easypaisa-logo.png', border: '#22c55e', sKey: 'easypaisa' },
-        { key: 'jazzcash',  label: 'JazzCash',      logo: 'assets/jazzcash-logo.png', border: '#ef4444', sKey: 'jazzcash'  },
-        { key: 'binance',   label: 'Binance Pay',   logo: 'assets/binance-pay-logo.svg', border: '#fbbf24', sKey: 'binance'   },
+        { key: 'easypaisa', label: 'Easypaisa',     icon: '💚', border: '#22c55e', sKey: 'easypaisa' },
+        { key: 'jazzcash',  label: 'JazzCash',      icon: '🔴', border: '#ef4444', sKey: 'jazzcash'  },
+        { key: 'binance',   label: 'Binance Pay',   icon: '🟡', border: '#fbbf24', sKey: 'binance'   },
         { key: 'usdt',      label: 'Crypto (USDT)', icon: '🔷', border: '#06b6d4', sKey: null        },
     ];
 
@@ -4554,7 +4367,7 @@ function requestNewOTP() {
                 'class="rounded-2xl p-4 flex flex-col items-center gap-2 transition-all hover:scale-[1.03] active:scale-95 cursor-pointer" ' +
                 'style="background:rgba(20,30,50,0.9);border:2px solid rgba(245,158,11,0.25);" ' +
                 'onmouseover="this.style.borderColor=\'' + m.border + '80\'" onmouseout="this.style.borderColor=\'rgba(245,158,11,0.25)\'">' +
-                (m.logo ? '<img src="' + m.logo + '" alt="' + m.label + ' logo" style="width:42px;height:32px;object-fit:contain;" loading="lazy">' : '<span class="text-3xl">' + m.icon + '</span>') +
+                '<span class="text-3xl">' + m.icon + '</span>' +
                 '<span class="text-xs font-bold text-white">' + m.label + '</span></button>';
         }).join('');
     }
@@ -4613,9 +4426,6 @@ function requestNewOTP() {
         // Sync hidden select value for compatibility
         var sel = document.getElementById('bl-plan');
         if (sel) sel.value = key;
-        // ADDITIVE (v8): a promo code is plan-sensitive — re-check it
-        var promoInput = document.getElementById('bl-promo');
-        if (promoInput && promoInput.value.trim() && typeof _blApplyPromo === 'function') _blApplyPromo();
         // Unlock payment section
         var pay = document.getElementById('bl-payment-section');
         var notice = document.getElementById('bl-payment-lock-notice');
@@ -4628,7 +4438,6 @@ function requestNewOTP() {
     function _blSelectMethod(key, label) {
         if (key === 'usdt') { _blShowUsdtChoice(); return; }
         _blSelMethod = label || key;
-        window._blSelMethodKey = key || '';   // ADDITIVE (v9): drives the contact field
         _blGoStep(2);
         _blRenderDetails(key);
     }
@@ -4648,7 +4457,6 @@ function requestNewOTP() {
 
     function _blSelectCrypto(netKey, netLabel) {
         _blSelMethod = netLabel;
-        window._blSelMethodKey = netKey || '';   // ADDITIVE (v9)
         _blGoStep(2);
         _blRenderDetails(netKey);
     }
@@ -4752,9 +4560,6 @@ function requestNewOTP() {
         var name    = (document.getElementById('bl-name')?.value || '').trim();
         var country = document.getElementById('bl-country')?.value || '';
         var wa      = (document.getElementById('bl-wa')?.value || '').trim();
-        var tg      = (document.getElementById('bl-tg')?.value || '').trim();
-        var email   = (document.getElementById('bl-email')?.value || '').trim().toLowerCase();
-        var isPKc   = (typeof _blIsPakistanContact === 'function') ? _blIsPakistanContact() : true;
         var txid    = (document.getElementById('bl-txid')?.value || '').trim();
         var planVal = _blSelPlan || (document.getElementById('bl-plan') ? document.getElementById('bl-plan').value : '');
         var scFile  = document.getElementById('bl-screenshot')?.files?.[0];
@@ -4766,19 +4571,14 @@ function requestNewOTP() {
         }
 
         if (!name)    return _stErr('❌ Please enter your full name');
-        if (isPKc && !wa)  return _stErr('❌ Please enter your WhatsApp number');
-        if (!isPKc && !tg) return _stErr('❌ Please enter your Telegram username (e.g. @username)');
-        if (isPKc && wa.replace(/\D/g, '').length < 7) return _stErr('❌ Please enter a valid WhatsApp number');
-        if (!isPKc && !/^@?[A-Za-z0-9_]{5,32}$/.test(tg)) return _stErr('❌ Please enter a valid Telegram username');
-        if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return _stErr('❌ Please enter a valid email address');
+        if (!wa)      return _stErr('❌ Please enter your WhatsApp number');
         if (!txid)    return _stErr('❌ Please enter your transaction ID');
         if (!planVal) return _stErr('❌ Please select a plan (go back to Step 1 and choose a plan)');
         if (!scFile)  return _stErr('❌ Please upload payment screenshot');
         if (!_blSelMethod) return _stErr('❌ Please select a payment method (go back to Step 1)');
 
         var planObj  = (_blSettings?.plans || []).find(function(p) { return p.key === planVal; }) || {};
-        var fullWa   = wa ? (country + wa).replace(/[^+\d]/g, '') : '';
-        var tgHandle = tg ? ('@' + tg.replace(/^@+/, '').replace(/\s+/g, '')) : '';
+        var fullWa   = (country + wa).replace(/[^+\d]/g, '');
 
         btn.disabled = true;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Sending...';
@@ -4792,26 +4592,22 @@ function requestNewOTP() {
             fd.append('planPricePKR',  planObj.pricePKR || '');
             fd.append('planPriceUSD',  planObj.priceUSD || '');
             fd.append('paymentMethod', _blSelMethod);
-            fd.append('whatsapp',      isPKc ? fullWa : '');
-            fd.append('telegram',      isPKc ? '' : tgHandle);
-            fd.append('email',         email);
+            fd.append('whatsapp',      fullWa);
             fd.append('country',       country);
             fd.append('txId',          txid);
-            if (typeof _blPromo !== 'undefined' && _blPromo && _blPromo.code) fd.append('promoCode', _blPromo.code);
             fd.append('screenshot',    scFile);
 
             var r = await fetch((typeof API_BASE !== 'undefined' ? API_BASE : '') + '/api/orders', { method: 'POST', body: fd });
             var data = await r.json().catch(function() { return {}; });
             if (!r.ok) throw new Error(data.error || 'Submission failed');
 
-            // Try push subscription — Telegram-only customers are keyed by handle
-            var pushId = fullWa || tgHandle;
-            localStorage.setItem('_blWa', pushId);
+            // Try push subscription
+            localStorage.setItem('_blWa', fullWa);
             if ('Notification' in window) {
                 if (Notification.permission === 'granted') {
-                    _blSubscribePush(pushId).catch(function(){});
+                    _blSubscribePush(fullWa).catch(function(){});
                 } else if (Notification.permission === 'default') {
-                    Notification.requestPermission().then(function(p) { if (p === 'granted') _blSubscribePush(pushId).catch(function(){}); });
+                    Notification.requestPermission().then(function(p) { if (p === 'granted') _blSubscribePush(fullWa).catch(function(){}); });
                 }
             }
 
@@ -4821,16 +4617,6 @@ function requestNewOTP() {
             if (success) success.classList.remove('hidden');
             var oidEl = document.getElementById('bl-order-id-display');
             if (oidEl) oidEl.textContent = 'Order ID: ' + (data.order?.id || '—');
-            // ADDITIVE (v10): remember the ID so "Track Order" prefills it
-            try { if (data.order?.id) localStorage.setItem('csai_last_order', data.order.id); } catch(e) {}
-
-            // ADDITIVE (v8): pre-fill the WhatsApp / Telegram support buttons
-            if (typeof _blFillSupportLinks === 'function') {
-                var isPKv  = _blSettings ? (_blSettings.isPakistan !== false) : true;
-                var amount = _blPromo ? (isPKv ? _blPromo.finalPKR + ' PKR' : '$' + _blPromo.finalUSD)
-                                      : (isPKv ? (planObj.pricePKR || '') + ' PKR' : '$' + (planObj.priceUSD || ''));
-                _blFillSupportLinks(data.order?.id || '', planObj.label || planVal, amount);
-            }
 
         } catch(e) {
             _stErr('❌ ' + (e.message || 'Failed to send. Please try again.'));
@@ -4839,190 +4625,7 @@ function requestNewOTP() {
             btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-2"></i> Submit Order';
         }
     }
-
-    // ═══════════════════════════════════════════════════════════════════
-    // ADDITIVE (v8) — SUPPORT CONTACTS / PROMO CODES / CONTACT FIELD
-    // Nothing above is modified; these are new helpers only.
-    // ═══════════════════════════════════════════════════════════════════
-    var CSAI_SUPPORT_WA = '+923021036192';      // overridable from Admin → Bot Settings
-    var CSAI_SUPPORT_TG = 'webmaster9i';
-
-    // Pull the live support contacts from Bot Settings when available so they
-    // can be changed from the admin panel without editing this file.
-    (function _blLoadSupportContacts() {
-        try {
-            fetch((typeof API_BASE !== 'undefined' ? API_BASE : '') + '/api/bot-settings')
-                .then(function(r) { return r.json(); })
-                .then(function(d) {
-                    if (!d) return;
-                    if (d.whatsappUrl) {
-                        var m = String(d.whatsappUrl).match(/(\+?\d[\d\s\-]{6,})/);
-                        if (m) CSAI_SUPPORT_WA = m[1].replace(/[^\d+]/g, '');
-                    }
-                    if (d.telegramUrl) {
-                        var t = String(d.telegramUrl).replace(/^https?:\/\/(t\.me|telegram\.me)\//i, '').replace(/^@/, '').replace(/\/.*$/, '');
-                        if (t) CSAI_SUPPORT_TG = t;
-                    }
-                }).catch(function() {});
-        } catch(e) {}
-    })();
-
-    // ── Country-aware contact field ────────────────────────────────────
-    // Pakistan (+92) → WhatsApp number (unchanged behaviour).
-    // Any other country → required Telegram @username.
-    function _blIsPakistanContact() {
-        // Contact method depends only on the selected country.
-        var sel = document.getElementById('bl-country');
-        if (sel && sel.getAttribute('data-user-picked') === '1') return sel.value === '+92';
-        if (sel && sel.value && sel.value !== '+92') return false;
-
-        var det = String(window._csaiCountry || '').toUpperCase();
-        if (det && det !== 'PK') return false;                          // detected outside Pakistan
-        if (_blSettings && _blSettings.isPakistan === false) return false;
-
-        return true;
-    }
-
-    // ADDITIVE (v9): preselect the visitor's own dial code so a Bangladeshi /
-    // Indian visitor is never shown the Pakistani "+92 WhatsApp" field.
-    function _blSyncCountrySelect() {
-        var sel = document.getElementById('bl-country');
-        if (!sel || sel.getAttribute('data-user-picked') === '1') return;
-        var info = window._csaiCountryInfo || null;
-        var dial = (info && info.dial) ? String(info.dial) : '';
-        var code = String(window._csaiCountry || '').toUpperCase();
-        if (!dial && code) {
-            var fallback = { PK:'+92', IN:'+91', BD:'+880', NP:'+977', LK:'+94', AE:'+971', SA:'+966',
-                             MY:'+60', ID:'+62', PH:'+63', NG:'+234', KE:'+254', ZA:'+27',
-                             US:'+1', GB:'+44', CA:'+1', AU:'+61', TR:'+90', EG:'+20' };
-            dial = fallback[code] || '';
-        }
-        if (!dial) return;
-        var found = false;
-        for (var i = 0; i < sel.options.length; i++) if (sel.options[i].value === dial) { found = true; break; }
-        if (!found) {
-            var o = document.createElement('option');
-            o.value = dial;
-            o.textContent = ((info && info.flag) ? info.flag + ' ' : '') + dial + (code ? ' (' + code + ')' : '');
-            sel.appendChild(o);
-        }
-        sel.value = dial;
-    }
-
-    // ADDITIVE (v9): remember that the customer picked the country themselves
-    function _blCountryChanged() {
-        var sel = document.getElementById('bl-country');
-        if (sel) sel.setAttribute('data-user-picked', '1');
-        _blSyncContactField();
-    }
-    function _blSyncContactField() {
-        var isPK   = _blIsPakistanContact();
-        var wa     = document.getElementById('bl-wa');
-        var tg     = document.getElementById('bl-tg');
-        var label  = document.getElementById('bl-contact-label');
-        var hint   = document.getElementById('bl-contact-hint');
-        if (!wa || !tg) return;
-        if (isPK) {
-            wa.classList.remove('hidden'); wa.required = true;
-            tg.classList.add('hidden');    tg.required = false; tg.removeAttribute('required'); tg.value = '';
-            if (label) label.innerHTML = 'WhatsApp Number <span class="text-red-400">*</span>';
-            if (hint)  hint.textContent = 'License key will be sent to this WhatsApp';
-        } else {
-            wa.classList.add('hidden');    wa.required = false; wa.removeAttribute('required'); wa.value = '';
-            tg.classList.remove('hidden'); tg.required = true;
-            if (label) label.innerHTML = 'Telegram Username <span class="text-red-400">*</span>';
-            if (hint)  hint.textContent = 'Example: @username — your license key will be sent on Telegram';
-        }
-    }
-
-    // ── Promo codes ────────────────────────────────────────────────────
-    var _blPromo = null;   // { code, discountPKR, discountUSD, finalPKR, finalUSD, label }
-
-    function _blPromoMsg(text, ok) {
-        var el = document.getElementById('bl-promo-msg');
-        if (!el) return;
-        el.textContent = text || '';
-        el.style.color = ok ? '#6ee7b7' : '#fca5a5';
-        el.classList.toggle('hidden', !text);
-    }
-
-    function _blClearPromo(msg) {
-        _blPromo = null;
-        var pe = document.getElementById('bl-promo-price');
-        if (pe) { pe.classList.add('hidden'); pe.innerHTML = ''; }
-        if (msg) _blPromoMsg(msg, false); else _blPromoMsg('', false);
-        _blRefreshAmountDisplay();
-    }
-
-    async function _blApplyPromo() {
-        var input = document.getElementById('bl-promo');
-        var btn   = document.getElementById('bl-promo-btn');
-        var code  = (input?.value || '').trim().toUpperCase();
-        if (!code) return _blClearPromo('Enter a promo code first');
-        if (!_blSelPlan) return _blPromoMsg('Please choose a plan first, then apply the code', false);
-
-        var planObj = (_blSettings?.plans || []).find(function(p) { return p.key === _blSelPlan; }) || {};
-        if (btn) { btn.disabled = true; btn.textContent = '…'; }
-        try {
-            var r = await fetch((typeof API_BASE !== 'undefined' ? API_BASE : '') + '/api/promo-codes/validate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ code: code, planKey: _blSelPlan, pricePKR: planObj.pricePKR || '', priceUSD: planObj.priceUSD || '' })
-            });
-            var d = await r.json().catch(function() { return {}; });
-            if (!d || !d.valid) { _blClearPromo('❌ ' + ((d && d.error) || 'Invalid promo code')); return; }
-
-            _blPromo = d;
-            _blPromoMsg('✅ ' + code + ' applied' + (d.label ? ' — ' + d.label : ''), true);
-
-            var isPK = _blSettings ? (_blSettings.isPakistan !== false) : true;
-            var pe   = document.getElementById('bl-promo-price');
-            if (pe) {
-                var oldTxt = isPK ? (d.originalPKR + ' PKR') : ('$' + d.originalUSD);
-                var newTxt = isPK ? (d.finalPKR    + ' PKR') : ('$' + d.finalUSD);
-                var saved  = isPK ? (d.discountPKR + ' PKR') : ('$' + d.discountUSD);
-                pe.innerHTML = '<span style="text-decoration:line-through;color:#94a3b8;">' + oldTxt + '</span>' +
-                               ' <span style="color:#FFD700;font-weight:900;font-size:15px;">' + newTxt + '</span>' +
-                               ' <span style="color:#6ee7b7;font-weight:700;">(You save ' + saved + ')</span>';
-                pe.classList.remove('hidden');
-            }
-            _blRefreshAmountDisplay();
-        } catch(e) {
-            _blClearPromo('❌ Could not check the code, please try again');
-        } finally {
-            if (btn) { btn.disabled = false; btn.textContent = 'Apply'; }
-        }
-    }
-
-    // Keeps the read-only Amount box on Step 3 in sync with the promo.
-    function _blRefreshAmountDisplay() {
-        var ad = document.getElementById('bl-amount-display');
-        if (!ad || !_blSelPlan) return;
-        var planObj = (_blSettings?.plans || []).find(function(p) { return p.key === _blSelPlan; });
-        if (!planObj) return;
-        var isPK = _blSettings ? (_blSettings.isPakistan !== false) : true;
-        if (_blPromo) {
-            ad.value = (isPK ? (_blPromo.finalPKR + ' PKR') : ('$' + _blPromo.finalUSD)) + '  (' + _blPromo.code + ')';
-        } else {
-            ad.value = isPK ? (planObj.pricePKR + ' PKR / $' + planObj.priceUSD)
-                            : ('$' + planObj.priceUSD + (planObj.pricePKR ? ' / ' + planObj.pricePKR + ' PKR' : ''));
-        }
-    }
-
-    // ── Success-screen support links, pre-filled with the order details ──
-    function _blFillSupportLinks(orderId, planLabel, price) {
-        var text = 'Hello! I just placed an order on Chinese Bot.\n' +
-                   'Order ID: ' + (orderId || '—') + '\n' +
-                   'Plan: ' + (planLabel || '—') +
-                   (price ? ('\nAmount: ' + price) : '') +
-                   '\nPlease share my order status / license key.';
-        var waEl = document.getElementById('bl-sup-wa');
-        var tgEl = document.getElementById('bl-sup-tg');
-        if (waEl) waEl.href = 'https://wa.me/' + String(CSAI_SUPPORT_WA).replace(/\D/g, '') + '?text=' + encodeURIComponent(text);
-        if (tgEl) tgEl.href = 'https://t.me/' + String(CSAI_SUPPORT_TG).replace(/^@/, '') + '?text=' + encodeURIComponent(text);
-    }
     </script>
-
 
 
     <!-- ═══════════════════════════════════════════════════
@@ -5843,5 +5446,276 @@ function requestNewOTP() {
             showRoute(routeFromHash());
         }());
     </script>
+<!-- ===================================================================== -->
+<!--  AI CUSTOMER SUPPORT WIDGET (ADDITIVE v9)                             -->
+<!--  Self-contained: every class/id is prefixed "aisup" so it cannot      -->
+<!--  clash with existing styles or scripts. Nothing above is modified.    -->
+<!-- ===================================================================== -->
+<style>
+#aisupFab{position:fixed;right:16px;bottom:88px;z-index:99998;width:56px;height:56px;border-radius:50%;
+ border:none;cursor:pointer;background:linear-gradient(135deg,#f59e0b,#d97706);color:#111;font-size:24px;
+ box-shadow:0 10px 26px rgba(245,158,11,.45);display:flex;align-items:center;justify-content:center}
+#aisupFab:active{transform:scale(.94)}
+#aisupFab .aisup-dot{position:absolute;top:-2px;right:-2px;width:12px;height:12px;border-radius:50%;
+ background:#34d399;border:2px solid #030712}
+#aisupPanel{position:fixed;right:16px;bottom:88px;z-index:99999;width:min(380px,calc(100vw - 24px));
+ height:min(600px,calc(100vh - 120px));background:#0b1220;border:1px solid #1f2937;border-radius:18px;
+ display:none;flex-direction:column;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.6);
+ font:14px/1.55 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#e5e7eb}
+#aisupPanel.aisup-open{display:flex}
+.aisup-head{flex:0 0 auto;display:flex;align-items:center;gap:10px;padding:12px 14px;
+ background:linear-gradient(135deg,#111827,#0b1220);border-bottom:1px solid #1f2937}
+.aisup-av{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#d97706);
+ display:flex;align-items:center;justify-content:center;font-size:17px}
+.aisup-ttl{font-weight:700;font-size:14px}
+.aisup-sub{font-size:11px;color:#9ca3af}
+.aisup-hbtn{margin-left:auto;display:flex;gap:6px}
+.aisup-hbtn button{background:#1f2937;border:1px solid #374151;color:#e5e7eb;border-radius:8px;
+ width:30px;height:30px;cursor:pointer;font-size:14px;line-height:1}
+.aisup-body{flex:1 1 auto;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;
+ -webkit-overflow-scrolling:touch}
+.aisup-msg{max-width:86%;padding:9px 12px;border-radius:14px;white-space:pre-wrap;word-break:break-word}
+.aisup-msg.aisup-a{align-self:flex-start;background:#111827;border:1px solid #1f2937;border-bottom-left-radius:5px}
+.aisup-msg.aisup-u{align-self:flex-end;background:#f59e0b;color:#111;font-weight:500;border-bottom-right-radius:5px}
+.aisup-msg.aisup-e{align-self:flex-start;background:#3f1d1d;border:1px solid #7f1d1d;color:#fecaca}
+.aisup-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+.aisup-chips button{background:#111827;border:1px solid #374151;color:#fbbf24;border-radius:999px;
+ padding:6px 11px;font-size:12px;cursor:pointer}
+.aisup-typing{align-self:flex-start;color:#9ca3af;font-size:12px}
+.aisup-foot{flex:0 0 auto;border-top:1px solid #1f2937;padding:10px;background:#0b1220}
+.aisup-row{display:flex;align-items:flex-end;gap:8px}
+#aisupInput{flex:1 1 auto;resize:none;max-height:110px;min-height:42px;background:#111827;
+ border:1px solid #374151;border-radius:12px;color:#e5e7eb;padding:11px 12px;font:inherit;outline:none}
+#aisupInput:focus{border-color:#f59e0b}
+.aisup-ico{flex:0 0 auto;width:42px;height:42px;border-radius:12px;border:1px solid #374151;
+ background:#111827;color:#e5e7eb;cursor:pointer;font-size:17px;display:flex;align-items:center;justify-content:center}
+.aisup-ico.aisup-send{background:linear-gradient(135deg,#f59e0b,#d97706);border-color:transparent;color:#111}
+.aisup-ico.aisup-rec{background:#dc2626;border-color:transparent;color:#fff;animation:aisupPulse 1s infinite}
+.aisup-ico:disabled{opacity:.5;cursor:not-allowed}
+@keyframes aisupPulse{50%{opacity:.55}}
+.aisup-note{font-size:10.5px;color:#6b7280;text-align:center;margin-top:7px}
+@media (max-width:480px){
+ #aisupPanel{right:8px;left:8px;width:auto;bottom:80px;height:min(72vh,560px)}
+ #aisupFab{right:12px;bottom:80px}
+}
+</style>
+
+<button id="aisupFab" type="button" aria-label="Open support chat">💬<span class="aisup-dot"></span></button>
+
+<div id="aisupPanel" role="dialog" aria-label="AI support chat">
+  <div class="aisup-head">
+    <div class="aisup-av">🎧</div>
+    <div>
+      <div class="aisup-ttl">Signal Support</div>
+      <div class="aisup-sub" id="aisupStatus">Online • English / اردو / Roman Urdu</div>
+    </div>
+    <div class="aisup-hbtn">
+      <button type="button" id="aisupSpeakToggle" title="Voice replies on/off">🔊</button>
+      <button type="button" id="aisupClear" title="New conversation">🗑</button>
+      <button type="button" id="aisupClose" title="Close">✕</button>
+    </div>
+  </div>
+  <div class="aisup-body" id="aisupBody"></div>
+  <div class="aisup-foot">
+    <div class="aisup-row">
+      <button type="button" class="aisup-ico" id="aisupMic" title="Hold to record a voice message">🎤</button>
+      <textarea id="aisupInput" rows="1" placeholder="Ask about your order, payment or licence…"></textarea>
+      <button type="button" class="aisup-ico aisup-send" id="aisupSend" title="Send">➤</button>
+    </div>
+    <div class="aisup-note">AI support • never shares licence keys or private data</div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var API = (typeof API_BASE !== 'undefined' && API_BASE) ? API_BASE : 'https://chinese-signal-bot.onrender.com';
+  var LS_MSG = 'aisup_chat_v1', LS_VOICE = 'aisup_voice_v1';
+  var panel = document.getElementById('aisupPanel');
+  var fab   = document.getElementById('aisupFab');
+  var body  = document.getElementById('aisupBody');
+  var input = document.getElementById('aisupInput');
+  var send  = document.getElementById('aisupSend');
+  var mic   = document.getElementById('aisupMic');
+  var stat  = document.getElementById('aisupStatus');
+  var spkBtn= document.getElementById('aisupSpeakToggle');
+  if (!panel || !fab) return;
+
+  var msgs = [];
+  try { msgs = JSON.parse(localStorage.getItem(LS_MSG) || '[]') || []; } catch (e) { msgs = []; }
+  var speak = localStorage.getItem(LS_VOICE) !== '0';
+  var busy = false, audioEl = null;
+
+  function save() { try { localStorage.setItem(LS_MSG, JSON.stringify(msgs.slice(-40))); } catch (e) {} }
+  function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+  function scroll() { body.scrollTop = body.scrollHeight; }
+
+  function bubble(role, text) {
+    var d = document.createElement('div');
+    d.className = 'aisup-msg ' + (role === 'user' ? 'aisup-u' : role === 'error' ? 'aisup-e' : 'aisup-a');
+    d.innerHTML = esc(text).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+    body.appendChild(d); scroll(); return d;
+  }
+
+  var QUICK = ['📦 Check my order status', '💳 How do I pay?', '🔑 I paid but no licence key', '👨‍💻 Talk to a human'];
+  function chips() {
+    var w = document.createElement('div'); w.className = 'aisup-chips';
+    QUICK.forEach(function (q) {
+      var b = document.createElement('button'); b.type = 'button'; b.textContent = q;
+      b.onclick = function () { w.remove(); ask(q); };
+      w.appendChild(b);
+    });
+    body.appendChild(w); scroll();
+  }
+
+  function render() {
+    body.innerHTML = '';
+    if (!msgs.length) {
+      bubble('assistant', 'Assalam-o-Alaikum! 👋 I am Signal Support.\nI can check your order, explain payment steps, help with licence delivery and activation — in English, Urdu or Roman Urdu.\n\nYou can also send a voice message with 🎤.');
+      chips();
+    } else {
+      msgs.forEach(function (m) { bubble(m.role, m.content); });
+    }
+  }
+
+  function open() {
+    panel.classList.add('aisup-open'); fab.style.display = 'none';
+    render(); setTimeout(function () { input.focus(); }, 60);
+  }
+  function close() { panel.classList.remove('aisup-open'); fab.style.display = 'flex'; }
+  fab.onclick = open;
+  document.getElementById('aisupClose').onclick = close;
+  document.getElementById('aisupClear').onclick = function () { msgs = []; save(); render(); input.focus(); };
+  spkBtn.onclick = function () {
+    speak = !speak; localStorage.setItem(LS_VOICE, speak ? '1' : '0');
+    spkBtn.textContent = speak ? '🔊' : '🔇';
+    if (!speak && audioEl) { try { audioEl.pause(); } catch (e) {} }
+  };
+  spkBtn.textContent = speak ? '🔊' : '🔇';
+
+  input.addEventListener('input', function () {
+    input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 110) + 'px';
+  });
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ask(input.value); }
+  });
+  send.onclick = function () { ask(input.value); };
+
+  async function playVoice(text) {
+    if (!speak || !text) return;
+    try {
+      var r = await fetch(API + '/api/support/tts', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: text.slice(0, 900) })
+      });
+      if (!r.ok) return;
+      var b = await r.blob();
+      if (audioEl) { try { audioEl.pause(); } catch (e) {} }
+      audioEl = new Audio(URL.createObjectURL(b));
+      audioEl.play().catch(function () {});
+    } catch (e) {}
+  }
+
+  async function ask(text) {
+    text = String(text || '').trim();
+    if (!text || busy) return;
+    input.value = ''; input.style.height = 'auto';
+    var chip = body.querySelector('.aisup-chips'); if (chip) chip.remove();
+    msgs.push({ role: 'user', content: text }); save(); bubble('user', text);
+
+    busy = true; send.disabled = true; mic.disabled = true;
+    var t = document.createElement('div'); t.className = 'aisup-typing'; t.textContent = 'Signal Support is typing…';
+    body.appendChild(t); scroll();
+
+    try {
+      var r = await fetch(API + '/api/support/chat', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: msgs.slice(-16) })
+      });
+      var d = await r.json().catch(function () { return {}; });
+      t.remove();
+      if (!r.ok || !d.ok) {
+        bubble('error', (d && d.error) || 'Support is unavailable right now. Please contact us on WhatsApp or Telegram.');
+      } else {
+        msgs.push({ role: 'assistant', content: d.reply }); save();
+        bubble('assistant', d.reply);
+        if (d.ticketId) bubble('assistant', '🎫 A support ticket has been created: ' + d.ticketId + '\nOur team has been notified and will contact you soon.');
+        playVoice(d.reply);
+      }
+    } catch (e) {
+      t.remove(); bubble('error', 'Network error — please check your connection and try again.');
+    } finally {
+      busy = false; send.disabled = false; mic.disabled = false; input.focus();
+    }
+  }
+
+  // ── Voice input: record PCM → upload a complete WAV file ────────────────
+  var rec = { on: false, ctx: null, node: null, src: null, stream: null, chunks: [] };
+
+  function wav(chunks, rate) {
+    var len = 0; chunks.forEach(function (c) { len += c.length; });
+    var data = new Float32Array(len), o = 0;
+    chunks.forEach(function (c) { data.set(c, o); o += c.length; });
+    var out = 16000, ratio = rate / out, n = Math.floor(data.length / ratio);
+    var pcm = new Int16Array(n);
+    for (var i = 0; i < n; i++) {
+      var s = data[Math.floor(i * ratio)] || 0;
+      s = Math.max(-1, Math.min(1, s));
+      pcm[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+    }
+    var buf = new ArrayBuffer(44 + pcm.length * 2), v = new DataView(buf);
+    function str(off, s) { for (var i = 0; i < s.length; i++) v.setUint8(off + i, s.charCodeAt(i)); }
+    str(0, 'RIFF'); v.setUint32(4, 36 + pcm.length * 2, true); str(8, 'WAVE'); str(12, 'fmt ');
+    v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+    v.setUint32(24, out, true); v.setUint32(28, out * 2, true); v.setUint16(32, 2, true);
+    v.setUint16(34, 16, true); str(36, 'data'); v.setUint32(40, pcm.length * 2, true);
+    new Int16Array(buf, 44).set(pcm);
+    return new Blob([buf], { type: 'audio/wav' });
+  }
+
+  async function startRec() {
+    if (rec.on || busy) return;
+    try { rec.stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+    catch (e) { bubble('error', 'Microphone access is needed for voice messages.'); return; }
+    rec.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    rec.src = rec.ctx.createMediaStreamSource(rec.stream);
+    rec.node = rec.ctx.createScriptProcessor(4096, 1, 1);
+    rec.chunks = [];
+    rec.node.onaudioprocess = function (e) { rec.chunks.push(new Float32Array(e.inputBuffer.getChannelData(0))); };
+    rec.src.connect(rec.node); rec.node.connect(rec.ctx.destination);
+    rec.on = true; mic.classList.add('aisup-rec'); stat.textContent = '🎙 Recording… release to send';
+  }
+
+  async function stopRec() {
+    if (!rec.on) return;
+    rec.on = false; mic.classList.remove('aisup-rec'); stat.textContent = 'Transcribing…';
+    try { rec.stream.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {}
+    try { rec.node.disconnect(); rec.src.disconnect(); } catch (e) {}
+    var rate = rec.ctx.sampleRate, chunks = rec.chunks;
+    try { await rec.ctx.close(); } catch (e) {}
+    var blob = wav(chunks, rate);
+    if (blob.size < 4096) { stat.textContent = 'Online • English / اردو / Roman Urdu'; bubble('error', 'That recording was too short — please try again.'); return; }
+    var fd = new FormData(); fd.append('audio', blob, 'voice.wav');
+    try {
+      var r = await fetch(API + '/api/support/stt', { method: 'POST', body: fd });
+      var d = await r.json().catch(function () { return {}; });
+      stat.textContent = 'Online • English / اردو / Roman Urdu';
+      if (!r.ok || !d.ok || !d.text) { bubble('error', (d && d.error) || 'Could not understand that recording.'); return; }
+      ask(d.text);
+    } catch (e) {
+      stat.textContent = 'Online • English / اردو / Roman Urdu';
+      bubble('error', 'Voice upload failed — please try again.');
+    }
+  }
+
+  mic.addEventListener('mousedown', startRec);
+  mic.addEventListener('mouseup', stopRec);
+  mic.addEventListener('mouseleave', function () { if (rec.on) stopRec(); });
+  mic.addEventListener('touchstart', function (e) { e.preventDefault(); startRec(); }, { passive: false });
+  mic.addEventListener('touchend', function (e) { e.preventDefault(); stopRec(); }, { passive: false });
+
+  render();
+})();
+</script>
+
 </body>
 </html>
