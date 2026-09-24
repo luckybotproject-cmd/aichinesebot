@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Earn by Invite • Chinese Bot</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <style>
+        body { background:#020617; color:#e2e8f0; font-family:'Inter',sans-serif; }
+        .card { background:rgba(15,23,42,.92); border:1px solid rgba(245,158,11,.25); border-radius:1.25rem; }
+        .stat { background:rgba(20,30,50,.9); border:1px solid rgba(110,231,183,.22); border-radius:1rem; }
+        .gold { background:linear-gradient(135deg,#FFD700,#F59E0B); color:#0b1220; }
+        input, select { background:#1c2537; border:1px solid rgba(245,158,11,.4); border-radius:.75rem; padding:.65rem .85rem; width:100%; color:#fff; font-size:.875rem; }
+        input:focus, select:focus { outline:none; border-color:#FFD700; }
+        th, td { padding:.55rem .6rem; text-align:left; font-size:.75rem; white-space:nowrap; }
+        thead th { color:#fcd34d; border-bottom:1px solid rgba(245,158,11,.25); }
+        tbody tr { border-bottom:1px solid rgba(148,163,184,.12); }
+        .badge { padding:.15rem .5rem; border-radius:999px; font-size:.65rem; font-weight:800; }
+    </style>
+</head>
+<body class="min-h-screen">
+<div class="max-w-5xl mx-auto px-4 py-6">
+    <div class="flex items-center justify-between mb-6">
+        <a href="/" class="text-amber-300 text-sm font-semibold"><i class="fa-solid fa-arrow-left mr-2"></i>Back to site</a>
+        <h1 class="text-lg sm:text-xl font-black text-yellow-300"><i class="fa-solid fa-gift mr-2"></i>Earn by Invite</h1>
+        <button id="signout" onclick="signOut()" class="hidden text-slate-400 text-xs hover:text-white">Sign out</button>
+    </div>
+
+    <!-- SIGN IN -->
+    <div id="login" class="card p-5 max-w-md mx-auto hidden">
+        <h2 class="font-bold text-amber-300 mb-1">Access your referral dashboard</h2>
+        <p class="text-slate-400 text-xs mb-4">Enter the email, WhatsApp number or Telegram username you used when ordering. We will send you a secure one-time access link.</p>
+        <div class="space-y-3">
+            <input id="in-email" type="email" placeholder="Email address" autocomplete="email">
+            <input id="in-wa" type="text" placeholder="WhatsApp number (e.g. 923001234567)">
+            <input id="in-tg" type="text" placeholder="Telegram username (e.g. @username)">
+            <button onclick="requestLink()" class="gold w-full font-black py-3 rounded-xl text-sm">Send access link</button>
+            <p id="login-msg" class="text-xs text-center text-slate-300"></p>
+        </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="dash" class="hidden space-y-5">
+        <div class="card p-5">
+            <p class="text-slate-400 text-xs mb-1">Your referral link</p>
+            <div class="flex flex-col sm:flex-row gap-2">
+                <input id="my-link" readonly class="flex-1">
+                <button onclick="copyLink()" class="gold font-bold px-4 py-2.5 rounded-xl text-xs whitespace-nowrap"><i class="fa-solid fa-copy mr-1"></i>Copy</button>
+                <button onclick="shareLink()" class="px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap" style="background:#1c2537;border:1px solid rgba(110,231,183,.4);color:#6ee7b7;"><i class="fa-solid fa-share-nodes mr-1"></i>Share</button>
+            </div>
+            <p class="text-[11px] text-slate-500 mt-2">Your invite code: <b id="my-code" class="text-amber-300"></b> — it also works in the Promo Code box at checkout.</p>
+            <p id="blocked-note" class="hidden text-[11px] text-red-300 mt-2">Referral earnings are currently disabled for this account. Please contact support.</p>
+        </div>
+
+        <div class="grid grid-cols-2 lg:grid-cols-3 gap-3">
+            <div class="stat p-4"><p class="text-[11px] text-slate-400">Available balance</p><p class="text-xl font-black text-emerald-300">PKR <span id="s-balance">0</span></p></div>
+            <div class="stat p-4"><p class="text-[11px] text-slate-400">Total earned</p><p class="text-xl font-black text-amber-300">PKR <span id="s-earned">0</span></p></div>
+            <div class="stat p-4"><p class="text-[11px] text-slate-400">Total withdrawn</p><p class="text-xl font-black text-slate-200">PKR <span id="s-withdrawn">0</span></p></div>
+            <div class="stat p-4"><p class="text-[11px] text-slate-400">Total invited</p><p class="text-xl font-black text-slate-200" id="s-invited">0</p></div>
+            <div class="stat p-4"><p class="text-[11px] text-slate-400">Invited who purchased</p><p class="text-xl font-black text-slate-200" id="s-bought">0</p></div>
+            <div class="stat p-4"><p class="text-[11px] text-slate-400">Pending commissions</p><p class="text-xl font-black text-slate-200" id="s-pending">0</p></div>
+        </div>
+
+        <!-- WITHDRAW -->
+        <div class="card p-5">
+            <h3 class="font-bold text-amber-300 mb-3"><i class="fa-solid fa-money-bill-transfer mr-2"></i>Withdraw referral earnings</h3>
+            <div class="grid sm:grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-[11px] text-slate-400 mb-1">Method</label>
+                    <select id="w-method" onchange="methodChanged()"></select>
+                    <p id="w-min" class="text-[11px] text-slate-500 mt-1"></p>
+                </div>
+                <div>
+                    <label class="block text-[11px] text-slate-400 mb-1">Amount (PKR)</label>
+                    <input id="w-amount" type="number" min="0" step="1" placeholder="0" oninput="methodChanged()">
+                    <p id="w-usdt" class="text-[11px] text-emerald-300 mt-1"></p>
+                </div>
+                <div id="w-name-row">
+                    <label class="block text-[11px] text-slate-400 mb-1">Account holder name</label>
+                    <input id="w-name" type="text" placeholder="Name on the account">
+                </div>
+                <div>
+                    <label class="block text-[11px] text-slate-400 mb-1" id="w-ref-label">Account number</label>
+                    <input id="w-ref" type="text" placeholder="03xxxxxxxxx">
+                </div>
+            </div>
+            <button onclick="submitWithdraw()" class="gold w-full font-black py-3 rounded-xl text-sm mt-4">Request withdrawal</button>
+            <p id="w-msg" class="text-xs mt-2 text-center"></p>
+        </div>
+
+        <!-- HISTORY -->
+        <div class="card p-5">
+            <h3 class="font-bold text-amber-300 mb-3"><i class="fa-solid fa-clock-rotate-left mr-2"></i>Withdrawal history</h3>
+            <div class="overflow-x-auto"><table class="w-full"><thead><tr><th>Date</th><th>Amount</th><th>Method</th><th>Status</th><th>Note</th></tr></thead><tbody id="w-history"></tbody></table></div>
+        </div>
+
+        <!-- DETAILS -->
+        <div class="card p-5">
+            <h3 class="font-bold text-amber-300 mb-3"><i class="fa-solid fa-users mr-2"></i>Referral details</h3>
+            <div class="overflow-x-auto"><table class="w-full"><thead><tr><th>Customer</th><th>Plan</th><th>Purchase</th><th>Level</th><th>Commission</th><th>Status</th><th>Date</th></tr></thead><tbody id="d-rows"></tbody></table></div>
+            <p id="d-empty" class="text-slate-500 text-xs mt-3 hidden">No commissions yet — share your link to start earning.</p>
+        </div>
+    </div>
+</div>
+
+<script>
+const API_BASE = "https://chinese-signal-bot.onrender.com";
+let SESSION = sessionStorage.getItem('csai_ref_session') || '';
+let ME = null, CFG = null;
+
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = n => Number(n || 0).toLocaleString('en-PK');
+const dt  = d => d ? new Date(d).toLocaleDateString('en-PK', { day:'2-digit', month:'short', year:'numeric' }) : '—';
+const METHODS = { easypaisa:'Easypaisa', jazzcash:'JazzCash', usdt_trc20:'USDT (TRC20)' };
+
+async function api(path, opts = {}) {
+    const r = await fetch(API_BASE + path, Object.assign({
+        headers: Object.assign({ 'Content-Type': 'application/json', 'X-Ref-Session': SESSION }, opts.headers || {})
+    }, opts));
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error || 'Something went wrong');
+    return d;
+}
+
+function show(which) {
+    document.getElementById('login').classList.toggle('hidden', which !== 'login');
+    document.getElementById('dash').classList.toggle('hidden', which !== 'dash');
+    document.getElementById('signout').classList.toggle('hidden', which !== 'dash');
+}
+
+async function requestLink() {
+    const msg = document.getElementById('login-msg');
+    msg.textContent = 'Sending…';
+    try {
+        const d = await api('/api/referral/request-link', { method:'POST', body: JSON.stringify({
+            email: document.getElementById('in-email').value.trim(),
+            whatsapp: document.getElementById('in-wa').value.trim(),
+            telegram: document.getElementById('in-tg').value.trim(),
+        })});
+        msg.textContent = d.message || 'Check your inbox for the access link.';
+    } catch (e) { msg.textContent = '❌ ' + e.message; }
+}
+
+function signOut() { sessionStorage.removeItem('csai_ref_session'); SESSION = ''; show('login'); }
+
+function copyLink() {
+    const el = document.getElementById('my-link');
+    el.select(); navigator.clipboard.writeText(el.value).catch(() => document.execCommand('copy'));
+    el.blur(); alert('Referral link copied!');
+}
+function shareLink() {
+    const url = document.getElementById('my-link').value;
+    const text = 'Start AI auto trading with Chinese Bot — use my invite link: ' + url;
+    if (navigator.share) { navigator.share({ title:'Chinese Bot', text, url }).catch(()=>{}); return; }
+    window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+}
+
+function methodChanged() {
+    const m = document.getElementById('w-method').value;
+    const min = (ME && ME.minimums ? ME.minimums[m] : 0) || 0;
+    document.getElementById('w-min').textContent = 'Minimum: PKR ' + fmt(min);
+    document.getElementById('w-ref-label').textContent = m === 'usdt_trc20' ? 'USDT TRC20 wallet address' : 'Account number';
+    document.getElementById('w-ref').placeholder = m === 'usdt_trc20' ? 'T…' : '03xxxxxxxxx';
+    document.getElementById('w-name-row').style.display = m === 'usdt_trc20' ? 'none' : '';
+    const amt = Number(document.getElementById('w-amount').value || 0);
+    const rate = (ME && ME.usdtRatePKR) || 280;
+    document.getElementById('w-usdt').textContent = (m === 'usdt_trc20' && amt)
+        ? '≈ ' + (Math.round((amt / rate) * 100) / 100) + ' USDT (1 USDT = PKR ' + rate + ')' : '';
+}
+
+async function submitWithdraw() {
+    const msg = document.getElementById('w-msg');
+    msg.className = 'text-xs mt-2 text-center text-slate-300';
+    msg.textContent = 'Submitting…';
+    try {
+        await api('/api/referral/withdraw', { method:'POST', body: JSON.stringify({
+            method: document.getElementById('w-method').value,
+            amountPKR: document.getElementById('w-amount').value,
+            accountName: document.getElementById('w-name').value.trim(),
+            accountRef: document.getElementById('w-ref').value.trim(),
+        })});
+        msg.className = 'text-xs mt-2 text-center text-emerald-300';
+        msg.textContent = '✅ Withdrawal request submitted. You will be notified once it is reviewed.';
+        document.getElementById('w-amount').value = '';
+        await loadAll();
+    } catch (e) {
+        msg.className = 'text-xs mt-2 text-center text-red-300';
+        msg.textContent = '❌ ' + e.message;
+    }
+}
+
+function statusBadge(s) {
+    const color = s === 'Approved' || s === 'Confirmed' ? 'background:rgba(16,185,129,.18);color:#6ee7b7'
+        : s === 'Rejected' ? 'background:rgba(239,68,68,.18);color:#fca5a5'
+        : 'background:rgba(245,158,11,.18);color:#fcd34d';
+    return '<span class="badge" style="' + color + '">' + esc(s) + '</span>';
+}
+
+async function loadAll() {
+    ME = await api('/api/referral/me');
+    document.getElementById('my-link').value = ME.link;
+    document.getElementById('my-code').textContent = ME.code;
+    document.getElementById('s-balance').textContent = fmt(ME.balance);
+    document.getElementById('s-earned').textContent = fmt(ME.totalEarned);
+    document.getElementById('s-withdrawn').textContent = fmt(ME.totalWithdrawn);
+    document.getElementById('s-invited').textContent = fmt(ME.totalInvited);
+    document.getElementById('s-bought').textContent = fmt(ME.invitedWhoPurchased);
+    document.getElementById('s-pending').textContent = 'PKR ' + fmt(
+        (ME.commissions || []).filter(c => c.status === 'Pending').reduce((a, c) => a + (c.amountPKR || 0), 0));
+    document.getElementById('blocked-note').classList.toggle('hidden', !ME.blocked);
+
+    const sel = document.getElementById('w-method');
+    if (!sel.options.length) {
+        (ME.methods || Object.keys(METHODS)).forEach(m => {
+            const o = document.createElement('option'); o.value = m; o.textContent = METHODS[m] || m; sel.appendChild(o);
+        });
+    }
+    methodChanged();
+
+    document.getElementById('w-history').innerHTML = (ME.withdrawals || []).map(w =>
+        '<tr><td>' + dt(w.createdAt) + '</td><td>PKR ' + fmt(w.amountPKR) + (w.amountUSDT ? ' (' + w.amountUSDT + ' USDT)' : '') +
+        '</td><td>' + esc(METHODS[w.method] || w.method) + '</td><td>' + statusBadge(w.status) + '</td><td>' + esc(w.adminNote || '—') + '</td></tr>'
+    ).join('') || '<tr><td colspan="5" class="text-slate-500">No withdrawals yet.</td></tr>';
+
+    const det = await api('/api/referral/details');
+    document.getElementById('d-rows').innerHTML = (det.earnings || []).map(e =>
+        '<tr><td>' + esc(e.buyer) + '</td><td>' + esc(e.plan) + '</td><td>PKR ' + fmt(e.baseAmountPKR) +
+        '</td><td>L' + e.level + '</td><td class="text-emerald-300 font-bold">PKR ' + fmt(e.amountPKR) +
+        '</td><td>' + statusBadge(e.status) + '</td><td>' + dt(e.date) + '</td></tr>').join('');
+    document.getElementById('d-empty').classList.toggle('hidden', (det.earnings || []).length > 0);
+}
+
+(async function init() {
+    try { CFG = await api('/api/referral/config'); } catch (e) {}
+    const token = new URLSearchParams(location.search).get('refLogin');
+    if (token) {
+        try {
+            const d = await api('/api/referral/consume-link', { method:'POST', body: JSON.stringify({ token }) });
+            SESSION = d.session;
+            sessionStorage.setItem('csai_ref_session', SESSION);
+            history.replaceState({}, '', '/referral.html');
+        } catch (e) { alert(e.message); }
+    }
+    if (!SESSION) return show('login');
+    try { await loadAll(); show('dash'); }
+    catch (e) { signOut(); document.getElementById('login-msg').textContent = e.message; }
+}());
+</script>
+</body>
+</html>
