@@ -651,7 +651,7 @@
                 <div class="mt-5 flex flex-col gap-3">
                     <button onclick="openBuyLicenseModal()"
                             class="golden-btn w-full text-black font-bold py-5 rounded-2xl text-base tracking-widest uppercase">
-                        🛒 Buy License Key
+                        🛒 Buy License Key — Order Here
                     </button>
                     <div class="flex gap-2">
                         <a id="login-wa-link" href="https://wa.me/923021036192?text=Hello,%20I%20want%20to%20buy%20Chinese%20Signal%20Bot%20License%20Key" target="_blank"
@@ -3631,6 +3631,13 @@ function requestNewOTP() {
         };
     </script>
 
+    <!-- ═══ BUY LICENSE BUTTON (floating) ═══ -->
+    <button id="buy-lic-fab" type="button" onclick="openBuyLicenseModal()"
+            class="fixed bottom-5 right-5 z-[200] px-5 py-3 rounded-2xl font-bold text-black text-sm shadow-lg hover:scale-105 transition-all"
+            style="background:linear-gradient(135deg,#FFD700,#F59E0B);box-shadow:0 8px 30px rgba(245,158,11,0.45);font-family:'Inter',sans-serif;">
+        <i class="fa-solid fa-bolt mr-2"></i> 🔥 Order License Key
+    </button>
+
     <!-- ═══ ADDITIVE (v10): TRACK ORDER MODAL ═══ -->
     <button id="track-order-fab" type="button" onclick="openTrackModal()"
             class="fixed bottom-5 left-5 z-[200] px-4 py-3 rounded-2xl font-bold text-xs shadow-lg hover:scale-105 transition-all"
@@ -4797,6 +4804,8 @@ function requestNewOTP() {
             fd.append('country',       country);
             fd.append('txId',          txid);
             if (typeof _blPromo !== 'undefined' && _blPromo && _blPromo.code) fd.append('promoCode', _blPromo.code);
+            // ADDITIVE (v9): referral attribution — always re-validated server-side
+            try { var _rc = localStorage.getItem('csai_ref_code') || ''; if (_rc) fd.append('referralCode', _rc); } catch(e) {}
             fd.append('screenshot',    scFile);
 
             var r = await fetch((typeof API_BASE !== 'undefined' ? API_BASE : '') + '/api/orders', { method: 'POST', body: fd });
@@ -4969,7 +4978,17 @@ function requestNewOTP() {
                 body: JSON.stringify({ code: code, planKey: _blSelPlan, pricePKR: planObj.pricePKR || '', priceUSD: planObj.priceUSD || '' })
             });
             var d = await r.json().catch(function() { return {}; });
-            if (!d || !d.valid) { _blClearPromo('❌ ' + ((d && d.error) || 'Invalid promo code')); return; }
+            if (!d || !d.valid) {
+                // ADDITIVE (v9): the same box also accepts an invite (referral)
+                // code. Promo behaviour above is untouched — this only runs when
+                // the code was NOT a valid promo code. No discount is applied;
+                // the code is stored as referral attribution and re-validated
+                // server-side when the order is created.
+                var refOk = await _blTryReferralCode(code);
+                if (refOk) return;
+                _blClearPromo('❌ ' + ((d && d.error) || 'Invalid promo or invite code'));
+                return;
+            }
 
             _blPromo = d;
             _blPromoMsg('✅ ' + code + ' applied' + (d.label ? ' — ' + d.label : ''), true);
@@ -5685,6 +5704,7 @@ function requestNewOTP() {
                     <p>To the fullest extent permitted by law, the service is provided on an “as available” and “as is” basis without warranties of any kind. To the fullest extent permitted by law, Chinese Trading Platform and its operators will not be liable for indirect, incidental, special, consequential, or trading losses arising from use of or inability to use the service.</p>
                     <h2>9. Changes and contact</h2>
                     <p>We may update these terms by posting a revised version on this page. Continued use after an update means you accept the revised terms. Questions should be sent using our <a href="#contact" data-cb-legal-route="contact">official contact details</a>.</p>
+                    <p class="cb-risk-warning" style="margin-top:1rem;padding:.75rem;border:1px solid rgba(245,158,11,.4);border-radius:.5rem;"><strong>Risk Warning:</strong> Trading involves significant financial risk and may lead to loss of capital. ChineseBot provides analytical and educational tools only and does not offer financial advice, guaranteed signals, or automated trading execution.</p>
                 </article>
             </section>
 
@@ -5842,5 +5862,117 @@ function requestNewOTP() {
             showRoute(routeFromHash());
         }());
     </script>
+
+    <!-- ═══ ADDITIVE (v9): REFERRAL ATTRIBUTION • EARN BY INVITE • PROMO POPUP ═══
+         Purely additive. Nothing above is modified. All codes and amounts are
+         validated server-side; no secrets live in this file. -->
+    <script>
+    (function () {
+        var API = (typeof API_BASE !== 'undefined' ? API_BASE : '');
+
+        // ── 1. Attribution: someone opened a referral link (?ref=CODE) ───────
+        function saveRef(code) { try { localStorage.setItem('csai_ref_code', code); } catch (e) {} }
+        try {
+            var qs = new URLSearchParams(location.search);
+            var ref = (qs.get('ref') || '').trim().toUpperCase();
+            if (ref) {
+                fetch(API + '/api/referral/attribute', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include', body: JSON.stringify({ code: ref })
+                }).then(function (r) { return r.ok ? r.json() : null; })
+                  .then(function (d) { if (d && d.ok) saveRef(ref); })
+                  .catch(function () {});
+            }
+            // Magic access link from email → open the referral dashboard.
+            var rl = qs.get('refLogin');
+            if (rl) location.replace('/referral.html?refLogin=' + encodeURIComponent(rl));
+        } catch (e) {}
+
+        // ── 2. Invite codes typed into the existing Promo Code box ───────────
+        window._blTryReferralCode = async function (code) {
+            try {
+                var r = await fetch(API + '/api/referral/attribute', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include', body: JSON.stringify({ code: code })
+                });
+                var d = await r.json().catch(function () { return {}; });
+                if (!r.ok || !d.ok) return false;
+                saveRef(code);
+                if (typeof _blPromoMsg === 'function') {
+                    _blPromoMsg('✅ Invite code ' + code + ' applied — ' +
+                        (d.invitedBy ? d.invitedBy + ' invited you.' : 'thanks for joining!') +
+                        ' (no price change)', true);
+                }
+                return true;
+            } catch (e) { return false; }
+        };
+
+        // ── 3. Floating "Earn by Invite" entry point ─────────────────────────
+        var fab = document.createElement('a');
+        fab.href = '/referral.html';
+        fab.id = 'earn-invite-fab';
+        fab.className = 'fixed bottom-20 left-5 z-[200] px-4 py-3 rounded-2xl font-bold text-xs shadow-lg hover:scale-105 transition-all';
+        fab.style.cssText = "background:rgba(15,23,42,0.92);border:1px solid rgba(110,231,183,0.45);color:#6ee7b7;font-family:'Inter',sans-serif;";
+        fab.innerHTML = '<i class="fa-solid fa-gift mr-2"></i> Earn by Invite';
+        document.body.appendChild(fab);
+
+        // ── 4. Admin-editable promo popup (default 5s after arrival) ─────────
+        function anyModalOpen() {
+            var ids = ['buy-lic-modal', 'track-modal'];
+            for (var i = 0; i < ids.length; i++) {
+                var el = document.getElementById(ids[i]);
+                if (el && !el.classList.contains('hidden')) return true;
+            }
+            return false;
+        }
+        function showPopup(p) {
+            if (document.getElementById('csai-ref-popup')) return;
+            var wrap = document.createElement('div');
+            wrap.id = 'csai-ref-popup';
+            wrap.setAttribute('role', 'dialog');
+            wrap.setAttribute('aria-modal', 'true');
+            wrap.setAttribute('aria-label', p.title || 'Offer');
+            wrap.className = 'fixed inset-0 z-[340] flex items-center justify-center p-4';
+            wrap.style.cssText = 'background:rgba(2,6,23,0.82);backdrop-filter:blur(6px);';
+            wrap.innerHTML =
+                '<div class="w-full max-w-sm rounded-3xl overflow-hidden" style="background:#0f172a;border:1px solid rgba(110,231,183,0.35);box-shadow:0 20px 60px rgba(0,0,0,.6);">' +
+                  '<div class="px-5 py-4 flex items-start justify-between" style="border-bottom:1px solid rgba(110,231,183,.2);">' +
+                    '<h4 class="title-font text-base font-bold" style="color:#6ee7b7;">' + esc(p.title || 'Earn by Invite') + '</h4>' +
+                    '<button type="button" aria-label="Close" data-x class="text-slate-400 hover:text-white text-lg ml-3">&times;</button>' +
+                  '</div>' +
+                  '<div class="px-5 py-5 space-y-4">' +
+                    '<p class="text-slate-300 text-sm leading-relaxed">' + esc(p.description || '') + '</p>' +
+                    '<a href="' + esc(p.ctaUrl || '/referral.html') + '" class="block text-center golden-btn text-black font-bold px-4 py-3 rounded-xl text-sm">' + esc(p.ctaLabel || 'Start earning') + '</a>' +
+                  '</div>' +
+                '</div>';
+            function close() { wrap.remove(); }
+            wrap.addEventListener('click', function (e) { if (e.target === wrap || e.target.hasAttribute('data-x')) close(); });
+            document.addEventListener('keydown', function onk(e) { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', onk); } });
+            document.body.appendChild(wrap);
+        }
+        function esc(s) {
+            return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+            });
+        }
+        fetch(API + '/api/referral/config').then(function (r) { return r.ok ? r.json() : null; }).then(function (cfg) {
+            if (!cfg || !cfg.enabled || !cfg.popup || !cfg.popup.active) return;
+            var p = cfg.popup;
+            var seen = {};
+            try { seen = JSON.parse(localStorage.getItem('csai_ref_popup') || '{}'); } catch (e) {}
+            var cooldownMs = (p.cooldownHrs || 24) * 3600000;
+            if (seen.count >= (p.maxPerUser || 3)) return;                 // frequency cap
+            if (seen.last && Date.now() - seen.last < cooldownMs) return;  // cooldown
+            setTimeout(function () {
+                if (anyModalOpen()) return;   // never interrupt checkout / tracking
+                showPopup(p);
+                try {
+                    localStorage.setItem('csai_ref_popup', JSON.stringify({ count: (seen.count || 0) + 1, last: Date.now() }));
+                } catch (e) {}
+            }, (p.delaySec != null ? p.delaySec : 5) * 1000);
+        }).catch(function () {});
+    }());
+    </script>
+<div id="cb-risk-warning" role="note" style="max-width:64rem;margin:1.5rem auto 5rem;padding:.75rem 1rem;font-size:.75rem;line-height:1.5;color:#cbd5e1;border-top:1px solid rgba(148,163,184,.25);text-align:center;"><strong>Risk Warning:</strong> Trading involves significant financial risk and may lead to loss of capital. ChineseBot provides analytical and educational tools only and does not offer financial advice, guaranteed signals, or automated trading execution.</div>
 </body>
 </html>
