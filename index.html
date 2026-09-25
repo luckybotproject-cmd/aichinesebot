@@ -676,8 +676,16 @@
 
             <!-- Bottom tagline -->
             <p class="text-center text-slate-600 text-xs mt-5">
-                Trusted by 12,000+ traders worldwide &bull; 93.8% accuracy
+                Trusted by 12,000+ traders worldwide &bull; Best Accuracy Guidelines Of Live-time and OTC market's analysis
             </p>
+            <footer class="cb-main-footer" aria-label="Legal and support links">
+                <p class="cb-risk-warning">
+                    <strong>Risk Warning:</strong> Trading involves significant financial risk and may lead to loss of capital.
+                    ChineseBot provides analytical and educational tools only and does not offer financial advice,
+                    guaranteed signals, or automated trading execution.
+                </p>
+                <p class="cb-footer-copy">© 2026 Chinese Trading Platform · chinesebot.me</p>
+            </footer>
         </div>
     </div>
 
@@ -4804,8 +4812,6 @@ function requestNewOTP() {
             fd.append('country',       country);
             fd.append('txId',          txid);
             if (typeof _blPromo !== 'undefined' && _blPromo && _blPromo.code) fd.append('promoCode', _blPromo.code);
-            // ADDITIVE (v9): referral attribution — always re-validated server-side
-            try { var _rc = localStorage.getItem('csai_ref_code') || ''; if (_rc) fd.append('referralCode', _rc); } catch(e) {}
             fd.append('screenshot',    scFile);
 
             var r = await fetch((typeof API_BASE !== 'undefined' ? API_BASE : '') + '/api/orders', { method: 'POST', body: fd });
@@ -4978,17 +4984,7 @@ function requestNewOTP() {
                 body: JSON.stringify({ code: code, planKey: _blSelPlan, pricePKR: planObj.pricePKR || '', priceUSD: planObj.priceUSD || '' })
             });
             var d = await r.json().catch(function() { return {}; });
-            if (!d || !d.valid) {
-                // ADDITIVE (v9): the same box also accepts an invite (referral)
-                // code. Promo behaviour above is untouched — this only runs when
-                // the code was NOT a valid promo code. No discount is applied;
-                // the code is stored as referral attribution and re-validated
-                // server-side when the order is created.
-                var refOk = await _blTryReferralCode(code);
-                if (refOk) return;
-                _blClearPromo('❌ ' + ((d && d.error) || 'Invalid promo or invite code'));
-                return;
-            }
+            if (!d || !d.valid) { _blClearPromo('❌ ' + ((d && d.error) || 'Invalid promo code')); return; }
 
             _blPromo = d;
             _blPromoMsg('✅ ' + code + ' applied' + (d.label ? ' — ' + d.label : ''), true);
@@ -5485,6 +5481,46 @@ function requestNewOTP() {
             font-size: 0.66rem;
             letter-spacing: 0.04em;
         }
+        .cb-main-footer {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
+            clear: both;
+            overflow: visible;
+        }
+        .cb-main-footer > * { margin-left: auto; margin-right: auto; }
+        .cb-risk-warning {
+            max-width: 62rem;
+            margin: 0 auto !important;
+            padding: 0.85rem 1rem;
+            border: 1px solid rgba(71, 85, 105, 0.45);
+            border-radius: 0.75rem;
+            background: rgba(15, 23, 42, 0.55);
+            color: #94a3b8 !important;
+            font-size: 0.72rem !important;
+            line-height: 1.6;
+            letter-spacing: 0.01em !important;
+            text-align: center;
+        }
+        .cb-risk-warning strong { color: #cbd5e1; }
+        .cb-footer-copy { margin: 0 !important; line-height: 1.6; word-break: break-word; }
+        #support-bar { position: relative; z-index: 2; row-gap: 0.5rem; line-height: 1.5; }
+        #support-bar-name { display: inline-block; white-space: nowrap; }
+        @media (max-width: 640px) {
+            .cb-risk-warning { font-size: 0.68rem !important; padding: 0.75rem 0.85rem; }
+        }
+        /* Risk warning + copyright now sit at the end of the main column:
+           keep the landing screen centred and scrollable, never clipped. */
+        #auth-view { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        #auth-view > .fade-up { margin: auto; }
+        #auth-view .cb-main-footer { margin-top: 2.25rem; padding: 1.1rem 0 0.25rem; }
+        @media (max-width: 768px) {
+            /* keep the copyright line clear of the floating bottom buttons */
+            #auth-view .cb-main-footer { margin-top: 1.5rem; padding-bottom: 4.75rem; }
+        }
         .cb-footer-dropdown {
             position: relative;
             display: inline-block;
@@ -5608,10 +5644,6 @@ function requestNewOTP() {
         </nav>
     </details>
 
-    <footer class="cb-main-footer" aria-label="Legal and support links">
-        <p>© 2026 Chinese Trading Platform · chinesebot.me</p>
-    </footer>
-
     <div id="cb-legal-layer" hidden aria-hidden="true">
         <header class="cb-legal-topbar">
             <div class="cb-legal-wrap cb-legal-topbar-inner">
@@ -5704,7 +5736,6 @@ function requestNewOTP() {
                     <p>To the fullest extent permitted by law, the service is provided on an “as available” and “as is” basis without warranties of any kind. To the fullest extent permitted by law, Chinese Trading Platform and its operators will not be liable for indirect, incidental, special, consequential, or trading losses arising from use of or inability to use the service.</p>
                     <h2>9. Changes and contact</h2>
                     <p>We may update these terms by posting a revised version on this page. Continued use after an update means you accept the revised terms. Questions should be sent using our <a href="#contact" data-cb-legal-route="contact">official contact details</a>.</p>
-                    <p class="cb-risk-warning" style="margin-top:1rem;padding:.75rem;border:1px solid rgba(245,158,11,.4);border-radius:.5rem;"><strong>Risk Warning:</strong> Trading involves significant financial risk and may lead to loss of capital. ChineseBot provides analytical and educational tools only and does not offer financial advice, guaranteed signals, or automated trading execution.</p>
                 </article>
             </section>
 
@@ -5863,116 +5894,190 @@ function requestNewOTP() {
         }());
     </script>
 
-    <!-- ═══ ADDITIVE (v9): REFERRAL ATTRIBUTION • EARN BY INVITE • PROMO POPUP ═══
-         Purely additive. Nothing above is modified. All codes and amounts are
-         validated server-side; no secrets live in this file. -->
-    <script>
-    (function () {
-        var API = (typeof API_BASE !== 'undefined' ? API_BASE : '');
+<!-- ═══ Chinese Bot AI Support (customer support assistant) ═══ -->
+<style>
+    #cbai-launcher{position:fixed;right:18px;bottom:18px;z-index:70;display:flex;align-items:center;gap:.5rem;
+        padding:.7rem 1rem;border-radius:999px;border:1px solid rgba(250,204,21,.45);cursor:pointer;
+        background:linear-gradient(135deg,#facc15,#eab308);color:#0b1220;font-weight:800;font-size:.78rem;
+        box-shadow:0 8px 28px rgba(0,0,0,.45);}
+    #cbai-launcher:hover{transform:translateY(-1px);}
+    #cbai-panel{position:fixed;right:18px;bottom:78px;z-index:71;width:min(380px,calc(100vw - 28px));
+        max-height:min(72vh,560px);display:none;flex-direction:column;border-radius:1.1rem;overflow:hidden;
+        border:1px solid rgba(250,204,21,.25);background:rgba(3,7,18,.97);backdrop-filter:blur(14px);
+        box-shadow:0 20px 60px rgba(0,0,0,.6);}
+    #cbai-panel.cbai-open{display:flex;}
+    .cbai-head{padding:.8rem 1rem;display:flex;align-items:center;gap:.6rem;
+        background:linear-gradient(90deg,rgba(234,179,8,.18),rgba(234,179,8,.04));
+        border-bottom:1px solid rgba(250,204,21,.18);}
+    .cbai-head h4{margin:0;font-size:.85rem;font-weight:800;color:#fde68a;}
+    .cbai-head small{display:block;color:#64748b;font-size:.62rem;font-weight:500;}
+    .cbai-close{margin-left:auto;background:none;border:0;color:#94a3b8;cursor:pointer;font-size:1rem;}
+    #cbai-log{flex:1;overflow-y:auto;padding:.9rem;display:flex;flex-direction:column;gap:.6rem;}
+    .cbai-msg{max-width:85%;padding:.6rem .8rem;border-radius:.9rem;font-size:.76rem;line-height:1.55;white-space:pre-wrap;}
+    .cbai-bot{align-self:flex-start;background:rgba(30,41,59,.85);color:#cbd5e1;border:1px solid rgba(148,163,184,.15);}
+    .cbai-user{align-self:flex-end;background:linear-gradient(135deg,#facc15,#eab308);color:#0b1220;font-weight:600;}
+    .cbai-foot{padding:.65rem;border-top:1px solid rgba(250,204,21,.15);display:flex;gap:.45rem;align-items:center;}
+    #cbai-input{flex:1;background:#0f172a;border:1px solid rgba(148,163,184,.25);border-radius:.8rem;
+        padding:.55rem .75rem;color:#e2e8f0;font-size:.76rem;outline:none;}
+    #cbai-input:focus{border-color:rgba(250,204,21,.6);}
+    .cbai-btn{border:0;border-radius:.75rem;padding:.55rem .7rem;cursor:pointer;font-size:.8rem;
+        background:rgba(250,204,21,.18);color:#fde68a;}
+    .cbai-btn:hover{background:rgba(250,204,21,.3);}
+    .cbai-btn.cbai-rec{background:#dc2626;color:#fff;animation:cbaiPulse 1.2s infinite;}
+    @keyframes cbaiPulse{50%{opacity:.55;}}
+    .cbai-quick{display:flex;flex-wrap:wrap;gap:.35rem;padding:0 .9rem .6rem;}
+    .cbai-quick button{background:rgba(148,163,184,.12);border:1px solid rgba(148,163,184,.2);color:#94a3b8;
+        border-radius:999px;padding:.3rem .6rem;font-size:.65rem;cursor:pointer;}
+    @media (max-width:640px){#cbai-panel{right:10px;left:10px;width:auto;bottom:74px;}}
+</style>
 
-        // ── 1. Attribution: someone opened a referral link (?ref=CODE) ───────
-        function saveRef(code) { try { localStorage.setItem('csai_ref_code', code); } catch (e) {} }
+<button id="cbai-launcher" type="button" aria-label="Open Chinese Bot AI Support">
+    <i class="fa-solid fa-headset"></i> AI Support
+</button>
+
+<div id="cbai-panel" role="dialog" aria-label="Chinese Bot AI Support">
+    <div class="cbai-head">
+        <i class="fa-solid fa-robot" style="color:#facc15"></i>
+        <div><h4>Chinese Bot AI Support</h4><small>Customer support · replies in your language</small></div>
+        <button class="cbai-close" type="button" aria-label="Close support chat">&times;</button>
+    </div>
+    <div id="cbai-log"></div>
+    <div class="cbai-quick">
+        <button type="button" data-q="What is my order status?">Order status</button>
+        <button type="button" data-q="How do I activate my licence?">Licence activation</button>
+        <button type="button" data-q="How can I pay and what methods do you accept?">Payment methods</button>
+        <button type="button" data-q="I need to talk to a human agent.">Human agent</button>
+    </div>
+    <div class="cbai-foot">
+        <button id="cbai-mic" class="cbai-btn" type="button" title="Voice message" aria-label="Record voice message">
+            <i class="fa-solid fa-microphone"></i>
+        </button>
+        <input id="cbai-input" type="text" placeholder="Type your question…" autocomplete="off" />
+        <button id="cbai-send" class="cbai-btn" type="button" aria-label="Send"><i class="fa-solid fa-paper-plane"></i></button>
+    </div>
+</div>
+
+<script>
+(function () {
+    var panel = document.getElementById('cbai-panel');
+    var log   = document.getElementById('cbai-log');
+    var input = document.getElementById('cbai-input');
+    var mic   = document.getElementById('cbai-mic');
+    var history = [];                  // conversation context for this session
+    var ctx = { orderId: '', telegram: '', whatsapp: '' };   // remembered identifiers (never secrets)
+    var greeted = false, busy = false;
+
+    function add(role, text) {
+        var d = document.createElement('div');
+        d.className = 'cbai-msg ' + (role === 'user' ? 'cbai-user' : 'cbai-bot');
+        d.textContent = text;
+        log.appendChild(d);
+        log.scrollTop = log.scrollHeight;
+        return d;
+    }
+
+    function openPanel() {
+        panel.classList.add('cbai-open');
+        if (!greeted) {
+            greeted = true;
+            add('bot', 'Hi! I\'m Chinese Bot AI Support. I can help with orders, licence activation, payments and general questions.\n\nFor an order check, send your Order ID, Telegram username or WhatsApp number.\n\nI never share licence keys, passwords or OTP codes in chat.');
+        }
+        input.focus();
+    }
+    document.getElementById('cbai-launcher').addEventListener('click', function () {
+        panel.classList.contains('cbai-open') ? panel.classList.remove('cbai-open') : openPanel();
+    });
+    panel.querySelector('.cbai-close').addEventListener('click', function () { panel.classList.remove('cbai-open'); });
+
+    Array.prototype.forEach.call(panel.querySelectorAll('.cbai-quick button'), function (b) {
+        b.addEventListener('click', function () { send(b.getAttribute('data-q')); });
+    });
+
+    async function send(text) {
+        text = (text || input.value || '').trim();
+        if (!text || busy) return;
+        busy = true;
+        input.value = '';
+        add('user', text);
+        history.push({ role: 'user', content: text });
+        var thinking = add('bot', '…');
         try {
-            var qs = new URLSearchParams(location.search);
-            var ref = (qs.get('ref') || '').trim().toUpperCase();
-            if (ref) {
-                fetch(API + '/api/referral/attribute', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include', body: JSON.stringify({ code: ref })
-                }).then(function (r) { return r.ok ? r.json() : null; })
-                  .then(function (d) { if (d && d.ok) saveRef(ref); })
-                  .catch(function () {});
-            }
-            // Magic access link from email → open the referral dashboard.
-            var rl = qs.get('refLogin');
-            if (rl) location.replace('/referral.html?refLogin=' + encodeURIComponent(rl));
-        } catch (e) {}
-
-        // ── 2. Invite codes typed into the existing Promo Code box ───────────
-        window._blTryReferralCode = async function (code) {
-            try {
-                var r = await fetch(API + '/api/referral/attribute', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include', body: JSON.stringify({ code: code })
-                });
-                var d = await r.json().catch(function () { return {}; });
-                if (!r.ok || !d.ok) return false;
-                saveRef(code);
-                if (typeof _blPromoMsg === 'function') {
-                    _blPromoMsg('✅ Invite code ' + code + ' applied — ' +
-                        (d.invitedBy ? d.invitedBy + ' invited you.' : 'thanks for joining!') +
-                        ' (no price change)', true);
-                }
-                return true;
-            } catch (e) { return false; }
-        };
-
-        // ── 3. Floating "Earn by Invite" entry point ─────────────────────────
-        var fab = document.createElement('a');
-        fab.href = '/referral.html';
-        fab.id = 'earn-invite-fab';
-        fab.className = 'fixed bottom-20 left-5 z-[200] px-4 py-3 rounded-2xl font-bold text-xs shadow-lg hover:scale-105 transition-all';
-        fab.style.cssText = "background:rgba(15,23,42,0.92);border:1px solid rgba(110,231,183,0.45);color:#6ee7b7;font-family:'Inter',sans-serif;";
-        fab.innerHTML = '<i class="fa-solid fa-gift mr-2"></i> Earn by Invite';
-        document.body.appendChild(fab);
-
-        // ── 4. Admin-editable promo popup (default 5s after arrival) ─────────
-        function anyModalOpen() {
-            var ids = ['buy-lic-modal', 'track-modal'];
-            for (var i = 0; i < ids.length; i++) {
-                var el = document.getElementById(ids[i]);
-                if (el && !el.classList.contains('hidden')) return true;
-            }
-            return false;
-        }
-        function showPopup(p) {
-            if (document.getElementById('csai-ref-popup')) return;
-            var wrap = document.createElement('div');
-            wrap.id = 'csai-ref-popup';
-            wrap.setAttribute('role', 'dialog');
-            wrap.setAttribute('aria-modal', 'true');
-            wrap.setAttribute('aria-label', p.title || 'Offer');
-            wrap.className = 'fixed inset-0 z-[340] flex items-center justify-center p-4';
-            wrap.style.cssText = 'background:rgba(2,6,23,0.82);backdrop-filter:blur(6px);';
-            wrap.innerHTML =
-                '<div class="w-full max-w-sm rounded-3xl overflow-hidden" style="background:#0f172a;border:1px solid rgba(110,231,183,0.35);box-shadow:0 20px 60px rgba(0,0,0,.6);">' +
-                  '<div class="px-5 py-4 flex items-start justify-between" style="border-bottom:1px solid rgba(110,231,183,.2);">' +
-                    '<h4 class="title-font text-base font-bold" style="color:#6ee7b7;">' + esc(p.title || 'Earn by Invite') + '</h4>' +
-                    '<button type="button" aria-label="Close" data-x class="text-slate-400 hover:text-white text-lg ml-3">&times;</button>' +
-                  '</div>' +
-                  '<div class="px-5 py-5 space-y-4">' +
-                    '<p class="text-slate-300 text-sm leading-relaxed">' + esc(p.description || '') + '</p>' +
-                    '<a href="' + esc(p.ctaUrl || '/referral.html') + '" class="block text-center golden-btn text-black font-bold px-4 py-3 rounded-xl text-sm">' + esc(p.ctaLabel || 'Start earning') + '</a>' +
-                  '</div>' +
-                '</div>';
-            function close() { wrap.remove(); }
-            wrap.addEventListener('click', function (e) { if (e.target === wrap || e.target.hasAttribute('data-x')) close(); });
-            document.addEventListener('keydown', function onk(e) { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', onk); } });
-            document.body.appendChild(wrap);
-        }
-        function esc(s) {
-            return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+            var r = await fetch('/api/support/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ messages: history.slice(-12), context: ctx })
             });
+            var j = await r.json();
+            if (j.context) {
+                ctx.orderId  = j.context.orderId  || ctx.orderId;
+                ctx.telegram = j.context.telegram || ctx.telegram;
+                ctx.whatsapp = j.context.whatsapp || ctx.whatsapp;
+            }
+            thinking.textContent = j.reply || 'Sorry, please try again.';
+            history.push({ role: 'assistant', content: j.reply || '' });
+            if (j.escalate || /human (agent|support)|talk to (a )?person/i.test(text)) offerHuman(text);
+        } catch (e) {
+            thinking.textContent = 'I could not reach support right now. Please use the WhatsApp or Telegram buttons in the support bar.';
         }
-        fetch(API + '/api/referral/config').then(function (r) { return r.ok ? r.json() : null; }).then(function (cfg) {
-            if (!cfg || !cfg.enabled || !cfg.popup || !cfg.popup.active) return;
-            var p = cfg.popup;
-            var seen = {};
-            try { seen = JSON.parse(localStorage.getItem('csai_ref_popup') || '{}'); } catch (e) {}
-            var cooldownMs = (p.cooldownHrs || 24) * 3600000;
-            if (seen.count >= (p.maxPerUser || 3)) return;                 // frequency cap
-            if (seen.last && Date.now() - seen.last < cooldownMs) return;  // cooldown
-            setTimeout(function () {
-                if (anyModalOpen()) return;   // never interrupt checkout / tracking
-                showPopup(p);
-                try {
-                    localStorage.setItem('csai_ref_popup', JSON.stringify({ count: (seen.count || 0) + 1, last: Date.now() }));
-                } catch (e) {}
-            }, (p.delaySec != null ? p.delaySec : 5) * 1000);
-        }).catch(function () {});
-    }());
-    </script>
-<div id="cb-risk-warning" role="note" style="max-width:64rem;margin:1.5rem auto 5rem;padding:.75rem 1rem;font-size:.75rem;line-height:1.5;color:#cbd5e1;border-top:1px solid rgba(148,163,184,.25);text-align:center;"><strong>Risk Warning:</strong> Trading involves significant financial risk and may lead to loss of capital. ChineseBot provides analytical and educational tools only and does not offer financial advice, guaranteed signals, or automated trading execution.</div>
+        busy = false;
+    }
+
+    function offerHuman(lastText) {
+        var wrap = document.createElement('div');
+        wrap.className = 'cbai-msg cbai-bot';
+        wrap.textContent = 'Would you like me to create a support ticket for our human team?';
+        var btn = document.createElement('button');
+        btn.className = 'cbai-btn';
+        btn.style.marginTop = '.5rem';
+        btn.textContent = 'Create support ticket';
+        btn.addEventListener('click', async function () {
+            btn.disabled = true;
+            var summary = history.slice(-6).map(function (m) { return (m.role === 'user' ? 'Customer: ' : 'AI: ') + m.content; }).join('\n');
+            try {
+                var r = await fetch('/api/support/ticket', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        customer: ctx.telegram || ctx.whatsapp || '',
+                        orderId: ctx.orderId || '', category: 'ai-support-escalation', summary: summary
+                    })
+                });
+                var j = await r.json();
+                add('bot', j.ok
+                    ? 'Ticket ' + j.ticketId + ' created. Our team will follow up. You can also reach us instantly on WhatsApp or Telegram using the support bar.'
+                    : 'I could not create the ticket. Please contact us on WhatsApp or Telegram.');
+            } catch (e) { add('bot', 'Please contact us on WhatsApp or Telegram from the support bar.'); }
+        });
+        wrap.appendChild(document.createElement('br'));
+        wrap.appendChild(btn);
+        log.appendChild(wrap);
+        log.scrollTop = log.scrollHeight;
+    }
+
+    document.getElementById('cbai-send').addEventListener('click', function () { send(); });
+    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') send(); });
+
+    // ── Voice support (browser speech recognition; text chat keeps working without it) ──
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+        mic.title = 'Voice input is not supported in this browser — please type your message.';
+        mic.addEventListener('click', function () {
+            add('bot', 'Voice input is not available in this browser. Please type your message and I\'ll help right away.');
+        });
+    } else {
+        var rec = new SR(), listening = false;
+        rec.continuous = false; rec.interimResults = false;
+        rec.lang = (navigator.language && /ur/i.test(navigator.language)) ? 'ur-PK' : (navigator.language || 'en-US');
+        rec.onresult = function (e) { send(e.results[0][0].transcript); };
+        rec.onerror = function () { add('bot', 'I could not hear that. Please try again or type your message.'); };
+        rec.onend = function () { listening = false; mic.classList.remove('cbai-rec'); };
+        mic.addEventListener('click', function () {
+            if (listening) { rec.stop(); return; }
+            try { rec.start(); listening = true; mic.classList.add('cbai-rec'); }
+            catch (e) { add('bot', 'Voice input could not start. Please type your message instead.'); }
+        });
+    }
+})();
+</script>
+
 </body>
 </html>
