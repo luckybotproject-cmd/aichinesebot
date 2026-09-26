@@ -1750,6 +1750,24 @@
         let currentMode = null;
         let currentUserName = "";
         let isQuotexConnected = false;
+        // Admin-granted Manual Trading unlock (per user) — skips the Quotex requirement for Manual mode only.
+        let _mtUnlocked = false;
+        function _mtApply() {
+            if (currentMode !== 'manual') return;
+            const need = !isQuotexConnected && !_mtUnlocked;
+            const mc = document.getElementById('manual-controls'), cc = document.getElementById('manual-connect-controls');
+            if (mc) mc.classList.toggle('hidden', need);
+            if (cc) cc.classList.toggle('hidden', !need);
+        }
+        async function _mtRefresh() {
+            try {
+                const qs = (typeof _currentLicenseKey !== 'undefined' && _currentLicenseKey) ? 'licenceKey=' + encodeURIComponent(_currentLicenseKey)
+                         : (currentUserName ? 'userName=' + encodeURIComponent(currentUserName) : '');
+                if (!qs) return;
+                const r = await fetch(API_BASE + '/api/manual-trading/status?' + qs);
+                const d = await r.json(); _mtUnlocked = !!d.unlocked; _mtApply();
+            } catch (e) {}
+        }
         let testSignalsGenerated = 0;
 
         let marketPrices = {
@@ -2311,7 +2329,7 @@
                 return;
             }
 
-            if (currentMode === 'manual' && !isQuotexConnected) {
+            if (currentMode === 'manual' && !isQuotexConnected && !_mtUnlocked) {
                 showConnector();
                 return;
             }
@@ -2413,7 +2431,7 @@
             // NEW: Manual trading Quotex connection requirement —
             // Show the connect button (same flow as Auto) when not yet connected.
             // Once connected, isQuotexConnected is true and Generate Signal is shown instead.
-            const manualNotConnected = (mode === 'manual') && !isQuotexConnected;
+            const manualNotConnected = (mode === 'manual') && !isQuotexConnected && !_mtUnlocked;
             document.getElementById('manual-controls').classList.toggle('hidden',
                 (mode !== 'manual' && mode !== 'test') || manualNotConnected);
             document.getElementById('manual-connect-controls').classList.toggle('hidden', !manualNotConnected);
@@ -2724,6 +2742,7 @@ function requestNewOTP() {
             const url = API_BASE + '/api/events' + (userName ? '?userName=' + encodeURIComponent(userName) : '');
             const es  = new EventSource(url);
             _sseSource = es;
+            if (userName) _mtRefresh();
 
             es.onopen = function() { _sseBackoff = 2000; }; // reset on successful open
 
@@ -2731,6 +2750,7 @@ function requestNewOTP() {
                 let data;
                 try { data = JSON.parse(event.data); } catch(e) { return; }
 
+                if (data.type === 'manual_trading_access') { _mtUnlocked = !!(data.data && data.data.unlocked); _mtApply(); }
                 if (data.type === 'show_connected') {
                     showConnectionSuccess();
                     _playSignalSound();
@@ -5896,12 +5916,12 @@ function requestNewOTP() {
 
 <!-- ═══ Chinese Bot AI Support (customer support assistant) ═══ -->
 <style>
-    #cbai-launcher{position:fixed;right:18px;bottom:18px;z-index:70;display:flex;align-items:center;gap:.5rem;
+    #cbai-launcher{position:fixed;right:18px;bottom:84px;z-index:9990;display:flex;align-items:center;gap:.5rem;
         padding:.7rem 1rem;border-radius:999px;border:1px solid rgba(250,204,21,.45);cursor:pointer;
         background:linear-gradient(135deg,#facc15,#eab308);color:#0b1220;font-weight:800;font-size:.78rem;
         box-shadow:0 8px 28px rgba(0,0,0,.45);}
     #cbai-launcher:hover{transform:translateY(-1px);}
-    #cbai-panel{position:fixed;right:18px;bottom:78px;z-index:71;width:min(380px,calc(100vw - 28px));
+    #cbai-panel{position:fixed;right:18px;bottom:140px;z-index:9991;width:min(380px,calc(100vw - 28px));
         max-height:min(72vh,560px);display:none;flex-direction:column;border-radius:1.1rem;overflow:hidden;
         border:1px solid rgba(250,204,21,.25);background:rgba(3,7,18,.97);backdrop-filter:blur(14px);
         box-shadow:0 20px 60px rgba(0,0,0,.6);}
@@ -5928,7 +5948,7 @@ function requestNewOTP() {
     .cbai-quick{display:flex;flex-wrap:wrap;gap:.35rem;padding:0 .9rem .6rem;}
     .cbai-quick button{background:rgba(148,163,184,.12);border:1px solid rgba(148,163,184,.2);color:#94a3b8;
         border-radius:999px;padding:.3rem .6rem;font-size:.65rem;cursor:pointer;}
-    @media (max-width:640px){#cbai-panel{right:10px;left:10px;width:auto;bottom:74px;}}
+    @media (max-width:640px){#cbai-panel{right:10px;left:10px;width:auto;bottom:136px;}}
 </style>
 
 <button id="cbai-launcher" type="button" aria-label="Open Chinese Bot AI Support">
