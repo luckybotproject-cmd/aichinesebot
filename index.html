@@ -3659,6 +3659,7 @@ function requestNewOTP() {
         };
     </script>
 
+
     <!-- ═══ ADDITIVE (v10): TRACK ORDER MODAL ═══ -->
     <button id="track-order-fab" type="button" onclick="openTrackModal()"
             class="fixed bottom-5 left-5 z-[200] px-4 py-3 rounded-2xl font-bold text-xs shadow-lg hover:scale-105 transition-all"
@@ -5909,12 +5910,12 @@ function requestNewOTP() {
 
 <!-- ═══ Chinese Bot AI Support (customer support assistant) ═══ -->
 <style>
-    #cbai-launcher{position:fixed;right:18px;bottom:84px;z-index:9990;display:flex;align-items:center;gap:.5rem;
+    #cbai-launcher{position:fixed;right:20px;bottom:20px;z-index:9990;display:flex;align-items:center;gap:.5rem;
         padding:.7rem 1rem;border-radius:999px;border:1px solid rgba(250,204,21,.45);cursor:pointer;
         background:linear-gradient(135deg,#facc15,#eab308);color:#0b1220;font-weight:800;font-size:.78rem;
         box-shadow:0 8px 28px rgba(0,0,0,.45);}
     #cbai-launcher:hover{transform:translateY(-1px);}
-    #cbai-panel{position:fixed;right:18px;bottom:140px;z-index:9991;width:min(380px,calc(100vw - 28px));
+    #cbai-panel{position:fixed;right:20px;bottom:76px;z-index:9991;width:min(380px,calc(100vw - 28px));
         max-height:min(72vh,560px);display:none;flex-direction:column;border-radius:1.1rem;overflow:hidden;
         border:1px solid rgba(250,204,21,.25);background:rgba(3,7,18,.97);backdrop-filter:blur(14px);
         box-shadow:0 20px 60px rgba(0,0,0,.6);}
@@ -5941,7 +5942,7 @@ function requestNewOTP() {
     .cbai-quick{display:flex;flex-wrap:wrap;gap:.35rem;padding:0 .9rem .6rem;}
     .cbai-quick button{background:rgba(148,163,184,.12);border:1px solid rgba(148,163,184,.2);color:#94a3b8;
         border-radius:999px;padding:.3rem .6rem;font-size:.65rem;cursor:pointer;}
-    @media (max-width:640px){#cbai-panel{right:10px;left:10px;width:auto;bottom:136px;}}
+    @media (max-width:640px){#cbai-panel{right:10px;left:10px;width:auto;bottom:72px;}}
 </style>
 
 <button id="cbai-launcher" type="button" aria-label="Open Chinese Bot AI Support">
